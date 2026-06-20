@@ -14,88 +14,93 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22112%22%20fill%3D%22%2313202E%22%2F%3E%3Crect%20x%3D%22150%22%20y%3D%22286%22%20width%3D%2246%22%20height%3D%2294%22%20rx%3D%2212%22%20fill%3D%22%235EEAD4%22%2F%3E%3Crect%20x%3D%22233%22%20y%3D%22226%22%20width%3D%2246%22%20height%3D%22154%22%20rx%3D%2212%22%20fill%3D%22%2334D399%22%2F%3E%3Crect%20x%3D%22316%22%20y%3D%22156%22%20width%3D%2246%22%20height%3D%22224%22%20rx%3D%2212%22%20fill%3D%22%235EEAD4%22%2F%3E%3C%2Fsvg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.right-4{right:1rem}.top-1\/2{top:50%}.z-50{z-index:50}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.h-1\.5{height:.375rem}.h-2{height:.5rem}.h-4{height:1rem}.h-7{height:1.75rem}.h-9{height:2.25rem}.min-h-screen{min-height:100vh}.w-1{width:.25rem}.w-1\.5{width:.375rem}.w-10{width:2.5rem}.w-2{width:.5rem}.w-4{width:1rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.-translate-y-1\/2{--tw-translate-y:-50%}.-translate-y-1\/2,.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.resize-none{resize:none}.appearance-none{-webkit-appearance:none;-moz-appearance:none;appearance:none}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-cols-7{grid-template-columns:repeat(7,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-end{align-items:flex-end}.items-center{align-items:center}.items-baseline{align-items:baseline}.justify-start{justify-content:flex-start}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.space-y-1\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.375rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.375rem*var(--tw-space-y-reverse))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.divide-y>:not([hidden])~:not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px*(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px*var(--tw-divide-y-reverse))}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rounded-2xl{border-radius:1rem}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-xl{border-radius:.75rem}.rounded-t-3xl{border-top-left-radius:1.5rem;border-top-right-radius:1.5rem}.border{border-width:1px}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.p-1{padding:.25rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-3\.5{padding-left:.875rem;padding-right:.875rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-20{padding-top:5rem;padding-bottom:5rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-3\.5{padding-top:.875rem;padding-bottom:.875rem}.pb-3{padding-bottom:.75rem}.pt-1\.5{padding-top:.375rem}.pt-7{padding-top:1.75rem}.text-left{text-align:left}.text-center{text-align:center}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-\[12px\]{font-size:12px}.text-\[13px\]{font-size:13px}.text-\[14px\]{font-size:14px}.text-\[15px\]{font-size:15px}.text-\[16px\]{font-size:16px}.text-\[18px\]{font-size:18px}.text-\[19px\]{font-size:19px}.text-\[20px\]{font-size:20px}.text-\[22px\]{font-size:22px}.text-\[24px\]{font-size:24px}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.capitalize{text-transform:capitalize}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.leading-tight{line-height:1.25}.tracking-\[0\.12em\]{letter-spacing:.12em}.tracking-\[0\.18em\]{letter-spacing:.18em}.outline-none{outline:2px solid transparent;outline-offset:2px}.outline{outline-style:solid}.blur{--tw-blur:blur(8px)}.blur,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.active\:scale-90:active{--tw-scale-x:.9;--tw-scale-y:.9}.active\:scale-90:active,.active\:scale-95:active{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95}.active\:scale-\[\.98\]:active{--tw-scale-x:.98;--tw-scale-y:.98}.active\:scale-\[\.98\]:active,.active\:scale-\[\.99\]:active{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.active\:scale-\[\.99\]:active{--tw-scale-x:.99;--tw-scale-y:.99}.active\:opacity-60:active{opacity:.6}</style>
 <style>
   html,body{margin:0;background:#F2F4F7;-webkit-tap-highlight-color:transparent}
-  #boot{font-family:system-ui,sans-serif;color:#8A95A3;text-align:center;padding:80px 20px;font-size:14px}
+  #boot{font-family:system-ui,sans-serif;color:#8A95A3;text-align:center;padding:80px 20px;font-size:14px;line-height:1.5}
+  .bx-body{font-family:Inter,system-ui,sans-serif}
+  .bx-num{font-family:"Space Grotesk",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+  .bx-sheet{animation:bxUp .28s cubic-bezier(.22,1,.36,1)}
+  @keyframes bxUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .bx-fade{animation:bxFade .2s ease both}
+  @keyframes bxFade{from{opacity:0}to{opacity:1}}
+  @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
+<script>
+  window.addEventListener("error", function (e) {
+    var b = document.getElementById("boot");
+    if (b) { b.textContent = "Load error: " + (e.message || (e.error && e.error.message) || "a script failed to load"); b.style.color = "#C2410C"; }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin></script>
 </head>
 <body>
 <div id="root"><div id="boot">Loading Budget Planner…</div></div>
-<script type="text/babel" data-presets="react">
+<script>
 const { useState, useEffect, useRef, useMemo } = React;
-// ─── CONFIG ───────────────────────────────────────────────────────
-// Your Cloudflare Worker that holds the Anthropic key and proxies to Claude.
 const WORKER_URL = "https://mts-assistant.lukedorsett.workers.dev";
-// Model the Worker should use. Switch to "claude-haiku-4-5" to cut cost ~3x.
 const MODEL = "claude-sonnet-4-6";
-// ──────────────────────────────────────────────────────────────────
-// ── Categories (preset options, drawn from the spreadsheet's groups) ──
 const INCOME_CATS = [
-  { id: "wages",    label: "Wages & Tips" },
+  { id: "wages", label: "Wages & Tips" },
   { id: "interest", label: "Interest" },
-  { id: "dividends",label: "Dividends" },
-  { id: "gifts",    label: "Gifts received" },
-  { id: "refunds",  label: "Refunds" },
+  { id: "dividends", label: "Dividends" },
+  { id: "gifts", label: "Gifts received" },
+  { id: "refunds", label: "Refunds" },
   { id: "transfer", label: "Transfer from savings" },
-  { id: "other-in", label: "Other income" },
+  { id: "other-in", label: "Other income" }
 ];
 const INCOME_COLOR = "#11875E";
-
 const EXPENSE_CATS = [
-  { id: "home",         label: "Home & Utilities", color: "#6366F1" },
-  { id: "daily",        label: "Daily Living",     color: "#0EA5E9" },
-  { id: "transport",    label: "Transportation",   color: "#EC4899" },
-  { id: "health",       label: "Health",           color: "#14B8A6" },
-  { id: "insurance",    label: "Insurance",        color: "#0D9488" },
-  { id: "obligations",  label: "Loans & Debt",     color: "#F59E0B" },
-  { id: "subscriptions",label: "Subscriptions",    color: "#A855F7" },
-  { id: "children",     label: "Children",         color: "#F472B6" },
-  { id: "education",    label: "Education",         color: "#8B5CF6" },
-  { id: "entertainment",label: "Entertainment",    color: "#FB923C" },
-  { id: "pets",         label: "Pets",             color: "#84CC16" },
-  { id: "charity",      label: "Charity & Gifts",  color: "#EF4444" },
-  { id: "vacation",     label: "Vacation",         color: "#06B6D4" },
-  { id: "savings",      label: "Savings",          color: "#22C55E" },
-  { id: "business",     label: "Business",         color: "#475569" },
-  { id: "misc",         label: "Miscellaneous",    color: "#94A3B8" },
+  { id: "home", label: "Home & Utilities", color: "#6366F1" },
+  { id: "daily", label: "Daily Living", color: "#0EA5E9" },
+  { id: "transport", label: "Transportation", color: "#EC4899" },
+  { id: "health", label: "Health", color: "#14B8A6" },
+  { id: "insurance", label: "Insurance", color: "#0D9488" },
+  { id: "obligations", label: "Loans & Debt", color: "#F59E0B" },
+  { id: "subscriptions", label: "Subscriptions", color: "#A855F7" },
+  { id: "children", label: "Children", color: "#F472B6" },
+  { id: "education", label: "Education", color: "#8B5CF6" },
+  { id: "entertainment", label: "Entertainment", color: "#FB923C" },
+  { id: "pets", label: "Pets", color: "#84CC16" },
+  { id: "charity", label: "Charity & Gifts", color: "#EF4444" },
+  { id: "vacation", label: "Vacation", color: "#06B6D4" },
+  { id: "savings", label: "Savings", color: "#22C55E" },
+  { id: "business", label: "Business", color: "#475569" },
+  { id: "misc", label: "Miscellaneous", color: "#94A3B8" }
 ];
 const expCat = (id) => EXPENSE_CATS.find((c) => c.id === id) || EXPENSE_CATS[EXPENSE_CATS.length - 1];
-const inCat  = (id) => INCOME_CATS.find((c) => c.id === id) || INCOME_CATS[INCOME_CATS.length - 1];
-const itemColor = (it) => (it.type === "income" ? INCOME_COLOR : expCat(it.category).color);
-
+const inCat = (id) => INCOME_CATS.find((c) => c.id === id) || INCOME_CATS[INCOME_CATS.length - 1];
+const itemColor = (it) => it.type === "income" ? INCOME_COLOR : expCat(it.category).color;
 const FREQS = [
-  { id: "once",      label: "One time" },
-  { id: "weekly",    label: "Weekly" },
-  { id: "biweekly",  label: "Every 2 weeks" },
-  { id: "monthly",   label: "Monthly" },
+  { id: "once", label: "One time" },
+  { id: "weekly", label: "Weekly" },
+  { id: "biweekly", label: "Every 2 weeks" },
+  { id: "monthly", label: "Monthly" },
   { id: "quarterly", label: "Quarterly" },
-  { id: "yearly",    label: "Yearly" },
+  { id: "yearly", label: "Yearly" }
 ];
 const freqLabel = (id) => (FREQS.find((f) => f.id === id) || FREQS[3]).label;
-
 const STORAGE_KEY = "budget-planner-v2";
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const MO_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
-
-// ── Date helpers (local, no timezone drift) ─────────────────────────
-const parseISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MO_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+const parseISO = (s) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
 const toISO = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-
+const addDays = (d, n) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
 const money = (n) => {
   const v = Math.abs(n);
   return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(v) ? 0 : 2 });
 };
-const signed = (n) => (n < 0 ? "−" : "") + money(n);
-
-// occurrences (day-of-month numbers) of an item within year/month(0-based)
+const signed = (n) => (n < 0 ? "\u2212" : "") + money(n);
 function occurrences(item, y, m) {
   const a = parseISO(item.date);
   const ms = new Date(y, m, 1);
@@ -110,7 +115,10 @@ function occurrences(item, y, m) {
     let d = new Date(a);
     if (d > me) return res;
     while (d < ms) d = addDays(d, step);
-    while (d <= me) { res.push(d.getDate()); d = addDays(d, step); }
+    while (d <= me) {
+      res.push(d.getDate());
+      d = addDays(d, step);
+    }
     return res;
   }
   const before = new Date(y, m, 1) < new Date(a.getFullYear(), a.getMonth(), 1);
@@ -129,34 +137,37 @@ function occurrences(item, y, m) {
   }
   return res;
 }
-
 function monthTotals(items, y, m) {
   let inc = 0, exp = 0;
   for (const it of items) {
     const t = occurrences(it, y, m).length * it.amount;
-    if (it.type === "income") inc += t; else exp += t;
+    if (it.type === "income") inc += t;
+    else exp += t;
   }
   return { inc, exp, net: inc - exp };
 }
-
-// running balance through end of year/month, starting from earliest item month
 function runningBalance(items, startBalance, y, m) {
   if (items.length === 0) return startBalance;
   let sy = y, sm = m;
   for (const it of items) {
     const a = parseISO(it.date);
-    if (a.getFullYear() < sy || (a.getFullYear() === sy && a.getMonth() < sm)) { sy = a.getFullYear(); sm = a.getMonth(); }
+    if (a.getFullYear() < sy || a.getFullYear() === sy && a.getMonth() < sm) {
+      sy = a.getFullYear();
+      sm = a.getMonth();
+    }
   }
   let bal = startBalance, cy = sy, cm = sm, guard = 0;
-  while ((cy < y || (cy === y && cm <= m)) && guard < 240) {
+  while ((cy < y || cy === y && cm <= m) && guard < 240) {
     bal += monthTotals(items, cy, cm).net;
-    cm++; if (cm > 11) { cm = 0; cy++; }
+    cm++;
+    if (cm > 11) {
+      cm = 0;
+      cy++;
+    }
     guard++;
   }
   return bal;
 }
-
-// concrete dated events (with running balance) from anchor through toISO
 function generateEvents(items, toISOstr) {
   const to = parseISO(toISOstr);
   const evs = [];
@@ -164,16 +175,21 @@ function generateEvents(items, toISOstr) {
     const a = parseISO(it.date);
     if (a > to) continue;
     let cy = a.getFullYear(), cm = a.getMonth(), g = 0;
-    while ((cy < to.getFullYear() || (cy === to.getFullYear() && cm <= to.getMonth())) && g < 240) {
+    while ((cy < to.getFullYear() || cy === to.getFullYear() && cm <= to.getMonth()) && g < 240) {
       for (const day of occurrences(it, cy, cm)) {
         const d = new Date(cy, cm, day);
         if (d >= a && d <= to) evs.push({ iso: toISO(d), t: d.getTime(), item: it });
       }
-      cm++; if (cm > 11) { cm = 0; cy++; } g++;
+      cm++;
+      if (cm > 11) {
+        cm = 0;
+        cy++;
+      }
+      g++;
     }
   }
   evs.sort((x, y) => x.t - y.t || (x.item.type === y.item.type ? 0 : x.item.type === "income" ? -1 : 1));
-  let bal = 0; // filled by caller via ledger()
+  let bal = 0;
   return evs;
 }
 function ledger(items, startBalance, toISOstr) {
@@ -184,8 +200,6 @@ function ledger(items, startBalance, toISOstr) {
     return { iso: e.iso, name: e.item.name, type: e.item.type, amount: e.item.amount, payee: e.item.payee || "", balance: bal };
   });
 }
-
-// ── Fonts / base styles ─────────────────────────────────────────────
 function useTheme() {
   useEffect(() => {
     const link = document.createElement("link");
@@ -205,21 +219,18 @@ function useTheme() {
     document.head.appendChild(style);
   }, []);
 }
-
-// ── App ─────────────────────────────────────────────────────────────
 function BudgetPlanner() {
   useTheme();
-  const now = new Date();
+  const now = /* @__PURE__ */ new Date();
   const [items, setItems] = useState([]);
   const [startBalance, setStartBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [selDay, setSelDay] = useState(now.getDate());
   const [editor, setEditor] = useState(null);
-  const [advisor, setAdvisor] = useState(null); // {mode:'general'|'bill', bill?, onApplyDate?}
+  const [advisor, setAdvisor] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const [editBal, setEditBal] = useState(false);
-
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -228,39 +239,40 @@ function BudgetPlanner() {
         setItems(Array.isArray(d.items) ? d.items : []);
         setStartBalance(Number(d.startBalance) || 0);
       }
-    } catch (e) { /* fresh start */ }
+    } catch (e) {
+    }
     setLoading(false);
   }, []);
-
   function persist(nextItems, nextBal) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: nextItems, startBalance: nextBal }));
-    } catch (e) { console.error("Could not save:", e); }
+    } catch (e) {
+      console.error("Could not save:", e);
+    }
   }
-
   function upsert(it) {
-    const next = items.some((x) => x.id === it.id)
-      ? items.map((x) => (x.id === it.id ? it : x))
-      : [...items, it];
-    setItems(next); persist(next, startBalance); setEditor(null);
+    const next = items.some((x) => x.id === it.id) ? items.map((x) => x.id === it.id ? it : x) : [...items, it];
+    setItems(next);
+    persist(next, startBalance);
+    setEditor(null);
   }
   function remove(id) {
     const next = items.filter((x) => x.id !== id);
-    setItems(next); persist(next, startBalance); setEditor(null);
+    setItems(next);
+    persist(next, startBalance);
+    setEditor(null);
   }
   function saveBalance(v) {
     const b = Math.round((parseFloat(v) || 0) * 100) / 100;
-    setStartBalance(b); persist(items, b); setEditBal(false);
+    setStartBalance(b);
+    persist(items, b);
+    setEditBal(false);
   }
-
-  // derived for the viewed month
   const { y, m } = view;
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const firstDow = new Date(y, m, 1).getDay();
   const totals = useMemo(() => monthTotals(items, y, m), [items, y, m]);
   const endBalance = useMemo(() => runningBalance(items, startBalance, y, m), [items, startBalance, y, m]);
-
-  // map day -> occurrences
   const dayMap = useMemo(() => {
     const map = {};
     for (const it of items) for (const day of occurrences(it, y, m)) {
@@ -268,220 +280,104 @@ function BudgetPlanner() {
     }
     return map;
   }, [items, y, m]);
-
   const selItems = dayMap[selDay] || [];
   const selDate = new Date(y, m, selDay);
-
   function shiftMonth(delta) {
     let nm = m + delta, ny = y;
-    if (nm < 0) { nm = 11; ny--; } if (nm > 11) { nm = 0; ny++; }
+    if (nm < 0) {
+      nm = 11;
+      ny--;
+    }
+    if (nm > 11) {
+      nm = 0;
+      ny++;
+    }
     setView({ y: ny, m: nm });
-    const today = new Date();
+    const today = /* @__PURE__ */ new Date();
     setSelDay(today.getFullYear() === ny && today.getMonth() === nm ? today.getDate() : 1);
     setEditBal(false);
   }
-
-  const isToday = (day) => { const t = new Date(); return t.getFullYear() === y && t.getMonth() === m && t.getDate() === day; };
-
+  const isToday = (day) => {
+    const t = /* @__PURE__ */ new Date();
+    return t.getFullYear() === y && t.getMonth() === m && t.getDate() === day;
+  };
   const cells = [];
   for (let i = 0; i < firstDow; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  return (
-    <div className="bx-body min-h-screen w-full" style={{ background: "#F2F4F7", color: "#16202B" }}>
-      <div className="mx-auto w-full" style={{ maxWidth: 480, paddingBottom: 96 }}>
-        {/* Header / month nav */}
-        <header className="px-5 pt-7 pb-3 flex items-center justify-between">
-          <div>
-            <p className="bx-num text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#8A95A3" }}>Budget planner</p>
-            <h1 className="text-[24px] font-bold leading-tight mt-0.5" style={{ letterSpacing: "-0.02em" }}>
-              {MONTHS[m]} {y}
-            </h1>
-          </div>
-          <div className="flex gap-1.5">
-            <NavBtn onClick={() => setAdvisor({ mode: "general" })} label="Budget advisor">
-              <span style={{ fontSize: 15 }}>✨</span>
-            </NavBtn>
-            <NavBtn onClick={() => shiftMonth(-1)} label="Previous month">‹</NavBtn>
-            <NavBtn onClick={() => shiftMonth(1)} label="Next month">›</NavBtn>
-          </div>
-        </header>
-
-        {loading ? (
-          <div className="px-5 py-20 text-center" style={{ color: "#8A95A3" }}>Loading…</div>
-        ) : (
-          <main className="px-4 space-y-4">
-            {/* Hero: projected balance + month flows */}
-            <section className="rounded-3xl p-6" style={{ background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" }}>
-              <div className="flex items-baseline justify-between">
-                <p className="text-[12px] font-medium" style={{ color: "#8FA0B3" }}>Projected balance · end of {MO_SHORT[m]}</p>
-                <button onClick={() => setEditBal((v) => !v)} className="text-[11px] font-semibold" style={{ color: "#5EEAD4" }}>
-                  start {money(startBalance)}
-                </button>
-              </div>
-              {editBal ? (
-                <BalanceEditor value={startBalance} onSave={saveBalance} onCancel={() => setEditBal(false)} />
-              ) : (
-                <div className="bx-num font-bold mt-1" style={{ fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" }}>
-                  {signed(Math.round(endBalance))}
-                </div>
-              )}
-              <div className="grid grid-cols-3 gap-2 mt-5">
-                <Stat label="Income" value={money(Math.round(totals.inc))} color="#5EEAD4" />
-                <Stat label="Expenses" value={money(Math.round(totals.exp))} color="#FCA5A5" />
-                <Stat label="Net" value={signed(Math.round(totals.net))} color={totals.net >= 0 ? "#fff" : "#FB7185"} />
-              </div>
-            </section>
-
-            {/* Calendar */}
-            <section className="rounded-3xl bg-white p-4" style={{ boxShadow: "0 1px 2px rgba(16,24,40,.06)" }}>
-              <div className="grid grid-cols-7 mb-1">
-                {DOW.map((d) => (
-                  <div key={d} className="text-center text-[11px] font-semibold py-1" style={{ color: "#A0AAB6" }}>{d[0]}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {cells.map((day, i) => {
-                  if (day === null) return <div key={`e${i}`} />;
-                  const its = dayMap[day] || [];
-                  const sel = day === selDay;
-                  const cols = [...new Set(its.map(itemColor))].slice(0, 3);
-                  return (
-                    <button key={day} onClick={() => setSelDay(day)}
-                      className="relative rounded-xl flex flex-col items-center justify-start pt-1.5 active:scale-95"
-                      style={{ height: 46, transition: "transform .1s", background: sel ? "#13202E" : "transparent", outline: isToday(day) && !sel ? "1.5px solid #CBD3DC" : "none", outlineOffset: -1.5 }}>
-                      <span className="bx-num text-[13px] font-semibold" style={{ color: sel ? "#fff" : "#16202B" }}>{day}</span>
-                      <span className="flex gap-0.5 mt-1 h-1.5">
-                        {cols.map((c, k) => <span key={k} className="h-1.5 w-1.5 rounded-full" style={{ background: sel ? "#fff" : c }} />)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* Selected day */}
-            <section className="rounded-3xl bg-white p-5" style={{ boxShadow: "0 1px 2px rgba(16,24,40,.06)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[15px] font-bold">
-                  {DOW[selDate.getDay()]}, {MO_SHORT[m]} {selDay}
-                </h2>
-                <button onClick={() => setEditor({ item: null, date: toISO(selDate) })}
-                  className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold active:scale-95"
-                  style={{ background: "#13202E", color: "#fff", transition: "transform .1s" }}>
-                  <span className="text-[15px] leading-none" style={{ marginTop: -1 }}>+</span> Add
-                </button>
-              </div>
-              {selItems.length === 0 ? (
-                <p className="text-[13px] py-1" style={{ color: "#8A95A3" }}>Nothing on this day. Tap Add to put income or a bill here.</p>
-              ) : (
-                <ul className="divide-y" style={{ borderColor: "#F0F2F5" }}>
-                  {selItems.map((it) => (
-                    <li key={it.id}>
-                      <button onClick={() => setEditor({ item: it, date: it.date })} className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-60">
-                        <span className="inline-block h-7 w-1 rounded-full shrink-0" style={{ background: itemColor(it) }} />
-                        <span className="flex-1 min-w-0">
-                          <span className="block font-semibold text-[14px] truncate">{it.name}</span>
-                          <span className="block text-[12px]" style={{ color: "#8A95A3" }}>
-                            {it.payee ? it.payee + " · " : ""}{it.type === "income" ? inCat(it.category).label : expCat(it.category).label} · {freqLabel(it.freq)}
-                          </span>
-                        </span>
-                        <span className="bx-num font-semibold text-[14px] shrink-0" style={{ color: it.type === "income" ? INCOME_COLOR : "#16202B" }}>
-                          {it.type === "income" ? "+" : ""}{money(it.amount)}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            {/* Manage all recurring items */}
-            <section className="rounded-3xl bg-white p-5" style={{ boxShadow: "0 1px 2px rgba(16,24,40,.06)" }}>
-              <button onClick={() => setShowAll((v) => !v)} className="w-full flex items-center justify-between">
-                <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#6B7785" }}>
-                  All items ({items.length})
-                </h2>
-                <span style={{ color: "#A0AAB6", transform: showAll ? "rotate(180deg)" : "none", transition: "transform .2s" }}>⌄</span>
-              </button>
-              {showAll && (
-                <ul className="divide-y mt-3 bx-fade" style={{ borderColor: "#F0F2F5" }}>
-                  {items.length === 0 && <li className="text-[13px] py-1" style={{ color: "#8A95A3" }}>No items yet.</li>}
-                  {items.slice().sort((a, b) => a.date.localeCompare(b.date)).map((it) => (
-                    <li key={it.id}>
-                      <button onClick={() => setEditor({ item: it, date: it.date })} className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-60">
-                        <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ background: itemColor(it) }} />
-                        <span className="flex-1 min-w-0">
-                          <span className="block font-semibold text-[14px] truncate">{it.name}</span>
-                          <span className="block text-[12px]" style={{ color: "#8A95A3" }}>
-                            {freqLabel(it.freq)} · from {MO_SHORT[parseISO(it.date).getMonth()]} {parseISO(it.date).getDate()}
-                          </span>
-                        </span>
-                        <span className="bx-num font-semibold text-[14px] shrink-0" style={{ color: it.type === "income" ? INCOME_COLOR : "#16202B" }}>
-                          {it.type === "income" ? "+" : ""}{money(it.amount)}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </main>
-        )}
-      </div>
-
-      {editor && (
-        <Editor
-          entry={editor}
-          onClose={() => setEditor(null)}
-          onSave={upsert}
-          onDelete={remove}
-          onAdvise={(bill, onApplyDate) => setAdvisor({ mode: "bill", bill, onApplyDate })}
-        />
-      )}
-      {advisor && (
-        <Advisor
-          advisor={advisor}
-          items={items}
-          startBalance={startBalance}
-          onClose={() => setAdvisor(null)}
-        />
-      )}
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => shiftMonth(-1), label: "Previous month" }, "\u2039"), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => shiftMonth(1), label: "Next month" }, "\u203A"))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected balance \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setEditBal((v) => !v), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, "start ", money(startBalance))), editBal ? /* @__PURE__ */ React.createElement(BalanceEditor, { value: startBalance, onSave: saveBalance, onCancel: () => setEditBal(false) }) : /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-7 mb-1" }, DOW.map((d) => /* @__PURE__ */ React.createElement("div", { key: d, className: "text-center text-[11px] font-semibold py-1", style: { color: "#A0AAB6" } }, d[0]))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-7 gap-1" }, cells.map((day, i) => {
+    if (day === null) return /* @__PURE__ */ React.createElement("div", { key: `e${i}` });
+    const its = dayMap[day] || [];
+    const sel = day === selDay;
+    const cols = [...new Set(its.map(itemColor))].slice(0, 3);
+    return /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: day,
+        onClick: () => setSelDay(day),
+        className: "relative rounded-xl flex flex-col items-center justify-start pt-1.5 active:scale-95",
+        style: { height: 46, transition: "transform .1s", background: sel ? "#13202E" : "transparent", outline: isToday(day) && !sel ? "1.5px solid #CBD3DC" : "none", outlineOffset: -1.5 }
+      },
+      /* @__PURE__ */ React.createElement("span", { className: "bx-num text-[13px] font-semibold", style: { color: sel ? "#fff" : "#16202B" } }, day),
+      /* @__PURE__ */ React.createElement("span", { className: "flex gap-0.5 mt-1 h-1.5" }, cols.map((c, k) => /* @__PURE__ */ React.createElement("span", { key: k, className: "h-1.5 w-1.5 rounded-full", style: { background: sel ? "#fff" : c } })))
+    );
+  }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[15px] font-bold" }, DOW[selDate.getDay()], ", ", MO_SHORT[m], " ", selDay), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setEditor({ item: null, date: toISO(selDate) }),
+      className: "flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold active:scale-95",
+      style: { background: "#13202E", color: "#fff", transition: "transform .1s" }
+    },
+    /* @__PURE__ */ React.createElement("span", { className: "text-[15px] leading-none", style: { marginTop: -1 } }, "+"),
+    " Add"
+  )), selItems.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-[13px] py-1", style: { color: "#8A95A3" } }, "Nothing on this day. Tap Add to put income or a bill here.") : /* @__PURE__ */ React.createElement("ul", { className: "divide-y", style: { borderColor: "#F0F2F5" } }, selItems.map((it) => /* @__PURE__ */ React.createElement("li", { key: it.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setEditor({ item: it, date: it.date }), className: "w-full flex items-center gap-3 py-2.5 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: itemColor(it) } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, it.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, it.payee ? it.payee + " \xB7 " : "", it.type === "income" ? inCat(it.category).label : expCat(it.category).label, " \xB7 ", freqLabel(it.freq))), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0", style: { color: it.type === "income" ? INCOME_COLOR : "#16202B" } }, it.type === "income" ? "+" : "", money(it.amount))))))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowAll((v) => !v), className: "w-full flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "All items (", items.length, ")"), /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6", transform: showAll ? "rotate(180deg)" : "none", transition: "transform .2s" } }, "\u2304")), showAll && /* @__PURE__ */ React.createElement("ul", { className: "divide-y mt-3 bx-fade", style: { borderColor: "#F0F2F5" } }, items.length === 0 && /* @__PURE__ */ React.createElement("li", { className: "text-[13px] py-1", style: { color: "#8A95A3" } }, "No items yet."), items.slice().sort((a, b) => a.date.localeCompare(b.date)).map((it) => /* @__PURE__ */ React.createElement("li", { key: it.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setEditor({ item: it, date: it.date }), className: "w-full flex items-center gap-3 py-2.5 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-2 w-2 rounded-full shrink-0", style: { background: itemColor(it) } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, it.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, freqLabel(it.freq), " \xB7 from ", MO_SHORT[parseISO(it.date).getMonth()], " ", parseISO(it.date).getDate())), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0", style: { color: it.type === "income" ? INCOME_COLOR : "#16202B" } }, it.type === "income" ? "+" : "", money(it.amount))))))))), editor && /* @__PURE__ */ React.createElement(
+    Editor,
+    {
+      entry: editor,
+      onClose: () => setEditor(null),
+      onSave: upsert,
+      onDelete: remove,
+      onAdvise: (bill, onApplyDate) => setAdvisor({ mode: "bill", bill, onApplyDate })
+    }
+  ), advisor && /* @__PURE__ */ React.createElement(
+    Advisor,
+    {
+      advisor,
+      items,
+      startBalance,
+      onClose: () => setAdvisor(null)
+    }
+  ));
 }
-
-// ── Small components ────────────────────────────────────────────────
 function NavBtn({ children, onClick, label }) {
-  return (
-    <button onClick={onClick} aria-label={label}
-      className="h-9 w-9 rounded-full bg-white flex items-center justify-center text-[20px] active:scale-90"
-      style={{ color: "#16202B", boxShadow: "0 1px 2px rgba(16,24,40,.08)", transition: "transform .1s", lineHeight: 1 }}>
-      {children}
-    </button>
+  return /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick,
+      "aria-label": label,
+      className: "h-9 w-9 rounded-full bg-white flex items-center justify-center text-[20px] active:scale-90",
+      style: { color: "#16202B", boxShadow: "0 1px 2px rgba(16,24,40,.08)", transition: "transform .1s", lineHeight: 1 }
+    },
+    children
   );
 }
 function Stat({ label, value, color }) {
-  return (
-    <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgba(255,255,255,.07)" }}>
-      <div className="text-[10px] font-medium" style={{ color: "#8FA0B3" }}>{label}</div>
-      <div className="bx-num text-[14px] font-semibold mt-0.5" style={{ color }}>{value}</div>
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3 py-2.5", style: { background: "rgba(255,255,255,.07)" } }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-medium", style: { color: "#8FA0B3" } }, label), /* @__PURE__ */ React.createElement("div", { className: "bx-num text-[14px] font-semibold mt-0.5", style: { color } }, value));
 }
 function BalanceEditor({ value, onSave, onCancel }) {
   const [v, setV] = useState(String(value));
-  return (
-    <div className="flex items-center gap-2 mt-2">
-      <input autoFocus value={v} inputMode="decimal" onChange={(e) => setV(e.target.value.replace(/[^0-9.-]/g, ""))}
-        className="bx-num flex-1 rounded-xl px-3 py-2.5 text-[16px] outline-none" style={{ background: "rgba(255,255,255,.12)", color: "#fff" }} placeholder="Starting balance" />
-      <button onClick={() => onSave(v)} className="rounded-xl px-4 py-2.5 text-[14px] font-semibold" style={{ background: "#5EEAD4", color: "#0B1620" }}>Set</button>
-      <button onClick={onCancel} className="text-[13px] px-1" style={{ color: "#8FA0B3" }}>✕</button>
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-2" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      autoFocus: true,
+      value: v,
+      inputMode: "decimal",
+      onChange: (e) => setV(e.target.value.replace(/[^0-9.-]/g, "")),
+      className: "bx-num flex-1 rounded-xl px-3 py-2.5 text-[16px] outline-none",
+      style: { background: "rgba(255,255,255,.12)", color: "#fff" },
+      placeholder: "Starting balance"
+    }
+  ), /* @__PURE__ */ React.createElement("button", { onClick: () => onSave(v), className: "rounded-xl px-4 py-2.5 text-[14px] font-semibold", style: { background: "#5EEAD4", color: "#0B1620" } }, "Set"), /* @__PURE__ */ React.createElement("button", { onClick: onCancel, className: "text-[13px] px-1", style: { color: "#8FA0B3" } }, "\u2715"));
 }
-
-// ── Editor sheet ────────────────────────────────────────────────────
 function Editor({ entry, onClose, onSave, onDelete, onAdvise }) {
   const item = entry.item;
   const [type, setType] = useState(item?.type || "expense");
@@ -494,155 +390,170 @@ function Editor({ entry, onClose, onSave, onDelete, onAdvise }) {
   const [notes, setNotes] = useState(item?.notes || "");
   const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
   const [category, setCategory] = useState(item?.category || (type === "income" ? "wages" : "home"));
-
-  // keep category valid when type flips
   function switchType(t) {
     setType(t);
     setCategory(t === "income" ? "wages" : "home");
   }
-
   const amt = parseFloat(amount);
   const valid = name.trim() && amt > 0 && date;
   const inputStyle = { background: "#F2F4F7", border: "1px solid transparent" };
-  const focus = (e) => (e.target.style.border = "1px solid #13202E");
-  const blur = (e) => (e.target.style.border = "1px solid transparent");
-
+  const focus = (e) => e.target.style.border = "1px solid #13202E";
+  const blur = (e) => e.target.style.border = "1px solid transparent";
   function build() {
     return {
-      id: item?.id || uid(), type, name: name.trim(), payee: payee.trim(),
-      amount: Math.round(amt * 100) / 100, date, freq: fr, category,
+      id: item?.id || uid(),
+      type,
+      name: name.trim(),
+      payee: payee.trim(),
+      amount: Math.round(amt * 100) / 100,
+      date,
+      freq: fr,
+      category,
       grace: type === "expense" && grace !== "" ? Math.max(0, parseInt(grace, 10) || 0) : null,
-      notes: notes.trim(),
+      notes: notes.trim()
     };
   }
-  function save() { if (valid) onSave(build()); }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bx-fade" style={{ background: "rgba(19,32,46,.45)" }} onClick={onClose}>
-      <div className="bx-sheet w-full bg-white rounded-t-3xl p-5" style={{ maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full" style={{ background: "#E2E6EB" }} />
-
-        {/* type toggle */}
-        <div className="flex gap-2 mb-4 p-1 rounded-2xl" style={{ background: "#F2F4F7" }}>
-          {["expense", "income"].map((t) => (
-            <button key={t} onClick={() => switchType(t)}
-              className="flex-1 rounded-xl py-2.5 text-[14px] font-semibold capitalize active:scale-[.98]"
-              style={{ transition: "all .12s", background: type === t ? (t === "income" ? INCOME_COLOR : "#13202E") : "transparent", color: type === t ? "#fff" : "#6B7785" }}>
-              {t === "expense" ? "Bill / expense" : "Income"}
-            </button>
-          ))}
-        </div>
-
-        <Field label="Name">
-          <input value={name} onChange={(e) => setName(e.target.value)} onFocus={focus} onBlur={blur}
-            placeholder={type === "income" ? "Paycheck, side gig…" : "Rent, electric, Netflix…"}
-            className="w-full rounded-xl px-3.5 py-3 text-[15px] outline-none" style={inputStyle} />
-        </Field>
-
-        <Field label={type === "income" ? "Who it's from" : "Who it's for"}>
-          <input value={payee} onChange={(e) => setPayee(e.target.value)} onFocus={focus} onBlur={blur}
-            placeholder={type === "income" ? "Employer, client…" : "Landlord, ComEd, Visa…"}
-            className="w-full rounded-xl px-3.5 py-3 text-[15px] outline-none" style={inputStyle} />
-        </Field>
-
-        <Field label="Amount">
-          <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} inputMode="decimal" placeholder="0"
-            onFocus={focus} onBlur={blur} className="bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none" style={inputStyle} />
-        </Field>
-
-        <Field label="Date">
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} onFocus={focus} onBlur={blur}
-            className="bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none" style={inputStyle} />
-        </Field>
-
-        <Field label="Repeat">
-          <div className="flex flex-wrap gap-2">
-            {FREQS.map((f) => (
-              <button key={f.id} onClick={() => setFr(f.id)} className="rounded-full px-3.5 py-2 text-[13px] font-medium active:scale-95"
-                style={{ transition: "all .12s", background: fr === f.id ? "#13202E" : "#F2F4F7", color: fr === f.id ? "#fff" : "#16202B" }}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </Field>
-
-        <Field label="Category">
-          <div className="relative">
-            <select value={category} onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none" style={inputStyle}>
-              {cats.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#A0AAB6" }}>⌄</span>
-          </div>
-        </Field>
-
-        {type === "expense" && (
-          <Field label={<>Grace period <span style={{ fontWeight: 400, color: "#A0AAB6" }}>(days you can pay late without penalty — optional)</span></>}>
-            <input value={grace} onChange={(e) => setGrace(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))} inputMode="numeric"
-              placeholder="e.g. 15" onFocus={focus} onBlur={blur}
-              className="bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none" style={inputStyle} />
-          </Field>
-        )}
-
-        <Field label={<>Notes <span style={{ fontWeight: 400, color: "#A0AAB6" }}>(optional)</span></>}>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} onFocus={focus} onBlur={blur} rows={2}
-            placeholder={type === "income" ? "Account, splits…" : "Account #, autopay, confirmation…"}
-            className="w-full rounded-xl px-3.5 py-3 text-[15px] outline-none resize-none" style={inputStyle} />
-        </Field>
-
-        {type === "expense" && valid && (
-          <button onClick={() => onAdvise(build(), (iso) => setDate(iso))}
-            className="w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99] mb-2 flex items-center justify-center gap-2"
-            style={{ transition: "all .12s", background: "#EEF2FF", color: "#4338CA" }}>
-            <span>✨</span> Best day to pay this
-          </button>
-        )}
-
-        <button onClick={save} disabled={!valid}
-          className="w-full rounded-xl py-3.5 text-[15px] font-semibold active:scale-[.99] mt-2"
-          style={{ transition: "all .12s", background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" }}>
-          {item ? "Save changes" : `Add ${type === "income" ? "income" : "expense"}`}
-        </button>
-        {item ? (
-          <button onClick={() => onDelete(item.id)} className="w-full py-3 mt-1 text-[14px] font-semibold" style={{ color: "#C2410C" }}>Delete</button>
-        ) : (
-          <button onClick={onClose} className="w-full py-3 mt-1 text-[14px] font-medium" style={{ color: "#8A95A3" }}>Cancel</button>
-        )}
-      </div>
-    </div>
-  );
+  function save() {
+    if (valid) onSave(build());
+  }
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 mb-4 p-1 rounded-2xl", style: { background: "#F2F4F7" } }, ["expense", "income"].map((t) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: t,
+      onClick: () => switchType(t),
+      className: "flex-1 rounded-xl py-2.5 text-[14px] font-semibold capitalize active:scale-[.98]",
+      style: { transition: "all .12s", background: type === t ? t === "income" ? INCOME_COLOR : "#13202E" : "transparent", color: type === t ? "#fff" : "#6B7785" }
+    },
+    t === "expense" ? "Bill / expense" : "Income"
+  ))), /* @__PURE__ */ React.createElement(Field, { label: "Name" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: name,
+      onChange: (e) => setName(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      placeholder: type === "income" ? "Paycheck, side gig\u2026" : "Rent, electric, Netflix\u2026",
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: type === "income" ? "Who it's from" : "Who it's for" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: payee,
+      onChange: (e) => setPayee(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      placeholder: type === "income" ? "Employer, client\u2026" : "Landlord, ComEd, Visa\u2026",
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: "Amount" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: amount,
+      onChange: (e) => setAmount(e.target.value.replace(/[^0-9.]/g, "")),
+      inputMode: "decimal",
+      placeholder: "0",
+      onFocus: focus,
+      onBlur: blur,
+      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: "Date" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "date",
+      value: date,
+      onChange: (e) => setDate(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: "Repeat" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, FREQS.map((f) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: f.id,
+      onClick: () => setFr(f.id),
+      className: "rounded-full px-3.5 py-2 text-[13px] font-medium active:scale-95",
+      style: { transition: "all .12s", background: fr === f.id ? "#13202E" : "#F2F4F7", color: fr === f.id ? "#fff" : "#16202B" }
+    },
+    f.label
+  )))), /* @__PURE__ */ React.createElement(Field, { label: "Category" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: category,
+      onChange: (e) => setCategory(e.target.value),
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none",
+      style: inputStyle
+    },
+    cats.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.label))
+  ), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), type === "expense" && /* @__PURE__ */ React.createElement(Field, { label: /* @__PURE__ */ React.createElement(React.Fragment, null, "Grace period ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, color: "#A0AAB6" } }, "(days you can pay late without penalty \u2014 optional)")) }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: grace,
+      onChange: (e) => setGrace(e.target.value.replace(/[^0-9]/g, "").slice(0, 3)),
+      inputMode: "numeric",
+      placeholder: "e.g. 15",
+      onFocus: focus,
+      onBlur: blur,
+      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: /* @__PURE__ */ React.createElement(React.Fragment, null, "Notes ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, color: "#A0AAB6" } }, "(optional)")) }, /* @__PURE__ */ React.createElement(
+    "textarea",
+    {
+      value: notes,
+      onChange: (e) => setNotes(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      rows: 2,
+      placeholder: type === "income" ? "Account, splits\u2026" : "Account #, autopay, confirmation\u2026",
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none resize-none",
+      style: inputStyle
+    }
+  )), type === "expense" && valid && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => onAdvise(build(), (iso) => setDate(iso)),
+      className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99] mb-2 flex items-center justify-center gap-2",
+      style: { transition: "all .12s", background: "#EEF2FF", color: "#4338CA" }
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2728"),
+    " Best day to pay this"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: save,
+      disabled: !valid,
+      className: "w-full rounded-xl py-3.5 text-[15px] font-semibold active:scale-[.99] mt-2",
+      style: { transition: "all .12s", background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" }
+    },
+    item ? "Save changes" : `Add ${type === "income" ? "income" : "expense"}`
+  ), item ? /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(item.id), className: "w-full py-3 mt-1 text-[14px] font-semibold", style: { color: "#C2410C" } }, "Delete") : /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-1 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Cancel")));
 }
 function Field({ label, children }) {
-  return (
-    <div className="mb-4">
-      <label className="block text-[12px] font-semibold mb-1.5" style={{ color: "#6B7785" }}>{label}</label>
-      {children}
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", { className: "mb-4" }, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, label), children);
 }
-
-// ── AI Advisor ──────────────────────────────────────────────────────
 async function callClaude(system, userContent) {
   const res = await fetch(WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 1000,
+      max_tokens: 1e3,
       system,
-      messages: [{ role: "user", content: userContent }],
-    }),
+      messages: [{ role: "user", content: userContent }]
+    })
   });
   if (!res.ok) throw new Error("Request failed (" + res.status + ")");
   const data = await res.json();
-  // Handle the common Worker response shapes (Anthropic passthrough, or {text}/{completion})
   if (data && Array.isArray(data.content)) return data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
   if (data && typeof data.text === "string") return data.text.trim();
   if (data && typeof data.completion === "string") return data.completion.trim();
   if (typeof data === "string") return data.trim();
   throw new Error("Unexpected response from Worker");
 }
-
 function nextDue(bill, from) {
   let cy = from.getFullYear(), cm = from.getMonth(), g = 0;
   while (g < 36) {
@@ -650,80 +561,69 @@ function nextDue(bill, from) {
       const dt = new Date(cy, cm, d);
       if (dt >= from) return dt;
     }
-    cm++; if (cm > 11) { cm = 0; cy++; } g++;
+    cm++;
+    if (cm > 11) {
+      cm = 0;
+      cy++;
+    }
+    g++;
   }
   return parseISO(bill.date);
 }
-
 function buildContext(items, startBalance) {
-  const today = new Date();
+  const today = /* @__PURE__ */ new Date();
   const horizon = toISO(addDays(today, 80));
   const led = ledger(items, startBalance, horizon);
   const fromISO = toISO(addDays(today, -3));
-  const lines = led
-    .filter((e) => e.iso >= fromISO)
-    .map((e) => `${e.iso}  ${e.type === "income" ? "+" : "-"}${e.amount}  ${e.name}${e.payee ? ` (${e.payee})` : ""}  -> balance ${Math.round(e.balance)}`);
+  const lines = led.filter((e) => e.iso >= fromISO).map((e) => `${e.iso}  ${e.type === "income" ? "+" : "-"}${e.amount}  ${e.name}${e.payee ? ` (${e.payee})` : ""}  -> balance ${Math.round(e.balance)}`);
   return { todayISO: toISO(today), lines };
 }
-
-const fmtLong = (iso) => { const d = parseISO(iso); return `${DOW[d.getDay()]}, ${MO_SHORT[d.getMonth()]} ${d.getDate()}`; };
-
+const fmtLong = (iso) => {
+  const d = parseISO(iso);
+  return `${DOW[d.getDay()]}, ${MO_SHORT[d.getMonth()]} ${d.getDate()}`;
+};
 function RichText({ text }) {
-  return (
-    <div className="space-y-2">
-      {text.split(/\n+/).map((line, i) => {
-        const t = line.trim();
-        if (!t) return null;
-        if (/^[-•]\s/.test(t))
-          return (
-            <div key={i} className="flex gap-2 text-[14px] leading-relaxed">
-              <span style={{ color: "#A0AAB6" }}>•</span>
-              <span>{t.replace(/^[-•]\s/, "")}</span>
-            </div>
-          );
-        return <p key={i} className="text-[14px] leading-relaxed">{t}</p>;
-      })}
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, text.split(/\n+/).map((line, i) => {
+    const t = line.trim();
+    if (!t) return null;
+    if (/^[-•]\s/.test(t))
+      return /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[14px] leading-relaxed" }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, t.replace(/^[-•]\s/, "")));
+    return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[14px] leading-relaxed" }, t);
+  }));
 }
-
 function Advisor({ advisor, items, startBalance, onClose }) {
   const isBill = advisor.mode === "bill";
   const bill = advisor.bill;
   const [loading, setLoading] = useState(isBill);
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null); // {recommendedDate, headline, reasoning, suggestions}
+  const [result, setResult] = useState(null);
   const [applied, setApplied] = useState(false);
   const [q, setQ] = useState("");
   const [answer, setAnswer] = useState("");
   const [asking, setAsking] = useState(false);
-
-  const SYS_BASE =
-    "You are a practical, plain-spoken budgeting advisor embedded in a personal budgeting app. You reason about real dates and running cash balances. Be specific and reference the numbers you are given. Never invent figures. Keep advice realistic and concise.";
-
+  const SYS_BASE = "You are a practical, plain-spoken budgeting advisor embedded in a personal budgeting app. You reason about real dates and running cash balances. Be specific and reference the numbers you are given. Never invent figures. Keep advice realistic and concise.";
   useEffect(() => {
     if (!isBill) return;
     (async () => {
       try {
         const ctx = buildContext(items, startBalance);
-        const due = nextDue(bill, new Date());
+        const due = nextDue(bill, /* @__PURE__ */ new Date());
         const dueISO = toISO(due);
         const graceEnd = bill.grace != null ? toISO(addDays(due, bill.grace)) : null;
-        const sys = SYS_BASE +
-          " Respond ONLY with a JSON object, no markdown and no preamble, with exactly these keys: " +
-          "recommendedDate (a date string YYYY-MM-DD, the single best day to pay), " +
-          "headline (<= 8 words), reasoning (1-2 sentences citing balances or paydays), " +
-          "suggestions (array of 2-3 short strings: other ways to make this bill easier — e.g. autopay timing, splitting it, lowering it, aligning the due date).";
-        const user =
-          `Today is ${ctx.todayISO}.\n\n` +
-          `Projected cash flow (date, amount, item, running balance):\n${ctx.lines.join("\n")}\n\n` +
-          `Bill to schedule:\n` +
-          `- Name: ${bill.name}${bill.payee ? ` (paid to ${bill.payee})` : ""}\n` +
-          `- Amount: ${bill.amount}\n` +
-          `- Next due: ${dueISO} (repeats ${freqLabel(bill.freq).toLowerCase()})\n` +
-          `- Grace period: ${bill.grace != null ? `${bill.grace} days (can pay through ${graceEnd} without penalty)` : "unknown — assume none unless typical for this bill type"}\n` +
-          (bill.notes ? `- Notes: ${bill.notes}\n` : "") +
-          `\nRecommend the single best day to pay this bill within the next 60 days. Payment is safe from the due date through the end of any grace period; paying later within grace can help if a paycheck lands in between. Prioritize keeping the running balance from going negative and paying just after income arrives. recommendedDate must be a real calendar date.`;
+        const sys = SYS_BASE + " Respond ONLY with a JSON object, no markdown and no preamble, with exactly these keys: recommendedDate (a date string YYYY-MM-DD, the single best day to pay), headline (<= 8 words), reasoning (1-2 sentences citing balances or paydays), suggestions (array of 2-3 short strings: other ways to make this bill easier \u2014 e.g. autopay timing, splitting it, lowering it, aligning the due date).";
+        const user = `Today is ${ctx.todayISO}.
+
+Projected cash flow (date, amount, item, running balance):
+${ctx.lines.join("\n")}
+
+Bill to schedule:
+- Name: ${bill.name}${bill.payee ? ` (paid to ${bill.payee})` : ""}
+- Amount: ${bill.amount}
+- Next due: ${dueISO} (repeats ${freqLabel(bill.freq).toLowerCase()})
+- Grace period: ${bill.grace != null ? `${bill.grace} days (can pay through ${graceEnd} without penalty)` : "unknown \u2014 assume none unless typical for this bill type"}
+` + (bill.notes ? `- Notes: ${bill.notes}
+` : "") + `
+Recommend the single best day to pay this bill within the next 60 days. Payment is safe from the due date through the end of any grace period; paying later within grace can help if a paycheck lands in between. Prioritize keeping the running balance from going negative and paying just after income arrives. recommendedDate must be a real calendar date.`;
         const text = await callClaude(sys, user);
         const clean = text.replace(/```json|```/g, "").trim();
         setResult(JSON.parse(clean));
@@ -733,21 +633,24 @@ function Advisor({ advisor, items, startBalance, onClose }) {
         setLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   async function ask() {
     const question = q.trim();
     if (!question || asking) return;
-    setAsking(true); setAnswer(""); setError("");
+    setAsking(true);
+    setAnswer("");
+    setError("");
     try {
       const ctx = buildContext(items, startBalance);
       const sys = SYS_BASE + " Answer in plain text (short paragraphs or simple '- ' bullets). No markdown headers or bold.";
-      const user =
-        `Today is ${ctx.todayISO}.\n\n` +
-        `Projected cash flow (date, amount, item, running balance):\n${ctx.lines.join("\n")}\n\n` +
-        (isBill ? `The user is currently looking at this bill: ${bill.name}, ${bill.amount}, due around ${toISO(nextDue(bill, new Date()))}.\n\n` : "") +
-        `Question: ${question}`;
+      const user = `Today is ${ctx.todayISO}.
+
+Projected cash flow (date, amount, item, running balance):
+${ctx.lines.join("\n")}
+
+` + (isBill ? `The user is currently looking at this bill: ${bill.name}, ${bill.amount}, due around ${toISO(nextDue(bill, /* @__PURE__ */ new Date()))}.
+
+` : "") + `Question: ${question}`;
       setAnswer(await callClaude(sys, user));
     } catch (e) {
       setError("Couldn't answer right now. Try again in a moment.");
@@ -755,113 +658,59 @@ function Advisor({ advisor, items, startBalance, onClose }) {
       setAsking(false);
     }
   }
-
   const recValid = result?.recommendedDate && /^\d{4}-\d{2}-\d{2}$/.test(result.recommendedDate);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bx-fade" style={{ background: "rgba(19,32,46,.45)" }} onClick={onClose}>
-      <div className="bx-sheet w-full bg-white rounded-t-3xl p-5" style={{ maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full" style={{ background: "#E2E6EB" }} />
-
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[18px]">✨</span>
-          <h3 className="text-[19px] font-bold">{isBill ? "Best day to pay" : "Budget advisor"}</h3>
-        </div>
-        {isBill && (
-          <p className="text-[13px] mb-4" style={{ color: "#8A95A3" }}>
-            {bill.name} · {money(bill.amount)}{bill.grace != null ? ` · ${bill.grace}-day grace` : ""}
-          </p>
-        )}
-
-        {isBill && (
-          <div className="rounded-2xl p-4 mb-4" style={{ background: "#F6F7FB", border: "1px solid #ECEFF4" }}>
-            {loading ? (
-              <div className="flex items-center gap-2 text-[14px]" style={{ color: "#6B7785" }}>
-                <Spinner /> Reading your cash flow…
-              </div>
-            ) : result ? (
-              <div>
-                {recValid && (
-                  <>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#8A95A3" }}>Pay on</div>
-                    <div className="bx-num text-[22px] font-bold mt-0.5" style={{ color: "#4338CA", letterSpacing: "-0.01em" }}>
-                      {fmtLong(result.recommendedDate)}
-                    </div>
-                  </>
-                )}
-                {result.headline && <div className="font-semibold text-[15px] mt-2">{result.headline}</div>}
-                {result.reasoning && <p className="text-[14px] leading-relaxed mt-1" style={{ color: "#3C4654" }}>{result.reasoning}</p>}
-                {Array.isArray(result.suggestions) && result.suggestions.length > 0 && (
-                  <div className="mt-3 space-y-1.5">
-                    {result.suggestions.map((s, i) => (
-                      <div key={i} className="flex gap-2 text-[13px] leading-relaxed" style={{ color: "#3C4654" }}>
-                        <span style={{ color: "#A0AAB6" }}>•</span><span>{s}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {recValid && advisor.onApplyDate && (
-                  applied ? (
-                    <div className="mt-3 text-[13px] font-semibold" style={{ color: "#11875E" }}>✓ Pay day set — save the bill to keep it.</div>
-                  ) : (
-                    <button onClick={() => { advisor.onApplyDate(result.recommendedDate); setApplied(true); }}
-                      className="mt-3 w-full rounded-xl py-2.5 text-[14px] font-semibold active:scale-[.99]"
-                      style={{ background: "#4338CA", color: "#fff" }}>
-                      Set this as the pay day
-                    </button>
-                  )
-                )}
-              </div>
-            ) : (
-              <p className="text-[14px]" style={{ color: "#C2410C" }}>{error}</p>
-            )}
-          </div>
-        )}
-
-        {/* Ask anything */}
-        <label className="block text-[12px] font-semibold mb-1.5" style={{ color: "#6B7785" }}>
-          {isBill ? "Ask a follow-up" : "Ask about your budget"}
-        </label>
-        <div className="flex gap-2">
-          <input value={q} onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") ask(); }}
-            placeholder={isBill ? "Can I split this in two?" : "Where can I free up cash?"}
-            className="flex-1 rounded-xl px-3.5 py-3 text-[15px] outline-none"
-            style={{ background: "#F2F4F7", border: "1px solid transparent" }}
-            onFocus={(e) => (e.target.style.border = "1px solid #13202E")}
-            onBlur={(e) => (e.target.style.border = "1px solid transparent")} />
-          <button onClick={ask} disabled={!q.trim() || asking}
-            className="rounded-xl px-4 text-[14px] font-semibold active:scale-95"
-            style={{ background: q.trim() && !asking ? "#13202E" : "#E2E6EB", color: q.trim() && !asking ? "#fff" : "#A0AAB6" }}>
-            {asking ? <Spinner light /> : "Ask"}
-          </button>
-        </div>
-
-        {answer && (
-          <div className="mt-4 rounded-2xl p-4 bx-fade" style={{ background: "#F6F7FB", border: "1px solid #ECEFF4" }}>
-            <RichText text={answer} />
-          </div>
-        )}
-        {error && !loading && !answer && <p className="mt-3 text-[13px]" style={{ color: "#C2410C" }}>{error}</p>}
-
-        <p className="text-[11px] leading-relaxed mt-4" style={{ color: "#A0AAB6" }}>
-          Suggestions are general guidance from AI, not financial advice. Check grace periods and fees with each biller before changing a payment date.
-        </p>
-        <button onClick={onClose} className="w-full py-3 mt-2 text-[14px] font-medium" style={{ color: "#8A95A3" }}>Close</button>
-      </div>
-    </div>
-  );
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "\u2728"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, isBill ? "Best day to pay" : "Budget advisor")), isBill && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, bill.name, " \xB7 ", money(bill.amount), bill.grace != null ? ` \xB7 ${bill.grace}-day grace` : ""), isBill && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-4", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, loading ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[14px]", style: { color: "#6B7785" } }, /* @__PURE__ */ React.createElement(Spinner, null), " Reading your cash flow\u2026") : result ? /* @__PURE__ */ React.createElement("div", null, recValid && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-semibold uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Pay on"), /* @__PURE__ */ React.createElement("div", { className: "bx-num text-[22px] font-bold mt-0.5", style: { color: "#4338CA", letterSpacing: "-0.01em" } }, fmtLong(result.recommendedDate))), result.headline && /* @__PURE__ */ React.createElement("div", { className: "font-semibold text-[15px] mt-2" }, result.headline), result.reasoning && /* @__PURE__ */ React.createElement("p", { className: "text-[14px] leading-relaxed mt-1", style: { color: "#3C4654" } }, result.reasoning), Array.isArray(result.suggestions) && result.suggestions.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mt-3 space-y-1.5" }, result.suggestions.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[13px] leading-relaxed", style: { color: "#3C4654" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, s)))), recValid && advisor.onApplyDate && (applied ? /* @__PURE__ */ React.createElement("div", { className: "mt-3 text-[13px] font-semibold", style: { color: "#11875E" } }, "\u2713 Pay day set \u2014 save the bill to keep it.") : /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => {
+        advisor.onApplyDate(result.recommendedDate);
+        setApplied(true);
+      },
+      className: "mt-3 w-full rounded-xl py-2.5 text-[14px] font-semibold active:scale-[.99]",
+      style: { background: "#4338CA", color: "#fff" }
+    },
+    "Set this as the pay day"
+  ))) : /* @__PURE__ */ React.createElement("p", { className: "text-[14px]", style: { color: "#C2410C" } }, error)), /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, isBill ? "Ask a follow-up" : "Ask about your budget"), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: q,
+      onChange: (e) => setQ(e.target.value),
+      onKeyDown: (e) => {
+        if (e.key === "Enter") ask();
+      },
+      placeholder: isBill ? "Can I split this in two?" : "Where can I free up cash?",
+      className: "flex-1 rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: { background: "#F2F4F7", border: "1px solid transparent" },
+      onFocus: (e) => e.target.style.border = "1px solid #13202E",
+      onBlur: (e) => e.target.style.border = "1px solid transparent"
+    }
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: ask,
+      disabled: !q.trim() || asking,
+      className: "rounded-xl px-4 text-[14px] font-semibold active:scale-95",
+      style: { background: q.trim() && !asking ? "#13202E" : "#E2E6EB", color: q.trim() && !asking ? "#fff" : "#A0AAB6" }
+    },
+    asking ? /* @__PURE__ */ React.createElement(Spinner, { light: true }) : "Ask"
+  )), answer && /* @__PURE__ */ React.createElement("div", { className: "mt-4 rounded-2xl p-4 bx-fade", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(RichText, { text: answer })), error && !loading && !answer && /* @__PURE__ */ React.createElement("p", { className: "mt-3 text-[13px]", style: { color: "#C2410C" } }, error), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] leading-relaxed mt-4", style: { color: "#A0AAB6" } }, "Suggestions are general guidance from AI, not financial advice. Check grace periods and fees with each biller before changing a payment date."), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
 }
-
 function Spinner({ light }) {
-  return (
-    <span className="inline-block h-4 w-4 rounded-full animate-spin"
-      style={{ border: "2px solid " + (light ? "rgba(255,255,255,.4)" : "#CBD3DC"), borderTopColor: light ? "#fff" : "#13202E" }} />
+  return /* @__PURE__ */ React.createElement(
+    "span",
+    {
+      className: "inline-block h-4 w-4 rounded-full animate-spin",
+      style: { border: "2px solid " + (light ? "rgba(255,255,255,.4)" : "#CBD3DC"), borderTopColor: light ? "#fff" : "#13202E" }
+    }
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(React.createElement(BudgetPlanner));
+try {
+  ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(BudgetPlanner));
+} catch (e) {
+  var b = document.getElementById("boot");
+  if (b) { b.textContent = "Error: " + (e && e.message ? e.message : e); b.style.color = "#C2410C"; }
+}
 
 </script>
 </body>
