@@ -39,7 +39,7 @@
     var root = document.getElementById("root");
     if (root && !root.querySelector(".bx-body") && !root.querySelector("[data-eb]")) {
       root.innerHTML = '<div style="font-family:system-ui,sans-serif;padding:60px 24px;text-align:center;color:#C2410C;font-size:14px;line-height:1.6">'
-        + '<b>App did not render (v15).</b><br><br>React=' + (typeof React) + ' · ReactDOM=' + (typeof ReactDOM)
+        + '<b>App did not render (v16).</b><br><br>React=' + (typeof React) + ' · ReactDOM=' + (typeof ReactDOM)
         + '<br><br>' + (window.__bootErr ? window.__bootErr : 'no error was thrown') + '</div>';
     }
   }, 4000);
@@ -346,7 +346,7 @@ function(a,b,c){if(!Vd(b))throw Error(n(200));return Wd(null,a,b,!1,c)};Q.unmoun
 </script>
 </head>
 <body>
-<div id="root"><div id="boot">Loading Budget Planner… v15</div></div>
+<div id="root"><div id="boot">Loading Budget Planner… v16</div></div>
 <script>
 try {
 const { useState, useEffect, useRef, useMemo } = React;
@@ -501,17 +501,16 @@ function monthTotals(items, y, m) {
 }
 function runningBalance(items, startBalance, y, m) {
   if (items.length === 0) return startBalance;
-  let sy = y, sm = m;
-  for (const it of items) {
-    const a = parseISO(it.date);
-    if (a.getFullYear() < sy || a.getFullYear() === sy && a.getMonth() < sm) {
-      sy = a.getFullYear();
-      sm = a.getMonth();
-    }
-  }
-  let bal = startBalance, cy = sy, cm = sm, guard = 0;
+  const today = /* @__PURE__ */ new Date();
+  const ty = today.getFullYear(), tm = today.getMonth(), td = today.getDate();
+  let net = 0, cy = ty, cm = tm, guard = 0;
   while ((cy < y || cy === y && cm <= m) && guard < 240) {
-    bal += monthTotals(items, cy, cm).net;
+    for (const it of items) {
+      for (const d of occurrences(it, cy, cm)) {
+        const upcoming = cy > ty || cy === ty && cm > tm || cy === ty && cm === tm && d >= td;
+        if (upcoming) net += it.type === "income" ? it.amount : -it.amount;
+      }
+    }
     cm++;
     if (cm > 11) {
       cm = 0;
@@ -519,19 +518,22 @@ function runningBalance(items, startBalance, y, m) {
     }
     guard++;
   }
-  return bal;
+  return startBalance + net;
 }
 function generateEvents(items, toISOstr) {
   const to = parseISO(toISOstr);
+  const today = /* @__PURE__ */ new Date();
+  today.setHours(0, 0, 0, 0);
   const evs = [];
   for (const it of items) {
     const a = parseISO(it.date);
     if (a > to) continue;
-    let cy = a.getFullYear(), cm = a.getMonth(), g = 0;
+    const start = a < today ? today : a;
+    let cy = start.getFullYear(), cm = start.getMonth(), g = 0;
     while ((cy < to.getFullYear() || cy === to.getFullYear() && cm <= to.getMonth()) && g < 240) {
       for (const day of occurrences(it, cy, cm)) {
         const d = new Date(cy, cm, day);
-        if (d >= a && d <= to) evs.push({ iso: toISO(d), t: d.getTime(), item: it });
+        if (d >= a && d >= today && d <= to) evs.push({ iso: toISO(d), t: d.getTime(), item: it });
       }
       cm++;
       if (cm > 11) {
@@ -542,7 +544,6 @@ function generateEvents(items, toISOstr) {
     }
   }
   evs.sort((x, y) => x.t - y.t || (x.item.type === y.item.type ? 0 : x.item.type === "income" ? -1 : 1));
-  let bal = 0;
   return evs;
 }
 function ledger(items, startBalance, toISOstr) {
