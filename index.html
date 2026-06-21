@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <title>Budget Planner</title>
 <meta name="theme-color" content="#13202E" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -36,7 +39,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin></script>
 </head>
 <body>
-<div id="root"><div id="boot">Loading Budget Planner…</div></div>
+<div id="root"><div id="boot">Loading Budget Planner… v11</div></div>
 <script>
 const { useState, useEffect, useRef, useMemo } = React;
 const WORKER_URL = "https://mts-assistant.lukedorsett.workers.dev";
@@ -1281,7 +1284,4 @@ function AccountForm({ acct, onSave, onDelete, onCancel, canDelete }) {
 function AccountsSheet({ accounts, onSave, onDelete, onClose }) {
   const [editing, setEditing] = useState(null);
   const total = accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold mb-1" }, "Accounts"), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Where your money sits. Balances seed your projection; transfers move money between them."), editing ? /* @__PURE__ */ React.createElement(
-    AccountForm,
-    {
-      acct: editing,
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold mb-1" }, "Accounts"), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Where y
