@@ -225,4 +225,1365 @@ d|=e.subtreeFlags,d|=e.flags,e.return=a,e=e.sibling;a.subtreeFlags|=d;a.childLan
 256)||(b.flags|=1024,null!==wa&&(Gf(wa),wa=null));yi(a,b);W(b);return null;case 5:kf(b);var e=vb(xc.current);c=b.type;if(null!==a&&null!=b.stateNode)zk(a,b,c,d,e),a.ref!==b.ref&&(b.flags|=512,b.flags|=2097152);else{if(!d){if(null===b.stateNode)throw Error(n(166));W(b);return null}a=vb(Ea.current);if(pd(b)){d=b.stateNode;c=b.type;var f=b.memoizedProps;d[Da]=b;d[uc]=f;a=0!==(b.mode&1);switch(c){case "dialog":B("cancel",d);B("close",d);break;case "iframe":case "object":case "embed":B("load",d);break;
 case "video":case "audio":for(e=0;e<Ec.length;e++)B(Ec[e],d);break;case "source":B("error",d);break;case "img":case "image":case "link":B("error",d);B("load",d);break;case "details":B("toggle",d);break;case "input":kg(d,f);B("invalid",d);break;case "select":d._wrapperState={wasMultiple:!!f.multiple};B("invalid",d);break;case "textarea":ng(d,f),B("invalid",d)}pe(c,f);e=null;for(var g in f)if(f.hasOwnProperty(g)){var h=f[g];"children"===g?"string"===typeof h?d.textContent!==h&&(!0!==f.suppressHydrationWarning&&
 jd(d.textContent,h,a),e=["children",h]):"number"===typeof h&&d.textContent!==""+h&&(!0!==f.suppressHydrationWarning&&jd(d.textContent,h,a),e=["children",""+h]):$b.hasOwnProperty(g)&&null!=h&&"onScroll"===g&&B("scroll",d)}switch(c){case "input":Pc(d);mg(d,f,!0);break;case "textarea":Pc(d);pg(d);break;case "select":case "option":break;default:"function"===typeof f.onClick&&(d.onclick=kd)}d=e;b.updateQueue=d;null!==d&&(b.flags|=4)}else{g=9===e.nodeType?e:e.ownerDocument;"http://www.w3.org/1999/xhtml"===
-a&&(a=qg(c));"http://www.w3.org/1999/xhtml"===a?"script"===c?(a=g.createElement("div"),a.innerHTML="<script>\x3c/script>",a=a.rem
+a&&(a=qg(c));"http://www.w3.org/1999/xhtml"===a?"script"===c?(a=g.createElement("div"),a.innerHTML="<script>\x3c/script>",a=a.removeChild(a.firstChild)):"string"===typeof d.is?a=g.createElement(c,{is:d.is}):(a=g.createElement(c),"select"===c&&(g=a,d.multiple?g.multiple=!0:d.size&&(g.size=d.size))):a=g.createElementNS(a,c);a[Da]=b;a[uc]=d;Ak(a,b,!1,!1);b.stateNode=a;a:{g=qe(c,d);switch(c){case "dialog":B("cancel",a);B("close",a);e=d;break;case "iframe":case "object":case "embed":B("load",a);e=d;break;
+case "video":case "audio":for(e=0;e<Ec.length;e++)B(Ec[e],a);e=d;break;case "source":B("error",a);e=d;break;case "img":case "image":case "link":B("error",a);B("load",a);e=d;break;case "details":B("toggle",a);e=d;break;case "input":kg(a,d);e=ke(a,d);B("invalid",a);break;case "option":e=d;break;case "select":a._wrapperState={wasMultiple:!!d.multiple};e=E({},d,{value:void 0});B("invalid",a);break;case "textarea":ng(a,d);e=ne(a,d);B("invalid",a);break;default:e=d}pe(c,e);h=e;for(f in h)if(h.hasOwnProperty(f)){var k=
+h[f];"style"===f?sg(a,k):"dangerouslySetInnerHTML"===f?(k=k?k.__html:void 0,null!=k&&zi(a,k)):"children"===f?"string"===typeof k?("textarea"!==c||""!==k)&&Fc(a,k):"number"===typeof k&&Fc(a,""+k):"suppressContentEditableWarning"!==f&&"suppressHydrationWarning"!==f&&"autoFocus"!==f&&($b.hasOwnProperty(f)?null!=k&&"onScroll"===f&&B("scroll",a):null!=k&&$d(a,f,k,g))}switch(c){case "input":Pc(a);mg(a,d,!1);break;case "textarea":Pc(a);pg(a);break;case "option":null!=d.value&&a.setAttribute("value",""+Ua(d.value));
+break;case "select":a.multiple=!!d.multiple;f=d.value;null!=f?Db(a,!!d.multiple,f,!1):null!=d.defaultValue&&Db(a,!!d.multiple,d.defaultValue,!0);break;default:"function"===typeof e.onClick&&(a.onclick=kd)}switch(c){case "button":case "input":case "select":case "textarea":d=!!d.autoFocus;break a;case "img":d=!0;break a;default:d=!1}}d&&(b.flags|=4)}null!==b.ref&&(b.flags|=512,b.flags|=2097152)}W(b);return null;case 6:if(a&&null!=b.stateNode)Bk(a,b,a.memoizedProps,d);else{if("string"!==typeof d&&null===
+b.stateNode)throw Error(n(166));c=vb(xc.current);vb(Ea.current);if(pd(b)){d=b.stateNode;c=b.memoizedProps;d[Da]=b;if(f=d.nodeValue!==c)if(a=la,null!==a)switch(a.tag){case 3:jd(d.nodeValue,c,0!==(a.mode&1));break;case 5:!0!==a.memoizedProps.suppressHydrationWarning&&jd(d.nodeValue,c,0!==(a.mode&1))}f&&(b.flags|=4)}else d=(9===c.nodeType?c:c.ownerDocument).createTextNode(d),d[Da]=b,b.stateNode=d}W(b);return null;case 13:w(G);d=b.memoizedState;if(null===a||null!==a.memoizedState&&null!==a.memoizedState.dehydrated){if(D&&
+null!==fa&&0!==(b.mode&1)&&0===(b.flags&128)){for(f=fa;f;)f=Ka(f.nextSibling);Qb();b.flags|=98560;f=!1}else if(f=pd(b),null!==d&&null!==d.dehydrated){if(null===a){if(!f)throw Error(n(318));f=b.memoizedState;f=null!==f?f.dehydrated:null;if(!f)throw Error(n(317));f[Da]=b}else Qb(),0===(b.flags&128)&&(b.memoizedState=null),b.flags|=4;W(b);f=!1}else null!==wa&&(Gf(wa),wa=null),f=!0;if(!f)return b.flags&65536?b:null}if(0!==(b.flags&128))return b.lanes=c,b;d=null!==d;d!==(null!==a&&null!==a.memoizedState)&&
+d&&(b.child.flags|=8192,0!==(b.mode&1)&&(null===a||0!==(G.current&1)?0===L&&(L=3):Ef()));null!==b.updateQueue&&(b.flags|=4);W(b);return null;case 4:return Tb(),yi(a,b),null===a&&sc(b.stateNode.containerInfo),W(b),null;case 10:return af(b.type._context),W(b),null;case 17:return ea(b.type)&&(w(S),w(J)),W(b),null;case 19:w(G);f=b.memoizedState;if(null===f)return W(b),null;d=0!==(b.flags&128);g=f.rendering;if(null===g)if(d)Dc(f,!1);else{if(0!==L||null!==a&&0!==(a.flags&128))for(a=b.child;null!==a;){g=
+yd(a);if(null!==g){b.flags|=128;Dc(f,!1);d=g.updateQueue;null!==d&&(b.updateQueue=d,b.flags|=4);b.subtreeFlags=0;d=c;for(c=b.child;null!==c;)f=c,a=d,f.flags&=14680066,g=f.alternate,null===g?(f.childLanes=0,f.lanes=a,f.child=null,f.subtreeFlags=0,f.memoizedProps=null,f.memoizedState=null,f.updateQueue=null,f.dependencies=null,f.stateNode=null):(f.childLanes=g.childLanes,f.lanes=g.lanes,f.child=g.child,f.subtreeFlags=0,f.deletions=null,f.memoizedProps=g.memoizedProps,f.memoizedState=g.memoizedState,
+f.updateQueue=g.updateQueue,f.type=g.type,a=g.dependencies,f.dependencies=null===a?null:{lanes:a.lanes,firstContext:a.firstContext}),c=c.sibling;y(G,G.current&1|2);return b.child}a=a.sibling}null!==f.tail&&P()>Hf&&(b.flags|=128,d=!0,Dc(f,!1),b.lanes=4194304)}else{if(!d)if(a=yd(g),null!==a){if(b.flags|=128,d=!0,c=a.updateQueue,null!==c&&(b.updateQueue=c,b.flags|=4),Dc(f,!0),null===f.tail&&"hidden"===f.tailMode&&!g.alternate&&!D)return W(b),null}else 2*P()-f.renderingStartTime>Hf&&1073741824!==c&&(b.flags|=
+128,d=!0,Dc(f,!1),b.lanes=4194304);f.isBackwards?(g.sibling=b.child,b.child=g):(c=f.last,null!==c?c.sibling=g:b.child=g,f.last=g)}if(null!==f.tail)return b=f.tail,f.rendering=b,f.tail=b.sibling,f.renderingStartTime=P(),b.sibling=null,c=G.current,y(G,d?c&1|2:c&1),b;W(b);return null;case 22:case 23:return ba=Ga.current,w(Ga),d=null!==b.memoizedState,null!==a&&null!==a.memoizedState!==d&&(b.flags|=8192),d&&0!==(b.mode&1)?0!==(ba&1073741824)&&(W(b),b.subtreeFlags&6&&(b.flags|=8192)):W(b),null;case 24:return null;
+case 25:return null}throw Error(n(156,b.tag));}function Ck(a,b,c){Ve(b);switch(b.tag){case 1:return ea(b.type)&&(w(S),w(J)),a=b.flags,a&65536?(b.flags=a&-65537|128,b):null;case 3:return Tb(),w(S),w(J),lf(),a=b.flags,0!==(a&65536)&&0===(a&128)?(b.flags=a&-65537|128,b):null;case 5:return kf(b),null;case 13:w(G);a=b.memoizedState;if(null!==a&&null!==a.dehydrated){if(null===b.alternate)throw Error(n(340));Qb()}a=b.flags;return a&65536?(b.flags=a&-65537|128,b):null;case 19:return w(G),null;case 4:return Tb(),
+null;case 10:return af(b.type._context),null;case 22:case 23:return ba=Ga.current,w(Ga),null;case 24:return null;default:return null}}function Wb(a,b){var c=a.ref;if(null!==c)if("function"===typeof c)try{c(null)}catch(d){H(a,b,d)}else c.current=null}function If(a,b,c){try{c()}catch(d){H(a,b,d)}}function Dk(a,b){Jf=Zc;a=ch();if(Ie(a)){if("selectionStart"in a)var c={start:a.selectionStart,end:a.selectionEnd};else a:{c=(c=a.ownerDocument)&&c.defaultView||window;var d=c.getSelection&&c.getSelection();
+if(d&&0!==d.rangeCount){c=d.anchorNode;var e=d.anchorOffset,f=d.focusNode;d=d.focusOffset;try{c.nodeType,f.nodeType}catch(M){c=null;break a}var g=0,h=-1,k=-1,m=0,t=0,u=a,r=null;b:for(;;){for(var p;;){u!==c||0!==e&&3!==u.nodeType||(h=g+e);u!==f||0!==d&&3!==u.nodeType||(k=g+d);3===u.nodeType&&(g+=u.nodeValue.length);if(null===(p=u.firstChild))break;r=u;u=p}for(;;){if(u===a)break b;r===c&&++m===e&&(h=g);r===f&&++t===d&&(k=g);if(null!==(p=u.nextSibling))break;u=r;r=u.parentNode}u=p}c=-1===h||-1===k?null:
+{start:h,end:k}}else c=null}c=c||{start:0,end:0}}else c=null;Kf={focusedElem:a,selectionRange:c};Zc=!1;for(l=b;null!==l;)if(b=l,a=b.child,0!==(b.subtreeFlags&1028)&&null!==a)a.return=b,l=a;else for(;null!==l;){b=l;try{var x=b.alternate;if(0!==(b.flags&1024))switch(b.tag){case 0:case 11:case 15:break;case 1:if(null!==x){var w=x.memoizedProps,z=x.memoizedState,A=b.stateNode,v=A.getSnapshotBeforeUpdate(b.elementType===b.type?w:xa(b.type,w),z);A.__reactInternalSnapshotBeforeUpdate=v}break;case 3:var q=
+b.stateNode.containerInfo;1===q.nodeType?q.textContent="":9===q.nodeType&&q.documentElement&&q.removeChild(q.documentElement);break;case 5:case 6:case 4:case 17:break;default:throw Error(n(163));}}catch(M){H(b,b.return,M)}a=b.sibling;if(null!==a){a.return=b.return;l=a;break}l=b.return}x=Ai;Ai=!1;return x}function Gc(a,b,c){var d=b.updateQueue;d=null!==d?d.lastEffect:null;if(null!==d){var e=d=d.next;do{if((e.tag&a)===a){var f=e.destroy;e.destroy=void 0;void 0!==f&&If(b,c,f)}e=e.next}while(e!==d)}}
+function Id(a,b){b=b.updateQueue;b=null!==b?b.lastEffect:null;if(null!==b){var c=b=b.next;do{if((c.tag&a)===a){var d=c.create;c.destroy=d()}c=c.next}while(c!==b)}}function Lf(a){var b=a.ref;if(null!==b){var c=a.stateNode;switch(a.tag){case 5:a=c;break;default:a=c}"function"===typeof b?b(a):b.current=a}}function Bi(a){var b=a.alternate;null!==b&&(a.alternate=null,Bi(b));a.child=null;a.deletions=null;a.sibling=null;5===a.tag&&(b=a.stateNode,null!==b&&(delete b[Da],delete b[uc],delete b[Me],delete b[Ek],
+delete b[Fk]));a.stateNode=null;a.return=null;a.dependencies=null;a.memoizedProps=null;a.memoizedState=null;a.pendingProps=null;a.stateNode=null;a.updateQueue=null}function Ci(a){return 5===a.tag||3===a.tag||4===a.tag}function Di(a){a:for(;;){for(;null===a.sibling;){if(null===a.return||Ci(a.return))return null;a=a.return}a.sibling.return=a.return;for(a=a.sibling;5!==a.tag&&6!==a.tag&&18!==a.tag;){if(a.flags&2)continue a;if(null===a.child||4===a.tag)continue a;else a.child.return=a,a=a.child}if(!(a.flags&
+2))return a.stateNode}}function Mf(a,b,c){var d=a.tag;if(5===d||6===d)a=a.stateNode,b?8===c.nodeType?c.parentNode.insertBefore(a,b):c.insertBefore(a,b):(8===c.nodeType?(b=c.parentNode,b.insertBefore(a,c)):(b=c,b.appendChild(a)),c=c._reactRootContainer,null!==c&&void 0!==c||null!==b.onclick||(b.onclick=kd));else if(4!==d&&(a=a.child,null!==a))for(Mf(a,b,c),a=a.sibling;null!==a;)Mf(a,b,c),a=a.sibling}function Nf(a,b,c){var d=a.tag;if(5===d||6===d)a=a.stateNode,b?c.insertBefore(a,b):c.appendChild(a);
+else if(4!==d&&(a=a.child,null!==a))for(Nf(a,b,c),a=a.sibling;null!==a;)Nf(a,b,c),a=a.sibling}function jb(a,b,c){for(c=c.child;null!==c;)Ei(a,b,c),c=c.sibling}function Ei(a,b,c){if(Ca&&"function"===typeof Ca.onCommitFiberUnmount)try{Ca.onCommitFiberUnmount(Uc,c)}catch(h){}switch(c.tag){case 5:X||Wb(c,b);case 6:var d=T,e=za;T=null;jb(a,b,c);T=d;za=e;null!==T&&(za?(a=T,c=c.stateNode,8===a.nodeType?a.parentNode.removeChild(c):a.removeChild(c)):T.removeChild(c.stateNode));break;case 18:null!==T&&(za?
+(a=T,c=c.stateNode,8===a.nodeType?Re(a.parentNode,c):1===a.nodeType&&Re(a,c),nc(a)):Re(T,c.stateNode));break;case 4:d=T;e=za;T=c.stateNode.containerInfo;za=!0;jb(a,b,c);T=d;za=e;break;case 0:case 11:case 14:case 15:if(!X&&(d=c.updateQueue,null!==d&&(d=d.lastEffect,null!==d))){e=d=d.next;do{var f=e,g=f.destroy;f=f.tag;void 0!==g&&(0!==(f&2)?If(c,b,g):0!==(f&4)&&If(c,b,g));e=e.next}while(e!==d)}jb(a,b,c);break;case 1:if(!X&&(Wb(c,b),d=c.stateNode,"function"===typeof d.componentWillUnmount))try{d.props=
+c.memoizedProps,d.state=c.memoizedState,d.componentWillUnmount()}catch(h){H(c,b,h)}jb(a,b,c);break;case 21:jb(a,b,c);break;case 22:c.mode&1?(X=(d=X)||null!==c.memoizedState,jb(a,b,c),X=d):jb(a,b,c);break;default:jb(a,b,c)}}function Fi(a){var b=a.updateQueue;if(null!==b){a.updateQueue=null;var c=a.stateNode;null===c&&(c=a.stateNode=new Gk);b.forEach(function(b){var d=Hk.bind(null,a,b);c.has(b)||(c.add(b),b.then(d,d))})}}function Aa(a,b,c){c=b.deletions;if(null!==c)for(var d=0;d<c.length;d++){var e=
+c[d];try{var f=a,g=b,h=g;a:for(;null!==h;){switch(h.tag){case 5:T=h.stateNode;za=!1;break a;case 3:T=h.stateNode.containerInfo;za=!0;break a;case 4:T=h.stateNode.containerInfo;za=!0;break a}h=h.return}if(null===T)throw Error(n(160));Ei(f,g,e);T=null;za=!1;var k=e.alternate;null!==k&&(k.return=null);e.return=null}catch(m){H(e,b,m)}}if(b.subtreeFlags&12854)for(b=b.child;null!==b;)Gi(b,a),b=b.sibling}function Gi(a,b,c){var d=a.alternate;c=a.flags;switch(a.tag){case 0:case 11:case 14:case 15:Aa(b,a);
+Ha(a);if(c&4){try{Gc(3,a,a.return),Id(3,a)}catch(F){H(a,a.return,F)}try{Gc(5,a,a.return)}catch(F){H(a,a.return,F)}}break;case 1:Aa(b,a);Ha(a);c&512&&null!==d&&Wb(d,d.return);break;case 5:Aa(b,a);Ha(a);c&512&&null!==d&&Wb(d,d.return);if(a.flags&32){var e=a.stateNode;try{Fc(e,"")}catch(F){H(a,a.return,F)}}if(c&4&&(e=a.stateNode,null!=e)){var f=a.memoizedProps,g=null!==d?d.memoizedProps:f,h=a.type,k=a.updateQueue;a.updateQueue=null;if(null!==k)try{"input"===h&&"radio"===f.type&&null!=f.name&&lg(e,f);
+qe(h,g);var m=qe(h,f);for(g=0;g<k.length;g+=2){var t=k[g],u=k[g+1];"style"===t?sg(e,u):"dangerouslySetInnerHTML"===t?zi(e,u):"children"===t?Fc(e,u):$d(e,t,u,m)}switch(h){case "input":le(e,f);break;case "textarea":og(e,f);break;case "select":var r=e._wrapperState.wasMultiple;e._wrapperState.wasMultiple=!!f.multiple;var p=f.value;null!=p?Db(e,!!f.multiple,p,!1):r!==!!f.multiple&&(null!=f.defaultValue?Db(e,!!f.multiple,f.defaultValue,!0):Db(e,!!f.multiple,f.multiple?[]:"",!1))}e[uc]=f}catch(F){H(a,a.return,
+F)}}break;case 6:Aa(b,a);Ha(a);if(c&4){if(null===a.stateNode)throw Error(n(162));e=a.stateNode;f=a.memoizedProps;try{e.nodeValue=f}catch(F){H(a,a.return,F)}}break;case 3:Aa(b,a);Ha(a);if(c&4&&null!==d&&d.memoizedState.isDehydrated)try{nc(b.containerInfo)}catch(F){H(a,a.return,F)}break;case 4:Aa(b,a);Ha(a);break;case 13:Aa(b,a);Ha(a);e=a.child;e.flags&8192&&(f=null!==e.memoizedState,e.stateNode.isHidden=f,!f||null!==e.alternate&&null!==e.alternate.memoizedState||(Of=P()));c&4&&Fi(a);break;case 22:t=
+null!==d&&null!==d.memoizedState;a.mode&1?(X=(m=X)||t,Aa(b,a),X=m):Aa(b,a);Ha(a);if(c&8192){m=null!==a.memoizedState;if((a.stateNode.isHidden=m)&&!t&&0!==(a.mode&1))for(l=a,t=a.child;null!==t;){for(u=l=t;null!==l;){r=l;p=r.child;switch(r.tag){case 0:case 11:case 14:case 15:Gc(4,r,r.return);break;case 1:Wb(r,r.return);var x=r.stateNode;if("function"===typeof x.componentWillUnmount){c=r;b=r.return;try{d=c,x.props=d.memoizedProps,x.state=d.memoizedState,x.componentWillUnmount()}catch(F){H(c,b,F)}}break;
+case 5:Wb(r,r.return);break;case 22:if(null!==r.memoizedState){Hi(u);continue}}null!==p?(p.return=r,l=p):Hi(u)}t=t.sibling}a:for(t=null,u=a;;){if(5===u.tag){if(null===t){t=u;try{e=u.stateNode,m?(f=e.style,"function"===typeof f.setProperty?f.setProperty("display","none","important"):f.display="none"):(h=u.stateNode,k=u.memoizedProps.style,g=void 0!==k&&null!==k&&k.hasOwnProperty("display")?k.display:null,h.style.display=rg("display",g))}catch(F){H(a,a.return,F)}}}else if(6===u.tag){if(null===t)try{u.stateNode.nodeValue=
+m?"":u.memoizedProps}catch(F){H(a,a.return,F)}}else if((22!==u.tag&&23!==u.tag||null===u.memoizedState||u===a)&&null!==u.child){u.child.return=u;u=u.child;continue}if(u===a)break a;for(;null===u.sibling;){if(null===u.return||u.return===a)break a;t===u&&(t=null);u=u.return}t===u&&(t=null);u.sibling.return=u.return;u=u.sibling}}break;case 19:Aa(b,a);Ha(a);c&4&&Fi(a);break;case 21:break;default:Aa(b,a),Ha(a)}}function Ha(a){var b=a.flags;if(b&2){try{a:{for(var c=a.return;null!==c;){if(Ci(c)){var d=c;
+break a}c=c.return}throw Error(n(160));}switch(d.tag){case 5:var e=d.stateNode;d.flags&32&&(Fc(e,""),d.flags&=-33);var f=Di(a);Nf(a,f,e);break;case 3:case 4:var g=d.stateNode.containerInfo,h=Di(a);Mf(a,h,g);break;default:throw Error(n(161));}}catch(k){H(a,a.return,k)}a.flags&=-3}b&4096&&(a.flags&=-4097)}function Ik(a,b,c){l=a;Ii(a,b,c)}function Ii(a,b,c){for(var d=0!==(a.mode&1);null!==l;){var e=l,f=e.child;if(22===e.tag&&d){var g=null!==e.memoizedState||Jd;if(!g){var h=e.alternate,k=null!==h&&null!==
+h.memoizedState||X;h=Jd;var m=X;Jd=g;if((X=k)&&!m)for(l=e;null!==l;)g=l,k=g.child,22===g.tag&&null!==g.memoizedState?Ji(e):null!==k?(k.return=g,l=k):Ji(e);for(;null!==f;)l=f,Ii(f,b,c),f=f.sibling;l=e;Jd=h;X=m}Ki(a,b,c)}else 0!==(e.subtreeFlags&8772)&&null!==f?(f.return=e,l=f):Ki(a,b,c)}}function Ki(a,b,c){for(;null!==l;){b=l;if(0!==(b.flags&8772)){c=b.alternate;try{if(0!==(b.flags&8772))switch(b.tag){case 0:case 11:case 15:X||Id(5,b);break;case 1:var d=b.stateNode;if(b.flags&4&&!X)if(null===c)d.componentDidMount();
+else{var e=b.elementType===b.type?c.memoizedProps:xa(b.type,c.memoizedProps);d.componentDidUpdate(e,c.memoizedState,d.__reactInternalSnapshotBeforeUpdate)}var f=b.updateQueue;null!==f&&Fh(b,f,d);break;case 3:var g=b.updateQueue;if(null!==g){c=null;if(null!==b.child)switch(b.child.tag){case 5:c=b.child.stateNode;break;case 1:c=b.child.stateNode}Fh(b,g,c)}break;case 5:var h=b.stateNode;if(null===c&&b.flags&4){c=h;var k=b.memoizedProps;switch(b.type){case "button":case "input":case "select":case "textarea":k.autoFocus&&
+c.focus();break;case "img":k.src&&(c.src=k.src)}}break;case 6:break;case 4:break;case 12:break;case 13:if(null===b.memoizedState){var m=b.alternate;if(null!==m){var t=m.memoizedState;if(null!==t){var p=t.dehydrated;null!==p&&nc(p)}}}break;case 19:case 17:case 21:case 22:case 23:case 25:break;default:throw Error(n(163));}X||b.flags&512&&Lf(b)}catch(r){H(b,b.return,r)}}if(b===a){l=null;break}c=b.sibling;if(null!==c){c.return=b.return;l=c;break}l=b.return}}function Hi(a){for(;null!==l;){var b=l;if(b===
+a){l=null;break}var c=b.sibling;if(null!==c){c.return=b.return;l=c;break}l=b.return}}function Ji(a){for(;null!==l;){var b=l;try{switch(b.tag){case 0:case 11:case 15:var c=b.return;try{Id(4,b)}catch(k){H(b,c,k)}break;case 1:var d=b.stateNode;if("function"===typeof d.componentDidMount){var e=b.return;try{d.componentDidMount()}catch(k){H(b,e,k)}}var f=b.return;try{Lf(b)}catch(k){H(b,f,k)}break;case 5:var g=b.return;try{Lf(b)}catch(k){H(b,g,k)}}}catch(k){H(b,b.return,k)}if(b===a){l=null;break}var h=b.sibling;
+if(null!==h){h.return=b.return;l=h;break}l=b.return}}function Hc(){Hf=P()+500}function Z(){return 0!==(p&6)?P():-1!==Kd?Kd:Kd=P()}function hb(a){if(0===(a.mode&1))return 1;if(0!==(p&2)&&0!==U)return U&-U;if(null!==Jk.transition)return 0===Ld&&(Ld=Dg()),Ld;a=z;if(0!==a)return a;a=window.event;a=void 0===a?16:Lg(a.type);return a}function ya(a,b,c,d){if(50<Ic)throw Ic=0,Pf=null,Error(n(185));ic(a,c,d);if(0===(p&2)||a!==O)a===O&&(0===(p&2)&&(Md|=c),4===L&&kb(a,U)),ia(a,d),1===c&&0===p&&0===(b.mode&1)&&
+(Hc(),md&&db())}function ia(a,b){var c=a.callbackNode;uj(a,b);var d=Vc(a,a===O?U:0);if(0===d)null!==c&&Li(c),a.callbackNode=null,a.callbackPriority=0;else if(b=d&-d,a.callbackPriority!==b){null!=c&&Li(c);if(1===b)0===a.tag?kk(Mi.bind(null,a)):wh(Mi.bind(null,a)),Kk(function(){0===(p&6)&&db()}),c=null;else{switch(Eg(d)){case 1:c=De;break;case 4:c=Mg;break;case 16:c=ad;break;case 536870912:c=Ng;break;default:c=ad}c=Ni(c,Oi.bind(null,a))}a.callbackPriority=b;a.callbackNode=c}}function Oi(a,b){Kd=-1;
+Ld=0;if(0!==(p&6))throw Error(n(327));var c=a.callbackNode;if(Xb()&&a.callbackNode!==c)return null;var d=Vc(a,a===O?U:0);if(0===d)return null;if(0!==(d&30)||0!==(d&a.expiredLanes)||b)b=Nd(a,d);else{b=d;var e=p;p|=2;var f=Pi();if(O!==a||U!==b)Ra=null,Hc(),xb(a,b);do try{Lk();break}catch(h){Qi(a,h)}while(1);Ze();Od.current=f;p=e;null!==I?b=0:(O=null,U=0,b=L)}if(0!==b){2===b&&(e=ve(a),0!==e&&(d=e,b=Qf(a,e)));if(1===b)throw c=Jc,xb(a,0),kb(a,d),ia(a,P()),c;if(6===b)kb(a,d);else{e=a.current.alternate;
+if(0===(d&30)&&!Mk(e)&&(b=Nd(a,d),2===b&&(f=ve(a),0!==f&&(d=f,b=Qf(a,f))),1===b))throw c=Jc,xb(a,0),kb(a,d),ia(a,P()),c;a.finishedWork=e;a.finishedLanes=d;switch(b){case 0:case 1:throw Error(n(345));case 2:yb(a,ja,Ra);break;case 3:kb(a,d);if((d&130023424)===d&&(b=Of+500-P(),10<b)){if(0!==Vc(a,0))break;e=a.suspendedLanes;if((e&d)!==d){Z();a.pingedLanes|=a.suspendedLanes&e;break}a.timeoutHandle=Rf(yb.bind(null,a,ja,Ra),b);break}yb(a,ja,Ra);break;case 4:kb(a,d);if((d&4194240)===d)break;b=a.eventTimes;
+for(e=-1;0<d;){var g=31-ta(d);f=1<<g;g=b[g];g>e&&(e=g);d&=~f}d=e;d=P()-d;d=(120>d?120:480>d?480:1080>d?1080:1920>d?1920:3E3>d?3E3:4320>d?4320:1960*Nk(d/1960))-d;if(10<d){a.timeoutHandle=Rf(yb.bind(null,a,ja,Ra),d);break}yb(a,ja,Ra);break;case 5:yb(a,ja,Ra);break;default:throw Error(n(329));}}}ia(a,P());return a.callbackNode===c?Oi.bind(null,a):null}function Qf(a,b){var c=Kc;a.current.memoizedState.isDehydrated&&(xb(a,b).flags|=256);a=Nd(a,b);2!==a&&(b=ja,ja=c,null!==b&&Gf(b));return a}function Gf(a){null===
+ja?ja=a:ja.push.apply(ja,a)}function Mk(a){for(var b=a;;){if(b.flags&16384){var c=b.updateQueue;if(null!==c&&(c=c.stores,null!==c))for(var d=0;d<c.length;d++){var e=c[d],f=e.getSnapshot;e=e.value;try{if(!ua(f(),e))return!1}catch(g){return!1}}}c=b.child;if(b.subtreeFlags&16384&&null!==c)c.return=b,b=c;else{if(b===a)break;for(;null===b.sibling;){if(null===b.return||b.return===a)return!0;b=b.return}b.sibling.return=b.return;b=b.sibling}}return!0}function kb(a,b){b&=~Sf;b&=~Md;a.suspendedLanes|=b;a.pingedLanes&=
+~b;for(a=a.expirationTimes;0<b;){var c=31-ta(b),d=1<<c;a[c]=-1;b&=~d}}function Mi(a){if(0!==(p&6))throw Error(n(327));Xb();var b=Vc(a,0);if(0===(b&1))return ia(a,P()),null;var c=Nd(a,b);if(0!==a.tag&&2===c){var d=ve(a);0!==d&&(b=d,c=Qf(a,d))}if(1===c)throw c=Jc,xb(a,0),kb(a,b),ia(a,P()),c;if(6===c)throw Error(n(345));a.finishedWork=a.current.alternate;a.finishedLanes=b;yb(a,ja,Ra);ia(a,P());return null}function Tf(a,b){var c=p;p|=1;try{return a(b)}finally{p=c,0===p&&(Hc(),md&&db())}}function zb(a){null!==
+lb&&0===lb.tag&&0===(p&6)&&Xb();var b=p;p|=1;var c=ca.transition,d=z;try{if(ca.transition=null,z=1,a)return a()}finally{z=d,ca.transition=c,p=b,0===(p&6)&&db()}}function xb(a,b){a.finishedWork=null;a.finishedLanes=0;var c=a.timeoutHandle;-1!==c&&(a.timeoutHandle=-1,Ok(c));if(null!==I)for(c=I.return;null!==c;){var d=c;Ve(d);switch(d.tag){case 1:d=d.type.childContextTypes;null!==d&&void 0!==d&&(w(S),w(J));break;case 3:Tb();w(S);w(J);lf();break;case 5:kf(d);break;case 4:Tb();break;case 13:w(G);break;
+case 19:w(G);break;case 10:af(d.type._context);break;case 22:case 23:ba=Ga.current,w(Ga)}c=c.return}O=a;I=a=gb(a.current,null);U=ba=b;L=0;Jc=null;Sf=Md=ra=0;ja=Kc=null;if(null!==tb){for(b=0;b<tb.length;b++)if(c=tb[b],d=c.interleaved,null!==d){c.interleaved=null;var e=d.next,f=c.pending;if(null!==f){var g=f.next;f.next=e;d.next=g}c.pending=d}tb=null}return a}function Qi(a,b){do{var c=I;try{Ze();zd.current=Ad;if(Bd){for(var d=C.memoizedState;null!==d;){var e=d.queue;null!==e&&(e.pending=null);d=d.next}Bd=
+!1}wb=0;N=K=C=null;zc=!1;Ac=0;Uf.current=null;if(null===c||null===c.return){L=1;Jc=b;I=null;break}a:{var f=a,g=c.return,h=c,k=b;b=U;h.flags|=32768;if(null!==k&&"object"===typeof k&&"function"===typeof k.then){var m=k,l=h,p=l.tag;if(0===(l.mode&1)&&(0===p||11===p||15===p)){var r=l.alternate;r?(l.updateQueue=r.updateQueue,l.memoizedState=r.memoizedState,l.lanes=r.lanes):(l.updateQueue=null,l.memoizedState=null)}var w=ki(g);if(null!==w){w.flags&=-257;li(w,g,h,f,b);w.mode&1&&ji(f,m,b);b=w;k=m;var x=b.updateQueue;
+if(null===x){var z=new Set;z.add(k);b.updateQueue=z}else x.add(k);break a}else{if(0===(b&1)){ji(f,m,b);Ef();break a}k=Error(n(426))}}else if(D&&h.mode&1){var y=ki(g);if(null!==y){0===(y.flags&65536)&&(y.flags|=256);li(y,g,h,f,b);Ye(Ub(k,h));break a}}f=k=Ub(k,h);4!==L&&(L=2);null===Kc?Kc=[f]:Kc.push(f);f=g;do{switch(f.tag){case 3:f.flags|=65536;b&=-b;f.lanes|=b;var A=hi(f,k,b);Eh(f,A);break a;case 1:h=k;var v=f.type,q=f.stateNode;if(0===(f.flags&128)&&("function"===typeof v.getDerivedStateFromError||
+null!==q&&"function"===typeof q.componentDidCatch&&(null===ib||!ib.has(q)))){f.flags|=65536;b&=-b;f.lanes|=b;var B=ii(f,h,b);Eh(f,B);break a}}f=f.return}while(null!==f)}Ri(c)}catch(ma){b=ma;I===c&&null!==c&&(I=c=c.return);continue}break}while(1)}function Pi(){var a=Od.current;Od.current=Ad;return null===a?Ad:a}function Ef(){if(0===L||3===L||2===L)L=4;null===O||0===(ra&268435455)&&0===(Md&268435455)||kb(O,U)}function Nd(a,b){var c=p;p|=2;var d=Pi();if(O!==a||U!==b)Ra=null,xb(a,b);do try{Pk();break}catch(e){Qi(a,
+e)}while(1);Ze();p=c;Od.current=d;if(null!==I)throw Error(n(261));O=null;U=0;return L}function Pk(){for(;null!==I;)Si(I)}function Lk(){for(;null!==I&&!Qk();)Si(I)}function Si(a){var b=Rk(a.alternate,a,ba);a.memoizedProps=a.pendingProps;null===b?Ri(a):I=b;Uf.current=null}function Ri(a){var b=a;do{var c=b.alternate;a=b.return;if(0===(b.flags&32768)){if(c=yk(c,b,ba),null!==c){I=c;return}}else{c=Ck(c,b);if(null!==c){c.flags&=32767;I=c;return}if(null!==a)a.flags|=32768,a.subtreeFlags=0,a.deletions=null;
+else{L=6;I=null;return}}b=b.sibling;if(null!==b){I=b;return}I=b=a}while(null!==b);0===L&&(L=5)}function yb(a,b,c){var d=z,e=ca.transition;try{ca.transition=null,z=1,Sk(a,b,c,d)}finally{ca.transition=e,z=d}return null}function Sk(a,b,c,d){do Xb();while(null!==lb);if(0!==(p&6))throw Error(n(327));c=a.finishedWork;var e=a.finishedLanes;if(null===c)return null;a.finishedWork=null;a.finishedLanes=0;if(c===a.current)throw Error(n(177));a.callbackNode=null;a.callbackPriority=0;var f=c.lanes|c.childLanes;
+vj(a,f);a===O&&(I=O=null,U=0);0===(c.subtreeFlags&2064)&&0===(c.flags&2064)||Pd||(Pd=!0,Ni(ad,function(){Xb();return null}));f=0!==(c.flags&15990);if(0!==(c.subtreeFlags&15990)||f){f=ca.transition;ca.transition=null;var g=z;z=1;var h=p;p|=4;Uf.current=null;Dk(a,c);Gi(c,a);Uj(Kf);Zc=!!Jf;Kf=Jf=null;a.current=c;Ik(c,a,e);Tk();p=h;z=g;ca.transition=f}else a.current=c;Pd&&(Pd=!1,lb=a,Qd=e);f=a.pendingLanes;0===f&&(ib=null);pj(c.stateNode,d);ia(a,P());if(null!==b)for(d=a.onRecoverableError,c=0;c<b.length;c++)e=
+b[c],d(e.value,{componentStack:e.stack,digest:e.digest});if(Ed)throw Ed=!1,a=xf,xf=null,a;0!==(Qd&1)&&0!==a.tag&&Xb();f=a.pendingLanes;0!==(f&1)?a===Pf?Ic++:(Ic=0,Pf=a):Ic=0;db();return null}function Xb(){if(null!==lb){var a=Eg(Qd),b=ca.transition,c=z;try{ca.transition=null;z=16>a?16:a;if(null===lb)var d=!1;else{a=lb;lb=null;Qd=0;if(0!==(p&6))throw Error(n(331));var e=p;p|=4;for(l=a.current;null!==l;){var f=l,g=f.child;if(0!==(l.flags&16)){var h=f.deletions;if(null!==h){for(var k=0;k<h.length;k++){var m=
+h[k];for(l=m;null!==l;){var t=l;switch(t.tag){case 0:case 11:case 15:Gc(8,t,f)}var u=t.child;if(null!==u)u.return=t,l=u;else for(;null!==l;){t=l;var r=t.sibling,w=t.return;Bi(t);if(t===m){l=null;break}if(null!==r){r.return=w;l=r;break}l=w}}}var x=f.alternate;if(null!==x){var y=x.child;if(null!==y){x.child=null;do{var C=y.sibling;y.sibling=null;y=C}while(null!==y)}}l=f}}if(0!==(f.subtreeFlags&2064)&&null!==g)g.return=f,l=g;else b:for(;null!==l;){f=l;if(0!==(f.flags&2048))switch(f.tag){case 0:case 11:case 15:Gc(9,
+f,f.return)}var A=f.sibling;if(null!==A){A.return=f.return;l=A;break b}l=f.return}}var v=a.current;for(l=v;null!==l;){g=l;var q=g.child;if(0!==(g.subtreeFlags&2064)&&null!==q)q.return=g,l=q;else b:for(g=v;null!==l;){h=l;if(0!==(h.flags&2048))try{switch(h.tag){case 0:case 11:case 15:Id(9,h)}}catch(ma){H(h,h.return,ma)}if(h===g){l=null;break b}var B=h.sibling;if(null!==B){B.return=h.return;l=B;break b}l=h.return}}p=e;db();if(Ca&&"function"===typeof Ca.onPostCommitFiberRoot)try{Ca.onPostCommitFiberRoot(Uc,
+a)}catch(ma){}d=!0}return d}finally{z=c,ca.transition=b}}return!1}function Ti(a,b,c){b=Ub(c,b);b=hi(a,b,1);a=eb(a,b,1);b=Z();null!==a&&(ic(a,1,b),ia(a,b))}function H(a,b,c){if(3===a.tag)Ti(a,a,c);else for(;null!==b;){if(3===b.tag){Ti(b,a,c);break}else if(1===b.tag){var d=b.stateNode;if("function"===typeof b.type.getDerivedStateFromError||"function"===typeof d.componentDidCatch&&(null===ib||!ib.has(d))){a=Ub(c,a);a=ii(b,a,1);b=eb(b,a,1);a=Z();null!==b&&(ic(b,1,a),ia(b,a));break}}b=b.return}}function tk(a,
+b,c){var d=a.pingCache;null!==d&&d.delete(b);b=Z();a.pingedLanes|=a.suspendedLanes&c;O===a&&(U&c)===c&&(4===L||3===L&&(U&130023424)===U&&500>P()-Of?xb(a,0):Sf|=c);ia(a,b)}function Ui(a,b){0===b&&(0===(a.mode&1)?b=1:(b=Rd,Rd<<=1,0===(Rd&130023424)&&(Rd=4194304)));var c=Z();a=Oa(a,b);null!==a&&(ic(a,b,c),ia(a,c))}function wk(a){var b=a.memoizedState,c=0;null!==b&&(c=b.retryLane);Ui(a,c)}function Hk(a,b){var c=0;switch(a.tag){case 13:var d=a.stateNode;var e=a.memoizedState;null!==e&&(c=e.retryLane);
+break;case 19:d=a.stateNode;break;default:throw Error(n(314));}null!==d&&d.delete(b);Ui(a,c)}function Ni(a,b){return xh(a,b)}function Uk(a,b,c,d){this.tag=a;this.key=c;this.sibling=this.child=this.return=this.stateNode=this.type=this.elementType=null;this.index=0;this.ref=null;this.pendingProps=b;this.dependencies=this.memoizedState=this.updateQueue=this.memoizedProps=null;this.mode=d;this.subtreeFlags=this.flags=0;this.deletions=null;this.childLanes=this.lanes=0;this.alternate=null}function yf(a){a=
+a.prototype;return!(!a||!a.isReactComponent)}function Vk(a){if("function"===typeof a)return yf(a)?1:0;if(void 0!==a&&null!==a){a=a.$$typeof;if(a===ie)return 11;if(a===je)return 14}return 2}function gb(a,b){var c=a.alternate;null===c?(c=pa(a.tag,b,a.key,a.mode),c.elementType=a.elementType,c.type=a.type,c.stateNode=a.stateNode,c.alternate=a,a.alternate=c):(c.pendingProps=b,c.type=a.type,c.flags=0,c.subtreeFlags=0,c.deletions=null);c.flags=a.flags&14680064;c.childLanes=a.childLanes;c.lanes=a.lanes;c.child=
+a.child;c.memoizedProps=a.memoizedProps;c.memoizedState=a.memoizedState;c.updateQueue=a.updateQueue;b=a.dependencies;c.dependencies=null===b?null:{lanes:b.lanes,firstContext:b.firstContext};c.sibling=a.sibling;c.index=a.index;c.ref=a.ref;return c}function wd(a,b,c,d,e,f){var g=2;d=a;if("function"===typeof a)yf(a)&&(g=1);else if("string"===typeof a)g=5;else a:switch(a){case Bb:return ub(c.children,e,f,b);case fe:g=8;e|=8;break;case ee:return a=pa(12,c,b,e|2),a.elementType=ee,a.lanes=f,a;case ge:return a=
+pa(13,c,b,e),a.elementType=ge,a.lanes=f,a;case he:return a=pa(19,c,b,e),a.elementType=he,a.lanes=f,a;case Vi:return Gd(c,e,f,b);default:if("object"===typeof a&&null!==a)switch(a.$$typeof){case hg:g=10;break a;case gg:g=9;break a;case ie:g=11;break a;case je:g=14;break a;case Ta:g=16;d=null;break a}throw Error(n(130,null==a?a:typeof a,""));}b=pa(g,c,b,e);b.elementType=a;b.type=d;b.lanes=f;return b}function ub(a,b,c,d){a=pa(7,a,d,b);a.lanes=c;return a}function Gd(a,b,c,d){a=pa(22,a,d,b);a.elementType=
+Vi;a.lanes=c;a.stateNode={isHidden:!1};return a}function gf(a,b,c){a=pa(6,a,null,b);a.lanes=c;return a}function hf(a,b,c){b=pa(4,null!==a.children?a.children:[],a.key,b);b.lanes=c;b.stateNode={containerInfo:a.containerInfo,pendingChildren:null,implementation:a.implementation};return b}function Wk(a,b,c,d,e){this.tag=b;this.containerInfo=a;this.finishedWork=this.pingCache=this.current=this.pendingChildren=null;this.timeoutHandle=-1;this.callbackNode=this.pendingContext=this.context=null;this.callbackPriority=
+0;this.eventTimes=we(0);this.expirationTimes=we(-1);this.entangledLanes=this.finishedLanes=this.mutableReadLanes=this.expiredLanes=this.pingedLanes=this.suspendedLanes=this.pendingLanes=0;this.entanglements=we(0);this.identifierPrefix=d;this.onRecoverableError=e;this.mutableSourceEagerHydrationData=null}function Vf(a,b,c,d,e,f,g,h,k,m){a=new Wk(a,b,c,h,k);1===b?(b=1,!0===f&&(b|=8)):b=0;f=pa(3,null,null,b);a.current=f;f.stateNode=a;f.memoizedState={element:d,isDehydrated:c,cache:null,transitions:null,
+pendingSuspenseBoundaries:null};df(f);return a}function Xk(a,b,c){var d=3<arguments.length&&void 0!==arguments[3]?arguments[3]:null;return{$$typeof:Cb,key:null==d?null:""+d,children:a,containerInfo:b,implementation:c}}function Wi(a){if(!a)return cb;a=a._reactInternals;a:{if(ob(a)!==a||1!==a.tag)throw Error(n(170));var b=a;do{switch(b.tag){case 3:b=b.stateNode.context;break a;case 1:if(ea(b.type)){b=b.stateNode.__reactInternalMemoizedMergedChildContext;break a}}b=b.return}while(null!==b);throw Error(n(171));
+}if(1===a.tag){var c=a.type;if(ea(c))return uh(a,c,b)}return b}function Xi(a,b,c,d,e,f,g,h,k,m){a=Vf(c,d,!0,a,e,f,g,h,k);a.context=Wi(null);c=a.current;d=Z();e=hb(c);f=Pa(d,e);f.callback=void 0!==b&&null!==b?b:null;eb(c,f,e);a.current.lanes=e;ic(a,e,d);ia(a,d);return a}function Sd(a,b,c,d){var e=b.current,f=Z(),g=hb(e);c=Wi(c);null===b.context?b.context=c:b.pendingContext=c;b=Pa(f,g);b.payload={element:a};d=void 0===d?null:d;null!==d&&(b.callback=d);a=eb(e,b,g);null!==a&&(ya(a,e,g,f),sd(a,e,g));return g}
+function Td(a){a=a.current;if(!a.child)return null;switch(a.child.tag){case 5:return a.child.stateNode;default:return a.child.stateNode}}function Yi(a,b){a=a.memoizedState;if(null!==a&&null!==a.dehydrated){var c=a.retryLane;a.retryLane=0!==c&&c<b?c:b}}function Wf(a,b){Yi(a,b);(a=a.alternate)&&Yi(a,b)}function Yk(a){a=Bg(a);return null===a?null:a.stateNode}function Zk(a){return null}function Xf(a){this._internalRoot=a}function Ud(a){this._internalRoot=a}function Yf(a){return!(!a||1!==a.nodeType&&9!==
+a.nodeType&&11!==a.nodeType)}function Vd(a){return!(!a||1!==a.nodeType&&9!==a.nodeType&&11!==a.nodeType&&(8!==a.nodeType||" react-mount-point-unstable "!==a.nodeValue))}function Zi(){}function $k(a,b,c,d,e){if(e){if("function"===typeof d){var f=d;d=function(){var a=Td(g);f.call(a)}}var g=Xi(b,d,a,0,null,!1,!1,"",Zi);a._reactRootContainer=g;a[Ja]=g.current;sc(8===a.nodeType?a.parentNode:a);zb();return g}for(;e=a.lastChild;)a.removeChild(e);if("function"===typeof d){var h=d;d=function(){var a=Td(k);
+h.call(a)}}var k=Vf(a,0,!1,null,null,!1,!1,"",Zi);a._reactRootContainer=k;a[Ja]=k.current;sc(8===a.nodeType?a.parentNode:a);zb(function(){Sd(b,k,c,d)});return k}function Wd(a,b,c,d,e){var f=c._reactRootContainer;if(f){var g=f;if("function"===typeof e){var h=e;e=function(){var a=Td(g);h.call(a)}}Sd(b,g,a,e)}else g=$k(c,b,a,e,d);return Td(g)}var cg=new Set,$b={},Ia=!("undefined"===typeof window||"undefined"===typeof window.document||"undefined"===typeof window.document.createElement),Zd=Object.prototype.hasOwnProperty,
+dj=/^[:A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD][:A-Z_a-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\-.0-9\u00B7\u0300-\u036F\u203F-\u2040]*$/,eg={},dg={},R={};"children dangerouslySetInnerHTML defaultValue defaultChecked innerHTML suppressContentEditableWarning suppressHydrationWarning style".split(" ").forEach(function(a){R[a]=
+new Y(a,0,!1,a,null,!1,!1)});[["acceptCharset","accept-charset"],["className","class"],["htmlFor","for"],["httpEquiv","http-equiv"]].forEach(function(a){var b=a[0];R[b]=new Y(b,1,!1,a[1],null,!1,!1)});["contentEditable","draggable","spellCheck","value"].forEach(function(a){R[a]=new Y(a,2,!1,a.toLowerCase(),null,!1,!1)});["autoReverse","externalResourcesRequired","focusable","preserveAlpha"].forEach(function(a){R[a]=new Y(a,2,!1,a,null,!1,!1)});"allowFullScreen async autoFocus autoPlay controls default defer disabled disablePictureInPicture disableRemotePlayback formNoValidate hidden loop noModule noValidate open playsInline readOnly required reversed scoped seamless itemScope".split(" ").forEach(function(a){R[a]=
+new Y(a,3,!1,a.toLowerCase(),null,!1,!1)});["checked","multiple","muted","selected"].forEach(function(a){R[a]=new Y(a,3,!0,a,null,!1,!1)});["capture","download"].forEach(function(a){R[a]=new Y(a,4,!1,a,null,!1,!1)});["cols","rows","size","span"].forEach(function(a){R[a]=new Y(a,6,!1,a,null,!1,!1)});["rowSpan","start"].forEach(function(a){R[a]=new Y(a,5,!1,a.toLowerCase(),null,!1,!1)});var Zf=/[\-:]([a-z])/g,$f=function(a){return a[1].toUpperCase()};"accent-height alignment-baseline arabic-form baseline-shift cap-height clip-path clip-rule color-interpolation color-interpolation-filters color-profile color-rendering dominant-baseline enable-background fill-opacity fill-rule flood-color flood-opacity font-family font-size font-size-adjust font-stretch font-style font-variant font-weight glyph-name glyph-orientation-horizontal glyph-orientation-vertical horiz-adv-x horiz-origin-x image-rendering letter-spacing lighting-color marker-end marker-mid marker-start overline-position overline-thickness paint-order panose-1 pointer-events rendering-intent shape-rendering stop-color stop-opacity strikethrough-position strikethrough-thickness stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin stroke-miterlimit stroke-opacity stroke-width text-anchor text-decoration text-rendering underline-position underline-thickness unicode-bidi unicode-range units-per-em v-alphabetic v-hanging v-ideographic v-mathematical vector-effect vert-adv-y vert-origin-x vert-origin-y word-spacing writing-mode xmlns:xlink x-height".split(" ").forEach(function(a){var b=
+a.replace(Zf,$f);R[b]=new Y(b,1,!1,a,null,!1,!1)});"xlink:actuate xlink:arcrole xlink:role xlink:show xlink:title xlink:type".split(" ").forEach(function(a){var b=a.replace(Zf,$f);R[b]=new Y(b,1,!1,a,"http://www.w3.org/1999/xlink",!1,!1)});["xml:base","xml:lang","xml:space"].forEach(function(a){var b=a.replace(Zf,$f);R[b]=new Y(b,1,!1,a,"http://www.w3.org/XML/1998/namespace",!1,!1)});["tabIndex","crossOrigin"].forEach(function(a){R[a]=new Y(a,1,!1,a.toLowerCase(),null,!1,!1)});R.xlinkHref=new Y("xlinkHref",
+1,!1,"xlink:href","http://www.w3.org/1999/xlink",!0,!1);["src","href","action","formAction"].forEach(function(a){R[a]=new Y(a,1,!1,a.toLowerCase(),null,!0,!0)});var Sa=mb.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED,xd=Symbol.for("react.element"),Cb=Symbol.for("react.portal"),Bb=Symbol.for("react.fragment"),fe=Symbol.for("react.strict_mode"),ee=Symbol.for("react.profiler"),hg=Symbol.for("react.provider"),gg=Symbol.for("react.context"),ie=Symbol.for("react.forward_ref"),ge=Symbol.for("react.suspense"),
+he=Symbol.for("react.suspense_list"),je=Symbol.for("react.memo"),Ta=Symbol.for("react.lazy");Symbol.for("react.scope");Symbol.for("react.debug_trace_mode");var Vi=Symbol.for("react.offscreen");Symbol.for("react.legacy_hidden");Symbol.for("react.cache");Symbol.for("react.tracing_marker");var fg=Symbol.iterator,E=Object.assign,ae,ce=!1,cc=Array.isArray,Xd,zi=function(a){return"undefined"!==typeof MSApp&&MSApp.execUnsafeLocalFunction?function(b,c,d,e){MSApp.execUnsafeLocalFunction(function(){return a(b,
+c,d,e)})}:a}(function(a,b){if("http://www.w3.org/2000/svg"!==a.namespaceURI||"innerHTML"in a)a.innerHTML=b;else{Xd=Xd||document.createElement("div");Xd.innerHTML="<svg>"+b.valueOf().toString()+"</svg>";for(b=Xd.firstChild;a.firstChild;)a.removeChild(a.firstChild);for(;b.firstChild;)a.appendChild(b.firstChild)}}),Fc=function(a,b){if(b){var c=a.firstChild;if(c&&c===a.lastChild&&3===c.nodeType){c.nodeValue=b;return}}a.textContent=b},dc={animationIterationCount:!0,aspectRatio:!0,borderImageOutset:!0,
+borderImageSlice:!0,borderImageWidth:!0,boxFlex:!0,boxFlexGroup:!0,boxOrdinalGroup:!0,columnCount:!0,columns:!0,flex:!0,flexGrow:!0,flexPositive:!0,flexShrink:!0,flexNegative:!0,flexOrder:!0,gridArea:!0,gridRow:!0,gridRowEnd:!0,gridRowSpan:!0,gridRowStart:!0,gridColumn:!0,gridColumnEnd:!0,gridColumnSpan:!0,gridColumnStart:!0,fontWeight:!0,lineClamp:!0,lineHeight:!0,opacity:!0,order:!0,orphans:!0,tabSize:!0,widows:!0,zIndex:!0,zoom:!0,fillOpacity:!0,floodOpacity:!0,stopOpacity:!0,strokeDasharray:!0,
+strokeDashoffset:!0,strokeMiterlimit:!0,strokeOpacity:!0,strokeWidth:!0},al=["Webkit","ms","Moz","O"];Object.keys(dc).forEach(function(a){al.forEach(function(b){b=b+a.charAt(0).toUpperCase()+a.substring(1);dc[b]=dc[a]})});var jj=E({menuitem:!0},{area:!0,base:!0,br:!0,col:!0,embed:!0,hr:!0,img:!0,input:!0,keygen:!0,link:!0,meta:!0,param:!0,source:!0,track:!0,wbr:!0}),ze=null,se=null,Eb=null,Fb=null,xg=function(a,b){return a(b)},yg=function(){},te=!1,Oe=!1;if(Ia)try{var Lc={};Object.defineProperty(Lc,
+"passive",{get:function(){Oe=!0}});window.addEventListener("test",Lc,Lc);window.removeEventListener("test",Lc,Lc)}catch(a){Oe=!1}var lj=function(a,b,c,d,e,f,g,h,k){var m=Array.prototype.slice.call(arguments,3);try{b.apply(c,m)}catch(t){this.onError(t)}},gc=!1,Sc=null,Tc=!1,ue=null,mj={onError:function(a){gc=!0;Sc=a}},Ba=mb.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.Scheduler,Jg=Ba.unstable_scheduleCallback,Kg=Ba.unstable_NormalPriority,xh=Jg,Li=Ba.unstable_cancelCallback,Qk=Ba.unstable_shouldYield,
+Tk=Ba.unstable_requestPaint,P=Ba.unstable_now,Ej=Ba.unstable_getCurrentPriorityLevel,De=Ba.unstable_ImmediatePriority,Mg=Ba.unstable_UserBlockingPriority,ad=Kg,Fj=Ba.unstable_LowPriority,Ng=Ba.unstable_IdlePriority,Uc=null,Ca=null,ta=Math.clz32?Math.clz32:qj,rj=Math.log,sj=Math.LN2,Wc=64,Rd=4194304,z=0,Ae=!1,Yc=[],Va=null,Wa=null,Xa=null,jc=new Map,kc=new Map,Ya=[],Cj="mousedown mouseup touchcancel touchend touchstart auxclick dblclick pointercancel pointerdown pointerup dragend dragstart drop compositionend compositionstart keydown keypress keyup input textInput copy cut paste click change contextmenu reset submit".split(" "),
+Gb=Sa.ReactCurrentBatchConfig,Zc=!0,$c=null,Za=null,Ee=null,bd=null,Yb={eventPhase:0,bubbles:0,cancelable:0,timeStamp:function(a){return a.timeStamp||Date.now()},defaultPrevented:0,isTrusted:0},He=ka(Yb),Mc=E({},Yb,{view:0,detail:0}),bk=ka(Mc),ag,bg,Nc,Yd=E({},Mc,{screenX:0,screenY:0,clientX:0,clientY:0,pageX:0,pageY:0,ctrlKey:0,shiftKey:0,altKey:0,metaKey:0,getModifierState:Fe,button:0,buttons:0,relatedTarget:function(a){return void 0===a.relatedTarget?a.fromElement===a.srcElement?a.toElement:a.fromElement:
+a.relatedTarget},movementX:function(a){if("movementX"in a)return a.movementX;a!==Nc&&(Nc&&"mousemove"===a.type?(ag=a.screenX-Nc.screenX,bg=a.screenY-Nc.screenY):bg=ag=0,Nc=a);return ag},movementY:function(a){return"movementY"in a?a.movementY:bg}}),ih=ka(Yd),bl=E({},Yd,{dataTransfer:0}),Xj=ka(bl),cl=E({},Mc,{relatedTarget:0}),Pe=ka(cl),dl=E({},Yb,{animationName:0,elapsedTime:0,pseudoElement:0}),Zj=ka(dl),el=E({},Yb,{clipboardData:function(a){return"clipboardData"in a?a.clipboardData:window.clipboardData}}),
+dk=ka(el),fl=E({},Yb,{data:0}),qh=ka(fl),gk=qh,gl={Esc:"Escape",Spacebar:" ",Left:"ArrowLeft",Up:"ArrowUp",Right:"ArrowRight",Down:"ArrowDown",Del:"Delete",Win:"OS",Menu:"ContextMenu",Apps:"ContextMenu",Scroll:"ScrollLock",MozPrintableKey:"Unidentified"},hl={8:"Backspace",9:"Tab",12:"Clear",13:"Enter",16:"Shift",17:"Control",18:"Alt",19:"Pause",20:"CapsLock",27:"Escape",32:" ",33:"PageUp",34:"PageDown",35:"End",36:"Home",37:"ArrowLeft",38:"ArrowUp",39:"ArrowRight",40:"ArrowDown",45:"Insert",46:"Delete",
+112:"F1",113:"F2",114:"F3",115:"F4",116:"F5",117:"F6",118:"F7",119:"F8",120:"F9",121:"F10",122:"F11",123:"F12",144:"NumLock",145:"ScrollLock",224:"Meta"},Hj={Alt:"altKey",Control:"ctrlKey",Meta:"metaKey",Shift:"shiftKey"},il=E({},Mc,{key:function(a){if(a.key){var b=gl[a.key]||a.key;if("Unidentified"!==b)return b}return"keypress"===a.type?(a=cd(a),13===a?"Enter":String.fromCharCode(a)):"keydown"===a.type||"keyup"===a.type?hl[a.keyCode]||"Unidentified":""},code:0,location:0,ctrlKey:0,shiftKey:0,altKey:0,
+metaKey:0,repeat:0,locale:0,getModifierState:Fe,charCode:function(a){return"keypress"===a.type?cd(a):0},keyCode:function(a){return"keydown"===a.type||"keyup"===a.type?a.keyCode:0},which:function(a){return"keypress"===a.type?cd(a):"keydown"===a.type||"keyup"===a.type?a.keyCode:0}}),Wj=ka(il),jl=E({},Yd,{pointerId:0,width:0,height:0,pressure:0,tangentialPressure:0,tiltX:0,tiltY:0,twist:0,pointerType:0,isPrimary:0}),nh=ka(jl),kl=E({},Mc,{touches:0,targetTouches:0,changedTouches:0,altKey:0,metaKey:0,
+ctrlKey:0,shiftKey:0,getModifierState:Fe}),Yj=ka(kl),ll=E({},Yb,{propertyName:0,elapsedTime:0,pseudoElement:0}),ak=ka(ll),ml=E({},Yd,{deltaX:function(a){return"deltaX"in a?a.deltaX:"wheelDeltaX"in a?-a.wheelDeltaX:0},deltaY:function(a){return"deltaY"in a?a.deltaY:"wheelDeltaY"in a?-a.wheelDeltaY:"wheelDelta"in a?-a.wheelDelta:0},deltaZ:0,deltaMode:0}),ck=ka(ml),Ij=[9,13,27,32],Ge=Ia&&"CompositionEvent"in window,Oc=null;Ia&&"documentMode"in document&&(Oc=document.documentMode);var fk=Ia&&"TextEvent"in
+window&&!Oc,Ug=Ia&&(!Ge||Oc&&8<Oc&&11>=Oc),Tg=String.fromCharCode(32),Sg=!1,Hb=!1,Lj={color:!0,date:!0,datetime:!0,"datetime-local":!0,email:!0,month:!0,number:!0,password:!0,range:!0,search:!0,tel:!0,text:!0,time:!0,url:!0,week:!0},oc=null,pc=null,ph=!1;Ia&&(ph=Mj("input")&&(!document.documentMode||9<document.documentMode));var ua="function"===typeof Object.is?Object.is:Tj,ek=Ia&&"documentMode"in document&&11>=document.documentMode,Jb=null,Ke=null,rc=null,Je=!1,Kb={animationend:gd("Animation","AnimationEnd"),
+animationiteration:gd("Animation","AnimationIteration"),animationstart:gd("Animation","AnimationStart"),transitionend:gd("Transition","TransitionEnd")},Le={},eh={};Ia&&(eh=document.createElement("div").style,"AnimationEvent"in window||(delete Kb.animationend.animation,delete Kb.animationiteration.animation,delete Kb.animationstart.animation),"TransitionEvent"in window||delete Kb.transitionend.transition);var jh=hd("animationend"),kh=hd("animationiteration"),lh=hd("animationstart"),mh=hd("transitionend"),
+fh=new Map,$i="abort auxClick cancel canPlay canPlayThrough click close contextMenu copy cut drag dragEnd dragEnter dragExit dragLeave dragOver dragStart drop durationChange emptied encrypted ended error gotPointerCapture input invalid keyDown keyPress keyUp load loadedData loadedMetadata loadStart lostPointerCapture mouseDown mouseMove mouseOut mouseOver mouseUp paste pause play playing pointerCancel pointerDown pointerMove pointerOut pointerOver pointerUp progress rateChange reset resize seeked seeking stalled submit suspend timeUpdate touchCancel touchEnd touchStart volumeChange scroll toggle touchMove waiting wheel".split(" ");
+(function(){for(var a=0;a<$i.length;a++){var b=$i[a],c=b.toLowerCase();b=b[0].toUpperCase()+b.slice(1);$a(c,"on"+b)}$a(jh,"onAnimationEnd");$a(kh,"onAnimationIteration");$a(lh,"onAnimationStart");$a("dblclick","onDoubleClick");$a("focusin","onFocus");$a("focusout","onBlur");$a(mh,"onTransitionEnd")})();Ab("onMouseEnter",["mouseout","mouseover"]);Ab("onMouseLeave",["mouseout","mouseover"]);Ab("onPointerEnter",["pointerout","pointerover"]);Ab("onPointerLeave",["pointerout","pointerover"]);nb("onChange",
+"change click focusin focusout input keydown keyup selectionchange".split(" "));nb("onSelect","focusout contextmenu dragend focusin keydown keyup mousedown mouseup selectionchange".split(" "));nb("onBeforeInput",["compositionend","keypress","textInput","paste"]);nb("onCompositionEnd","compositionend focusout keydown keypress keyup mousedown".split(" "));nb("onCompositionStart","compositionstart focusout keydown keypress keyup mousedown".split(" "));nb("onCompositionUpdate","compositionupdate focusout keydown keypress keyup mousedown".split(" "));
+var Ec="abort canplay canplaythrough durationchange emptied encrypted ended error loadeddata loadedmetadata loadstart pause play playing progress ratechange resize seeked seeking stalled suspend timeupdate volumechange waiting".split(" "),Vj=new Set("cancel close invalid load scroll toggle".split(" ").concat(Ec)),id="_reactListening"+Math.random().toString(36).slice(2),hk=/\r\n?/g,ik=/\u0000|\uFFFD/g,Jf=null,Kf=null,Rf="function"===typeof setTimeout?setTimeout:void 0,Ok="function"===typeof clearTimeout?
+clearTimeout:void 0,aj="function"===typeof Promise?Promise:void 0,Kk="function"===typeof queueMicrotask?queueMicrotask:"undefined"!==typeof aj?function(a){return aj.resolve(null).then(a).catch(jk)}:Rf,Zb=Math.random().toString(36).slice(2),Da="__reactFiber$"+Zb,uc="__reactProps$"+Zb,Ja="__reactContainer$"+Zb,Me="__reactEvents$"+Zb,Ek="__reactListeners$"+Zb,Fk="__reactHandles$"+Zb,Se=[],Mb=-1,cb={},J=bb(cb),S=bb(!1),qb=cb,La=null,md=!1,Te=!1,Ob=[],Pb=0,od=null,nd=0,na=[],oa=0,sb=null,Ma=1,Na="",la=
+null,fa=null,D=!1,wa=null,Jk=Sa.ReactCurrentBatchConfig,rd=bb(null),qd=null,Rb=null,$e=null,tb=null,lk=Oa,fb=!1,Jh=(new mb.Component).refs,ud={isMounted:function(a){return(a=a._reactInternals)?ob(a)===a:!1},enqueueSetState:function(a,b,c){a=a._reactInternals;var d=Z(),e=hb(a),f=Pa(d,e);f.payload=b;void 0!==c&&null!==c&&(f.callback=c);b=eb(a,f,e);null!==b&&(ya(b,a,e,d),sd(b,a,e))},enqueueReplaceState:function(a,b,c){a=a._reactInternals;var d=Z(),e=hb(a),f=Pa(d,e);f.tag=1;f.payload=b;void 0!==c&&null!==
+c&&(f.callback=c);b=eb(a,f,e);null!==b&&(ya(b,a,e,d),sd(b,a,e))},enqueueForceUpdate:function(a,b){a=a._reactInternals;var c=Z(),d=hb(a),e=Pa(c,d);e.tag=2;void 0!==b&&null!==b&&(e.callback=b);b=eb(a,e,d);null!==b&&(ya(b,a,d,c),sd(b,a,d))}},Vb=Lh(!0),mi=Lh(!1),wc={},Ea=bb(wc),yc=bb(wc),xc=bb(wc),G=bb(0),mf=[],zd=Sa.ReactCurrentDispatcher,uf=Sa.ReactCurrentBatchConfig,wb=0,C=null,K=null,N=null,Bd=!1,zc=!1,Ac=0,nl=0,Ad={readContext:qa,useCallback:V,useContext:V,useEffect:V,useImperativeHandle:V,useInsertionEffect:V,
+useLayoutEffect:V,useMemo:V,useReducer:V,useRef:V,useState:V,useDebugValue:V,useDeferredValue:V,useTransition:V,useMutableSource:V,useSyncExternalStore:V,useId:V,unstable_isNewReconciler:!1},mk={readContext:qa,useCallback:function(a,b){Fa().memoizedState=[a,void 0===b?null:b];return a},useContext:qa,useEffect:Wh,useImperativeHandle:function(a,b,c){c=null!==c&&void 0!==c?c.concat([a]):null;return Cd(4194308,4,Zh.bind(null,b,a),c)},useLayoutEffect:function(a,b){return Cd(4194308,4,a,b)},useInsertionEffect:function(a,
+b){return Cd(4,2,a,b)},useMemo:function(a,b){var c=Fa();b=void 0===b?null:b;a=a();c.memoizedState=[a,b];return a},useReducer:function(a,b,c){var d=Fa();b=void 0!==c?c(b):b;d.memoizedState=d.baseState=b;a={pending:null,interleaved:null,lanes:0,dispatch:null,lastRenderedReducer:a,lastRenderedState:b};d.queue=a;a=a.dispatch=rk.bind(null,C,a);return[d.memoizedState,a]},useRef:function(a){var b=Fa();a={current:a};return b.memoizedState=a},useState:Uh,useDebugValue:tf,useDeferredValue:function(a){return Fa().memoizedState=
+a},useTransition:function(){var a=Uh(!1),b=a[0];a=qk.bind(null,a[1]);Fa().memoizedState=a;return[b,a]},useMutableSource:function(a,b,c){},useSyncExternalStore:function(a,b,c){var d=C,e=Fa();if(D){if(void 0===c)throw Error(n(407));c=c()}else{c=b();if(null===O)throw Error(n(349));0!==(wb&30)||Rh(d,b,c)}e.memoizedState=c;var f={value:c,getSnapshot:b};e.queue=f;Wh(Ph.bind(null,d,f,a),[a]);d.flags|=2048;Cc(9,Qh.bind(null,d,f,c,b),void 0,null);return c},useId:function(){var a=Fa(),b=O.identifierPrefix;
+if(D){var c=Na;var d=Ma;c=(d&~(1<<32-ta(d)-1)).toString(32)+c;b=":"+b+"R"+c;c=Ac++;0<c&&(b+="H"+c.toString(32));b+=":"}else c=nl++,b=":"+b+"r"+c.toString(32)+":";return a.memoizedState=b},unstable_isNewReconciler:!1},nk={readContext:qa,useCallback:ai,useContext:qa,useEffect:sf,useImperativeHandle:$h,useInsertionEffect:Xh,useLayoutEffect:Yh,useMemo:bi,useReducer:qf,useRef:Vh,useState:function(a){return qf(Bc)},useDebugValue:tf,useDeferredValue:function(a){var b=sa();return ci(b,K.memoizedState,a)},
+useTransition:function(){var a=qf(Bc)[0],b=sa().memoizedState;return[a,b]},useMutableSource:Nh,useSyncExternalStore:Oh,useId:di,unstable_isNewReconciler:!1},ok={readContext:qa,useCallback:ai,useContext:qa,useEffect:sf,useImperativeHandle:$h,useInsertionEffect:Xh,useLayoutEffect:Yh,useMemo:bi,useReducer:rf,useRef:Vh,useState:function(a){return rf(Bc)},useDebugValue:tf,useDeferredValue:function(a){var b=sa();return null===K?b.memoizedState=a:ci(b,K.memoizedState,a)},useTransition:function(){var a=rf(Bc)[0],
+b=sa().memoizedState;return[a,b]},useMutableSource:Nh,useSyncExternalStore:Oh,useId:di,unstable_isNewReconciler:!1},sk="function"===typeof WeakMap?WeakMap:Map,uk=Sa.ReactCurrentOwner,ha=!1,Cf={dehydrated:null,treeContext:null,retryLane:0};var Ak=function(a,b,c,d){for(c=b.child;null!==c;){if(5===c.tag||6===c.tag)a.appendChild(c.stateNode);else if(4!==c.tag&&null!==c.child){c.child.return=c;c=c.child;continue}if(c===b)break;for(;null===c.sibling;){if(null===c.return||c.return===b)return;c=c.return}c.sibling.return=
+c.return;c=c.sibling}};var yi=function(a,b){};var zk=function(a,b,c,d,e){var f=a.memoizedProps;if(f!==d){a=b.stateNode;vb(Ea.current);e=null;switch(c){case "input":f=ke(a,f);d=ke(a,d);e=[];break;case "select":f=E({},f,{value:void 0});d=E({},d,{value:void 0});e=[];break;case "textarea":f=ne(a,f);d=ne(a,d);e=[];break;default:"function"!==typeof f.onClick&&"function"===typeof d.onClick&&(a.onclick=kd)}pe(c,d);var g;c=null;for(m in f)if(!d.hasOwnProperty(m)&&f.hasOwnProperty(m)&&null!=f[m])if("style"===
+m){var h=f[m];for(g in h)h.hasOwnProperty(g)&&(c||(c={}),c[g]="")}else"dangerouslySetInnerHTML"!==m&&"children"!==m&&"suppressContentEditableWarning"!==m&&"suppressHydrationWarning"!==m&&"autoFocus"!==m&&($b.hasOwnProperty(m)?e||(e=[]):(e=e||[]).push(m,null));for(m in d){var k=d[m];h=null!=f?f[m]:void 0;if(d.hasOwnProperty(m)&&k!==h&&(null!=k||null!=h))if("style"===m)if(h){for(g in h)!h.hasOwnProperty(g)||k&&k.hasOwnProperty(g)||(c||(c={}),c[g]="");for(g in k)k.hasOwnProperty(g)&&h[g]!==k[g]&&(c||
+(c={}),c[g]=k[g])}else c||(e||(e=[]),e.push(m,c)),c=k;else"dangerouslySetInnerHTML"===m?(k=k?k.__html:void 0,h=h?h.__html:void 0,null!=k&&h!==k&&(e=e||[]).push(m,k)):"children"===m?"string"!==typeof k&&"number"!==typeof k||(e=e||[]).push(m,""+k):"suppressContentEditableWarning"!==m&&"suppressHydrationWarning"!==m&&($b.hasOwnProperty(m)?(null!=k&&"onScroll"===m&&B("scroll",a),e||h===k||(e=[])):(e=e||[]).push(m,k))}c&&(e=e||[]).push("style",c);var m=e;if(b.updateQueue=m)b.flags|=4}};var Bk=function(a,
+b,c,d){c!==d&&(b.flags|=4)};var Jd=!1,X=!1,Gk="function"===typeof WeakSet?WeakSet:Set,l=null,Ai=!1,T=null,za=!1,Nk=Math.ceil,Od=Sa.ReactCurrentDispatcher,Uf=Sa.ReactCurrentOwner,ca=Sa.ReactCurrentBatchConfig,p=0,O=null,I=null,U=0,ba=0,Ga=bb(0),L=0,Jc=null,ra=0,Md=0,Sf=0,Kc=null,ja=null,Of=0,Hf=Infinity,Ra=null,Ed=!1,xf=null,ib=null,Pd=!1,lb=null,Qd=0,Ic=0,Pf=null,Kd=-1,Ld=0;var Rk=function(a,b,c){if(null!==a)if(a.memoizedProps!==b.pendingProps||S.current)ha=!0;else{if(0===(a.lanes&c)&&0===(b.flags&
+128))return ha=!1,xk(a,b,c);ha=0!==(a.flags&131072)?!0:!1}else ha=!1,D&&0!==(b.flags&1048576)&&yh(b,nd,b.index);b.lanes=0;switch(b.tag){case 2:var d=b.type;Fd(a,b);a=b.pendingProps;var e=Nb(b,J.current);Sb(b,c);e=of(null,b,d,a,e,c);var f=pf();b.flags|=1;"object"===typeof e&&null!==e&&"function"===typeof e.render&&void 0===e.$$typeof?(b.tag=1,b.memoizedState=null,b.updateQueue=null,ea(d)?(f=!0,ld(b)):f=!1,b.memoizedState=null!==e.state&&void 0!==e.state?e.state:null,df(b),e.updater=ud,b.stateNode=
+e,e._reactInternals=b,ff(b,d,a,c),b=Af(null,b,d,!0,f,c)):(b.tag=0,D&&f&&Ue(b),aa(null,b,e,c),b=b.child);return b;case 16:d=b.elementType;a:{Fd(a,b);a=b.pendingProps;e=d._init;d=e(d._payload);b.type=d;e=b.tag=Vk(d);a=xa(d,a);switch(e){case 0:b=zf(null,b,d,a,c);break a;case 1:b=si(null,b,d,a,c);break a;case 11:b=ni(null,b,d,a,c);break a;case 14:b=oi(null,b,d,xa(d.type,a),c);break a}throw Error(n(306,d,""));}return b;case 0:return d=b.type,e=b.pendingProps,e=b.elementType===d?e:xa(d,e),zf(a,b,d,e,c);
+case 1:return d=b.type,e=b.pendingProps,e=b.elementType===d?e:xa(d,e),si(a,b,d,e,c);case 3:a:{ti(b);if(null===a)throw Error(n(387));d=b.pendingProps;f=b.memoizedState;e=f.element;Dh(a,b);td(b,d,null,c);var g=b.memoizedState;d=g.element;if(f.isDehydrated)if(f={element:d,isDehydrated:!1,cache:g.cache,pendingSuspenseBoundaries:g.pendingSuspenseBoundaries,transitions:g.transitions},b.updateQueue.baseState=f,b.memoizedState=f,b.flags&256){e=Ub(Error(n(423)),b);b=ui(a,b,d,c,e);break a}else if(d!==e){e=
+Ub(Error(n(424)),b);b=ui(a,b,d,c,e);break a}else for(fa=Ka(b.stateNode.containerInfo.firstChild),la=b,D=!0,wa=null,c=mi(b,null,d,c),b.child=c;c;)c.flags=c.flags&-3|4096,c=c.sibling;else{Qb();if(d===e){b=Qa(a,b,c);break a}aa(a,b,d,c)}b=b.child}return b;case 5:return Mh(b),null===a&&Xe(b),d=b.type,e=b.pendingProps,f=null!==a?a.memoizedProps:null,g=e.children,Qe(d,e)?g=null:null!==f&&Qe(d,f)&&(b.flags|=32),ri(a,b),aa(a,b,g,c),b.child;case 6:return null===a&&Xe(b),null;case 13:return vi(a,b,c);case 4:return jf(b,
+b.stateNode.containerInfo),d=b.pendingProps,null===a?b.child=Vb(b,null,d,c):aa(a,b,d,c),b.child;case 11:return d=b.type,e=b.pendingProps,e=b.elementType===d?e:xa(d,e),ni(a,b,d,e,c);case 7:return aa(a,b,b.pendingProps,c),b.child;case 8:return aa(a,b,b.pendingProps.children,c),b.child;case 12:return aa(a,b,b.pendingProps.children,c),b.child;case 10:a:{d=b.type._context;e=b.pendingProps;f=b.memoizedProps;g=e.value;y(rd,d._currentValue);d._currentValue=g;if(null!==f)if(ua(f.value,g)){if(f.children===
+e.children&&!S.current){b=Qa(a,b,c);break a}}else for(f=b.child,null!==f&&(f.return=b);null!==f;){var h=f.dependencies;if(null!==h){g=f.child;for(var k=h.firstContext;null!==k;){if(k.context===d){if(1===f.tag){k=Pa(-1,c&-c);k.tag=2;var m=f.updateQueue;if(null!==m){m=m.shared;var l=m.pending;null===l?k.next=k:(k.next=l.next,l.next=k);m.pending=k}}f.lanes|=c;k=f.alternate;null!==k&&(k.lanes|=c);bf(f.return,c,b);h.lanes|=c;break}k=k.next}}else if(10===f.tag)g=f.type===b.type?null:f.child;else if(18===
+f.tag){g=f.return;if(null===g)throw Error(n(341));g.lanes|=c;h=g.alternate;null!==h&&(h.lanes|=c);bf(g,c,b);g=f.sibling}else g=f.child;if(null!==g)g.return=f;else for(g=f;null!==g;){if(g===b){g=null;break}f=g.sibling;if(null!==f){f.return=g.return;g=f;break}g=g.return}f=g}aa(a,b,e.children,c);b=b.child}return b;case 9:return e=b.type,d=b.pendingProps.children,Sb(b,c),e=qa(e),d=d(e),b.flags|=1,aa(a,b,d,c),b.child;case 14:return d=b.type,e=xa(d,b.pendingProps),e=xa(d.type,e),oi(a,b,d,e,c);case 15:return pi(a,
+b,b.type,b.pendingProps,c);case 17:return d=b.type,e=b.pendingProps,e=b.elementType===d?e:xa(d,e),Fd(a,b),b.tag=1,ea(d)?(a=!0,ld(b)):a=!1,Sb(b,c),Hh(b,d,e),ff(b,d,e,c),Af(null,b,d,!0,a,c);case 19:return xi(a,b,c);case 22:return qi(a,b,c)}throw Error(n(156,b.tag));};var pa=function(a,b,c,d){return new Uk(a,b,c,d)},bj="function"===typeof reportError?reportError:function(a){console.error(a)};Ud.prototype.render=Xf.prototype.render=function(a){var b=this._internalRoot;if(null===b)throw Error(n(409));
+Sd(a,b,null,null)};Ud.prototype.unmount=Xf.prototype.unmount=function(){var a=this._internalRoot;if(null!==a){this._internalRoot=null;var b=a.containerInfo;zb(function(){Sd(null,a,null,null)});b[Ja]=null}};Ud.prototype.unstable_scheduleHydration=function(a){if(a){var b=ol();a={blockedOn:null,target:a,priority:b};for(var c=0;c<Ya.length&&0!==b&&b<Ya[c].priority;c++);Ya.splice(c,0,a);0===c&&Hg(a)}};var Dj=function(a){switch(a.tag){case 3:var b=a.stateNode;if(b.current.memoizedState.isDehydrated){var c=
+hc(b.pendingLanes);0!==c&&(xe(b,c|1),ia(b,P()),0===(p&6)&&(Hc(),db()))}break;case 13:zb(function(){var b=Oa(a,1);if(null!==b){var c=Z();ya(b,a,1,c)}}),Wf(a,1)}};var Gg=function(a){if(13===a.tag){var b=Oa(a,134217728);if(null!==b){var c=Z();ya(b,a,134217728,c)}Wf(a,134217728)}};var yj=function(a){if(13===a.tag){var b=hb(a),c=Oa(a,b);if(null!==c){var d=Z();ya(c,a,b,d)}Wf(a,b)}};var ol=function(){return z};var xj=function(a,b){var c=z;try{return z=a,b()}finally{z=c}};se=function(a,b,c){switch(b){case "input":le(a,
+c);b=c.name;if("radio"===c.type&&null!=b){for(c=a;c.parentNode;)c=c.parentNode;c=c.querySelectorAll("input[name="+JSON.stringify(""+b)+'][type="radio"]');for(b=0;b<c.length;b++){var d=c[b];if(d!==a&&d.form===a.form){var e=Rc(d);if(!e)throw Error(n(90));jg(d);le(d,e)}}}break;case "textarea":og(a,c);break;case "select":b=c.value,null!=b&&Db(a,!!c.multiple,b,!1)}};(function(a,b,c){xg=a;yg=c})(Tf,function(a,b,c,d,e){var f=z,g=ca.transition;try{return ca.transition=null,z=1,a(b,c,d,e)}finally{z=f,ca.transition=
+g,0===p&&Hc()}},zb);var pl={usingClientEntryPoint:!1,Events:[ec,Ib,Rc,ug,vg,Tf]};(function(a){a={bundleType:a.bundleType,version:a.version,rendererPackageName:a.rendererPackageName,rendererConfig:a.rendererConfig,overrideHookState:null,overrideHookStateDeletePath:null,overrideHookStateRenamePath:null,overrideProps:null,overridePropsDeletePath:null,overridePropsRenamePath:null,setErrorHandler:null,setSuspenseHandler:null,scheduleUpdate:null,currentDispatcherRef:Sa.ReactCurrentDispatcher,findHostInstanceByFiber:Yk,
+findFiberByHostInstance:a.findFiberByHostInstance||Zk,findHostInstancesForRefresh:null,scheduleRefresh:null,scheduleRoot:null,setRefreshHandler:null,getCurrentFiber:null,reconcilerVersion:"18.2.0"};if("undefined"===typeof __REACT_DEVTOOLS_GLOBAL_HOOK__)a=!1;else{var b=__REACT_DEVTOOLS_GLOBAL_HOOK__;if(b.isDisabled||!b.supportsFiber)a=!0;else{try{Uc=b.inject(a),Ca=b}catch(c){}a=b.checkDCE?!0:!1}}return a})({findFiberByHostInstance:pb,bundleType:0,version:"18.2.0-next-9e3b772b8-20220608",
+rendererPackageName:"react-dom"});Q.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED=pl;Q.createPortal=function(a,b){var c=2<arguments.length&&void 0!==arguments[2]?arguments[2]:null;if(!Yf(b))throw Error(n(200));return Xk(a,b,null,c)};Q.createRoot=function(a,b){if(!Yf(a))throw Error(n(299));var c=!1,d="",e=bj;null!==b&&void 0!==b&&(!0===b.unstable_strictMode&&(c=!0),void 0!==b.identifierPrefix&&(d=b.identifierPrefix),void 0!==b.onRecoverableError&&(e=b.onRecoverableError));b=Vf(a,1,!1,null,null,
+c,!1,d,e);a[Ja]=b.current;sc(8===a.nodeType?a.parentNode:a);return new Xf(b)};Q.findDOMNode=function(a){if(null==a)return null;if(1===a.nodeType)return a;var b=a._reactInternals;if(void 0===b){if("function"===typeof a.render)throw Error(n(188));a=Object.keys(a).join(",");throw Error(n(268,a));}a=Bg(b);a=null===a?null:a.stateNode;return a};Q.flushSync=function(a){return zb(a)};Q.hydrate=function(a,b,c){if(!Vd(b))throw Error(n(200));return Wd(null,a,b,!0,c)};Q.hydrateRoot=function(a,b,c){if(!Yf(a))throw Error(n(405));
+var d=null!=c&&c.hydratedSources||null,e=!1,f="",g=bj;null!==c&&void 0!==c&&(!0===c.unstable_strictMode&&(e=!0),void 0!==c.identifierPrefix&&(f=c.identifierPrefix),void 0!==c.onRecoverableError&&(g=c.onRecoverableError));b=Xi(b,null,a,1,null!=c?c:null,e,!1,f,g);a[Ja]=b.current;sc(a);if(d)for(a=0;a<d.length;a++)c=d[a],e=c._getVersion,e=e(c._source),null==b.mutableSourceEagerHydrationData?b.mutableSourceEagerHydrationData=[c,e]:b.mutableSourceEagerHydrationData.push(c,e);return new Ud(b)};Q.render=
+function(a,b,c){if(!Vd(b))throw Error(n(200));return Wd(null,a,b,!1,c)};Q.unmountComponentAtNode=function(a){if(!Vd(a))throw Error(n(40));return a._reactRootContainer?(zb(function(){Wd(null,null,a,!1,function(){a._reactRootContainer=null;a[Ja]=null})}),!0):!1};Q.unstable_batchedUpdates=Tf;Q.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!Vd(c))throw Error(n(200));if(null==a||void 0===a._reactInternals)throw Error(n(38));return Wd(a,b,c,!1,d)};Q.version="18.2.0-next-9e3b772b8-20220608"});
+})();
+</script>
+</head>
+<body>
+<div id="root"><div id="boot">Loading Budget Planner… v15</div></div>
+<script>
+try {
+const { useState, useEffect, useRef, useMemo } = React;
+const WORKER_URL = "https://mts-assistant.lukedorsett.workers.dev";
+const MODEL = "claude-sonnet-4-6";
+const SCAN_MODEL = "claude-haiku-4-5";
+const INCOME_CATS = [
+  { id: "wages", label: "Wages & Tips" },
+  { id: "interest", label: "Interest" },
+  { id: "dividends", label: "Dividends" },
+  { id: "gifts", label: "Gifts received" },
+  { id: "refunds", label: "Refunds" },
+  { id: "transfer", label: "Transfer from savings" },
+  { id: "other-in", label: "Other income" }
+];
+const INCOME_COLOR = "#11875E";
+const EXPENSE_CATS = [
+  { id: "home", label: "Home & Utilities", color: "#6366F1" },
+  { id: "daily", label: "Daily Living", color: "#0EA5E9" },
+  { id: "transport", label: "Transportation", color: "#EC4899" },
+  { id: "health", label: "Health", color: "#14B8A6" },
+  { id: "insurance", label: "Insurance", color: "#0D9488" },
+  { id: "obligations", label: "Loans & Debt", color: "#F59E0B" },
+  { id: "subscriptions", label: "Subscriptions", color: "#A855F7" },
+  { id: "children", label: "Children", color: "#F472B6" },
+  { id: "education", label: "Education", color: "#8B5CF6" },
+  { id: "entertainment", label: "Entertainment", color: "#FB923C" },
+  { id: "pets", label: "Pets", color: "#84CC16" },
+  { id: "charity", label: "Charity & Gifts", color: "#EF4444" },
+  { id: "vacation", label: "Vacation", color: "#06B6D4" },
+  { id: "savings", label: "Savings", color: "#22C55E" },
+  { id: "business", label: "Business", color: "#475569" },
+  { id: "misc", label: "Miscellaneous", color: "#94A3B8" }
+];
+const expCat = (id) => EXPENSE_CATS.find((c) => c.id === id) || EXPENSE_CATS[EXPENSE_CATS.length - 1];
+const inCat = (id) => INCOME_CATS.find((c) => c.id === id) || INCOME_CATS[INCOME_CATS.length - 1];
+const itemColor = (it) => it.type === "income" ? INCOME_COLOR : expCat(it.category).color;
+const ACCT_TYPES = [
+  { id: "checking", label: "Checking", color: "#2563EB" },
+  { id: "savings", label: "Savings", color: "#11875E" },
+  { id: "crypto", label: "Crypto / exchange", color: "#F59E0B" },
+  { id: "cash", label: "Cash", color: "#64748B" },
+  { id: "investment", label: "Investment", color: "#7C3AED" },
+  { id: "credit", label: "Credit card", color: "#DB2777" },
+  { id: "other", label: "Other", color: "#0EA5E9" }
+];
+const acctType = (id) => ACCT_TYPES.find((t) => t.id === id) || ACCT_TYPES[ACCT_TYPES.length - 1];
+const FREQS = [
+  { id: "once", label: "One time" },
+  { id: "weekly", label: "Weekly" },
+  { id: "biweekly", label: "Every 2 weeks" },
+  { id: "monthly", label: "Monthly" },
+  { id: "quarterly", label: "Quarterly" },
+  { id: "yearly", label: "Yearly" }
+];
+const freqLabel = (id) => (FREQS.find((f) => f.id === id) || FREQS[3]).label;
+const STORAGE_KEY = "budget-planner-v2";
+const SNAP_KEY = "budget-snapshots";
+const CLEARED_KEY = "budget-cleared";
+const ck = (id, iso) => id + ":" + iso;
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MO_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function loadSnapshots() {
+  try {
+    const a = JSON.parse(localStorage.getItem(SNAP_KEY) || "[]");
+    return Array.isArray(a) ? a : [];
+  } catch (e) {
+    return [];
+  }
+}
+function addSnapshot(items, startBalance) {
+  try {
+    const snaps = loadSnapshots();
+    const entry = { at: (/* @__PURE__ */ new Date()).toISOString(), items, startBalance };
+    const last = snaps[0];
+    if (last && Date.now() - new Date(last.at).getTime() < 30 * 60 * 1e3) snaps[0] = entry;
+    else snaps.unshift(entry);
+    localStorage.setItem(SNAP_KEY, JSON.stringify(snaps.slice(0, 10)));
+  } catch (e) {
+  }
+}
+const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+const parseISO = (s) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+const toISO = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+const addDays = (d, n) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+const money = (n) => {
+  const v = Math.abs(n);
+  return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(v) ? 0 : 2 });
+};
+const signed = (n) => (n < 0 ? "\u2212" : "") + money(n);
+function occurrences(item, y, m) {
+  const a = parseISO(item.date);
+  const ms = new Date(y, m, 1);
+  const me = new Date(y, m + 1, 0);
+  const res = [];
+  if (item.freq === "once") {
+    if (a.getFullYear() === y && a.getMonth() === m) res.push(a.getDate());
+    return res;
+  }
+  if (item.freq === "weekly" || item.freq === "biweekly") {
+    const step = item.freq === "weekly" ? 7 : 14;
+    let d = new Date(a);
+    if (d > me) return res;
+    while (d < ms) d = addDays(d, step);
+    while (d <= me) {
+      res.push(d.getDate());
+      d = addDays(d, step);
+    }
+    return res;
+  }
+  const before = new Date(y, m, 1) < new Date(a.getFullYear(), a.getMonth(), 1);
+  if (item.freq === "monthly") {
+    if (!before) res.push(Math.min(a.getDate(), me.getDate()));
+    return res;
+  }
+  if (item.freq === "quarterly") {
+    const md = (y - a.getFullYear()) * 12 + (m - a.getMonth());
+    if (md >= 0 && md % 3 === 0) res.push(Math.min(a.getDate(), me.getDate()));
+    return res;
+  }
+  if (item.freq === "yearly") {
+    if (y >= a.getFullYear() && m === a.getMonth()) res.push(Math.min(a.getDate(), me.getDate()));
+    return res;
+  }
+  return res;
+}
+function effectiveItems(items) {
+  return items.map((it) => {
+    if (it.type === "expense" && it.linkedIncomeId) {
+      const inc = items.find((x) => x.id === it.linkedIncomeId && x.type === "income");
+      if (inc) return { ...it, date: inc.date, freq: inc.freq };
+    }
+    return it;
+  });
+}
+function monthTotals(items, y, m) {
+  let inc = 0, exp = 0;
+  for (const it of items) {
+    const t = occurrences(it, y, m).length * it.amount;
+    if (it.type === "income") inc += t;
+    else exp += t;
+  }
+  return { inc, exp, net: inc - exp };
+}
+function runningBalance(items, startBalance, y, m) {
+  if (items.length === 0) return startBalance;
+  let sy = y, sm = m;
+  for (const it of items) {
+    const a = parseISO(it.date);
+    if (a.getFullYear() < sy || a.getFullYear() === sy && a.getMonth() < sm) {
+      sy = a.getFullYear();
+      sm = a.getMonth();
+    }
+  }
+  let bal = startBalance, cy = sy, cm = sm, guard = 0;
+  while ((cy < y || cy === y && cm <= m) && guard < 240) {
+    bal += monthTotals(items, cy, cm).net;
+    cm++;
+    if (cm > 11) {
+      cm = 0;
+      cy++;
+    }
+    guard++;
+  }
+  return bal;
+}
+function generateEvents(items, toISOstr) {
+  const to = parseISO(toISOstr);
+  const evs = [];
+  for (const it of items) {
+    const a = parseISO(it.date);
+    if (a > to) continue;
+    let cy = a.getFullYear(), cm = a.getMonth(), g = 0;
+    while ((cy < to.getFullYear() || cy === to.getFullYear() && cm <= to.getMonth()) && g < 240) {
+      for (const day of occurrences(it, cy, cm)) {
+        const d = new Date(cy, cm, day);
+        if (d >= a && d <= to) evs.push({ iso: toISO(d), t: d.getTime(), item: it });
+      }
+      cm++;
+      if (cm > 11) {
+        cm = 0;
+        cy++;
+      }
+      g++;
+    }
+  }
+  evs.sort((x, y) => x.t - y.t || (x.item.type === y.item.type ? 0 : x.item.type === "income" ? -1 : 1));
+  let bal = 0;
+  return evs;
+}
+function ledger(items, startBalance, toISOstr) {
+  const evs = generateEvents(items, toISOstr);
+  let bal = startBalance;
+  return evs.map((e) => {
+    bal += e.item.type === "income" ? e.item.amount : -e.item.amount;
+    return { id: e.item.id, iso: e.iso, name: e.item.name, type: e.item.type, amount: e.item.amount, payee: e.item.payee || "", balance: bal };
+  });
+}
+function useTheme() {
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap";
+    document.head.appendChild(link);
+    const style = document.createElement("style");
+    style.textContent = `
+      .bx-body{font-family:'Inter',system-ui,sans-serif}
+      .bx-num{font-family:'Space Grotesk',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+      .bx-sheet{animation:bxUp .28s cubic-bezier(.22,1,.36,1)}
+      @keyframes bxUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+      .bx-fade{animation:bxFade .2s ease both}
+      @keyframes bxFade{from{opacity:0}to{opacity:1}}
+      @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
+    `;
+    document.head.appendChild(style);
+  }, []);
+}
+function downscaleImage(file, maxEdge) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        URL.revokeObjectURL(url);
+        resolve({ data: dataUrl.slice(dataUrl.indexOf(",") + 1), mediaType: "image/jpeg" });
+      } catch (e) {
+        URL.revokeObjectURL(url);
+        reject(e);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("image load failed"));
+    };
+    img.src = url;
+  });
+}
+class AppErrorBoundary extends React.Component {
+  constructor(p) {
+    super(p);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    try {
+      console.error(error, info);
+    } catch (e) {
+    }
+  }
+  reset() {
+    try {
+      ["budget-planner-v2", "budget-snapshots", "budget-cleared", "budget-last-backup"].forEach((k) => localStorage.removeItem(k));
+    } catch (e) {
+    }
+    location.reload();
+  }
+  render() {
+    if (this.state.error) {
+      const msg = String(this.state.error && this.state.error.message || this.state.error);
+      return /* @__PURE__ */ React.createElement("div", { "data-eb": "1", style: { fontFamily: "system-ui,sans-serif", padding: "60px 24px", textAlign: "center", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20, fontWeight: 700, marginBottom: 8 } }, "Something went wrong"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#C2410C", marginBottom: 20, wordBreak: "break-word" } }, msg), /* @__PURE__ */ React.createElement("button", { onClick: () => location.reload(), style: { display: "block", width: "100%", maxWidth: 300, margin: "0 auto 10px", padding: 12, borderRadius: 12, border: "none", background: "#13202E", color: "#fff", fontSize: 14, fontWeight: 600 } }, "Reload"), /* @__PURE__ */ React.createElement("button", { onClick: () => this.reset(), style: { display: "block", width: "100%", maxWidth: 300, margin: "0 auto", padding: 12, borderRadius: 12, border: "none", background: "#F2F4F7", color: "#C2410C", fontSize: 14, fontWeight: 600 } }, "Reset app data & reload"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#A0AAB6", marginTop: 16, maxWidth: 300, marginLeft: "auto", marginRight: "auto" } }, "Reset clears saved budget data on this device. If you have a backup file, you can restore it afterward."));
+    }
+    return this.props.children;
+  }
+}
+function BudgetPlanner() {
+  useTheme();
+  const now = /* @__PURE__ */ new Date();
+  const [items, setItems] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
+  const [selDay, setSelDay] = useState(now.getDate());
+  const [editor, setEditor] = useState(null);
+  const [advisor, setAdvisor] = useState(null);
+  const [showAll, setShowAll] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [accountsOpen, setAccountsOpen] = useState(false);
+  const [lastBackup, setLastBackup] = useState(null);
+  const [cleared, setCleared] = useState({});
+  const startBalance = useMemo(() => accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0), [accounts]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const d = JSON.parse(raw);
+          setItems(Array.isArray(d.items) ? d.items : []);
+          if (Array.isArray(d.accounts) && d.accounts.length) setAccounts(d.accounts);
+          else setAccounts([{ id: uid(), name: "Checking", type: "checking", balance: Number(d.startBalance) || 0 }]);
+        } else {
+          setAccounts([{ id: uid(), name: "Checking", type: "checking", balance: 0 }]);
+        }
+      } catch (e) {
+        setAccounts([{ id: uid(), name: "Checking", type: "checking", balance: 0 }]);
+      }
+      try {
+        const lb = localStorage.getItem("budget-last-backup");
+        if (lb) setLastBackup(lb);
+      } catch (e) {
+      }
+      try {
+        const c = localStorage.getItem(CLEARED_KEY);
+        if (c) setCleared(JSON.parse(c) || {});
+      } catch (e) {
+      }
+      setLoading(false);
+    })();
+  }, []);
+  function toggleCleared(id, iso) {
+    setCleared((prev) => {
+      const next = { ...prev };
+      const k = ck(id, iso);
+      if (next[k]) delete next[k];
+      else next[k] = true;
+      try {
+        localStorage.setItem(CLEARED_KEY, JSON.stringify(next));
+      } catch (e) {
+      }
+      return next;
+    });
+  }
+  useEffect(() => {
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persisted().then((p) => {
+          if (!p) navigator.storage.persist();
+        }).catch(() => {
+        });
+      }
+    } catch (e) {
+    }
+  }, []);
+  async function persist(nextItems, nextAccounts) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: nextItems, accounts: nextAccounts }));
+      addSnapshot(nextItems, nextAccounts);
+    } catch (e) {
+      console.error("Could not save:", e);
+    }
+  }
+  function upsertAccount(acct) {
+    const next = accounts.some((a) => a.id === acct.id) ? accounts.map((a) => a.id === acct.id ? acct : a) : [...accounts, acct];
+    setAccounts(next);
+    persist(items, next);
+  }
+  function removeAccount(id) {
+    const next = accounts.filter((a) => a.id !== id);
+    setAccounts(next);
+    persist(items, next);
+  }
+  function exportBackup() {
+    try {
+      const payload = JSON.stringify({ app: "budget-planner", version: 3, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), items, accounts }, null, 2);
+      const blob = new Blob([payload], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "budget-backup-" + toISO(/* @__PURE__ */ new Date()) + ".json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      const stamp = (/* @__PURE__ */ new Date()).toISOString();
+      try {
+        localStorage.setItem("budget-last-backup", stamp);
+      } catch (e) {
+      }
+      setLastBackup(stamp);
+    } catch (e) {
+      console.error("Export failed:", e);
+    }
+  }
+  function applyData(nextItems, nextAccounts) {
+    setItems(nextItems);
+    const accts = Array.isArray(nextAccounts) && nextAccounts.length ? nextAccounts : accounts;
+    setAccounts(accts);
+    persist(nextItems, accts);
+  }
+  const scanRef = useRef(null);
+  const [scan, setScan] = useState(null);
+  function startScan() {
+    if (scanRef.current) scanRef.current.click();
+  }
+  async function onScanFile(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    setScan({ loading: true });
+    try {
+      const { data, mediaType } = await downscaleImage(file, 1100);
+      const out = await callClaudeVision(SCAN_SYS, "Extract this into the JSON schema. Today is " + toISO(/* @__PURE__ */ new Date()) + ".", data, mediaType);
+      const d = JSON.parse(out.replace(/```json|```/g, "").trim());
+      const isIncome = d.type === "income";
+      const amt = typeof d.amount === "number" ? d.amount : parseFloat(d.amount);
+      const prefill = {
+        type: isIncome ? "income" : "expense",
+        name: d.name || "",
+        payee: d.payee || "",
+        amount: amt > 0 ? amt : "",
+        date: /^\d{4}-\d{2}-\d{2}$/.test(d.dueDate || "") ? d.dueDate : toISO(selDate),
+        freq: ["once", "weekly", "biweekly", "monthly", "quarterly", "yearly"].includes(d.freq) ? d.freq : "monthly",
+        category: isIncome ? INCOME_CATS.some((c) => c.id === d.category) ? d.category : "wages" : EXPENSE_CATS.some((c) => c.id === d.category) ? d.category : "misc",
+        notes: d.notes || ""
+      };
+      setScan(null);
+      setEditor({ item: null, date: prefill.date, prefill });
+    } catch (err) {
+      setScan({ error: "Couldn't read that image. Try a clearer shot, or add it manually." });
+    }
+  }
+  function upsert(it) {
+    const next = items.some((x) => x.id === it.id) ? items.map((x) => x.id === it.id ? it : x) : [...items, it];
+    setItems(next);
+    persist(next, accounts);
+    setEditor(null);
+  }
+  function remove(id) {
+    const next = items.filter((x) => x.id !== id);
+    setItems(next);
+    persist(next, accounts);
+    setEditor(null);
+  }
+  const { y, m } = view;
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const firstDow = new Date(y, m, 1).getDay();
+  const eff = useMemo(() => effectiveItems(items), [items]);
+  const byId = useMemo(() => Object.fromEntries(items.map((x) => [x.id, x])), [items]);
+  const totals = useMemo(() => monthTotals(eff, y, m), [eff, y, m]);
+  const endBalance = useMemo(() => runningBalance(eff, startBalance, y, m), [eff, startBalance, y, m]);
+  const dayMap = useMemo(() => {
+    const map = {};
+    for (const it of eff) for (const day of occurrences(it, y, m)) {
+      (map[day] = map[day] || []).push(it);
+    }
+    return map;
+  }, [eff, y, m]);
+  const selItems = dayMap[selDay] || [];
+  const selDate = new Date(y, m, selDay);
+  function shiftMonth(delta) {
+    let nm = m + delta, ny = y;
+    if (nm < 0) {
+      nm = 11;
+      ny--;
+    }
+    if (nm > 11) {
+      nm = 0;
+      ny++;
+    }
+    setView({ y: ny, m: nm });
+    const today = /* @__PURE__ */ new Date();
+    setSelDay(today.getFullYear() === ny && today.getMonth() === nm ? today.getDate() : 1);
+  }
+  function goToday() {
+    const t = /* @__PURE__ */ new Date();
+    setView({ y: t.getFullYear(), m: t.getMonth() });
+    setSelDay(t.getDate());
+  }
+  const isToday = (day) => {
+    const t = /* @__PURE__ */ new Date();
+    return t.getFullYear() === y && t.getMonth() === m && t.getDate() === day;
+  };
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5 truncate", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setSettingsOpen(true), label: "Settings and backup" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2699")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected total \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, accounts.length, " account", accounts.length === 1 ? "" : "s", " \xB7 now ", money(startBalance))), /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Accounts"), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, "Manage")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, accounts.map((a) => /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "w-full flex items-center gap-3 py-2 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0" }, money(Number(a.balance) || 0)))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 pt-2 border-t", style: { borderColor: "#F0F2F5" } }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#6B7785" } }, "Total now"), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-bold text-[15px]" }, money(startBalance)))), /* @__PURE__ */ React.createElement(Insights, { items, eff, startBalance, cleared, accounts }), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => shiftMonth(-1),
+      "aria-label": "Previous month",
+      className: "h-9 w-9 rounded-full flex items-center justify-center text-[20px] active:scale-90",
+      style: { background: "#F2F4F7", color: "#16202B", transition: "transform .1s", lineHeight: 1 }
+    },
+    "\u2039"
+  ), /* @__PURE__ */ React.createElement("button", { onClick: goToday, className: "text-[15px] font-bold active:opacity-60", style: { letterSpacing: "-0.01em" } }, MONTHS[m], " ", y), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => shiftMonth(1),
+      "aria-label": "Next month",
+      className: "h-9 w-9 rounded-full flex items-center justify-center text-[20px] active:scale-90",
+      style: { background: "#F2F4F7", color: "#16202B", transition: "transform .1s", lineHeight: 1 }
+    },
+    "\u203A"
+  )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-7 mb-1" }, DOW.map((d) => /* @__PURE__ */ React.createElement("div", { key: d, className: "text-center text-[11px] font-semibold py-1", style: { color: "#A0AAB6" } }, d[0]))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-7 gap-1" }, cells.map((day, i) => {
+    if (day === null) return /* @__PURE__ */ React.createElement("div", { key: `e${i}` });
+    const its = dayMap[day] || [];
+    const sel = day === selDay;
+    const cols = [...new Set(its.map(itemColor))].slice(0, 3);
+    return /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: day,
+        onClick: () => setSelDay(day),
+        className: "relative rounded-xl flex flex-col items-center justify-start pt-1.5 active:scale-95",
+        style: { height: 46, transition: "transform .1s", background: sel ? "#13202E" : "transparent", outline: isToday(day) && !sel ? "1.5px solid #CBD3DC" : "none", outlineOffset: -1.5 }
+      },
+      /* @__PURE__ */ React.createElement("span", { className: "bx-num text-[13px] font-semibold", style: { color: sel ? "#fff" : "#16202B" } }, day),
+      /* @__PURE__ */ React.createElement("span", { className: "flex gap-0.5 mt-1 h-1.5" }, cols.map((c, k) => /* @__PURE__ */ React.createElement("span", { key: k, className: "h-1.5 w-1.5 rounded-full", style: { background: sel ? "#fff" : c } })))
+    );
+  }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[15px] font-bold" }, DOW[selDate.getDay()], ", ", MO_SHORT[m], " ", selDay), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: startScan,
+      className: "flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold active:scale-95",
+      style: { background: "#EEF2FF", color: "#4338CA", transition: "transform .1s" }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, "\u{1F4F7}"),
+    " Scan"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setEditor({ item: null, date: toISO(selDate) }),
+      className: "flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold active:scale-95",
+      style: { background: "#13202E", color: "#fff", transition: "transform .1s" }
+    },
+    /* @__PURE__ */ React.createElement("span", { className: "text-[15px] leading-none", style: { marginTop: -1 } }, "+"),
+    " Add"
+  ))), selItems.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-[13px] py-1", style: { color: "#8A95A3" } }, "Nothing on this day. Tap Add to put income or a bill here.") : /* @__PURE__ */ React.createElement("ul", { className: "divide-y", style: { borderColor: "#F0F2F5" } }, selItems.map((it) => {
+    const dayISO = toISO(selDate);
+    const paid = !!cleared[ck(it.id, dayISO)];
+    return /* @__PURE__ */ React.createElement("li", { key: it.id, className: "flex items-center gap-2.5 py-2.5" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => toggleCleared(it.id, dayISO),
+        "aria-label": paid ? "Mark as not paid" : "Mark as paid",
+        className: "shrink-0 h-6 w-6 rounded-full flex items-center justify-center active:scale-90",
+        style: { transition: "transform .1s", border: paid ? "none" : "2px solid #D5DBE2", background: paid ? "#11875E" : "transparent" }
+      },
+      paid && /* @__PURE__ */ React.createElement("span", { style: { color: "#fff", fontSize: 12, lineHeight: 1 } }, "\u2713")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setEditor({ item: byId[it.id] || it, date: it.date }),
+        className: "flex-1 min-w-0 flex items-center gap-3 text-left active:opacity-60",
+        style: { opacity: paid ? 0.5 : 1 }
+      },
+      /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: itemColor(it) } }),
+      /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[14px] truncate flex items-center gap-1.5", style: { textDecoration: paid ? "line-through" : "none" } }, it.name, it.auto && /* @__PURE__ */ React.createElement(AutoBadge, null)), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, paid ? (it.type === "income" ? "Received" : "Paid") + " \xB7 " : "", it.linkedIncomeId && byId[it.linkedIncomeId] ? `Auto from ${byId[it.linkedIncomeId].name}` : `${it.payee ? it.payee + " \xB7 " : ""}${it.type === "income" ? inCat(it.category).label : expCat(it.category).label} \xB7 ${freqLabel(it.freq)}`)),
+      /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0", style: { color: it.type === "income" ? INCOME_COLOR : "#16202B" } }, it.type === "income" ? "+" : "", money(it.amount))
+    ));
+  }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowAll((v) => !v), className: "w-full flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "All items (", items.length, ")"), /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6", transform: showAll ? "rotate(180deg)" : "none", transition: "transform .2s" } }, "\u2304")), showAll && /* @__PURE__ */ React.createElement("ul", { className: "divide-y mt-3 bx-fade", style: { borderColor: "#F0F2F5" } }, items.length === 0 && /* @__PURE__ */ React.createElement("li", { className: "text-[13px] py-1", style: { color: "#8A95A3" } }, "No items yet."), items.slice().sort((a, b) => a.date.localeCompare(b.date)).map((it) => /* @__PURE__ */ React.createElement("li", { key: it.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setEditor({ item: it, date: it.date }), className: "w-full flex items-center gap-3 py-2.5 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-2 w-2 rounded-full shrink-0", style: { background: itemColor(it) } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[14px] truncate flex items-center gap-1.5" }, it.name, it.auto && /* @__PURE__ */ React.createElement(AutoBadge, null)), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, it.linkedIncomeId && byId[it.linkedIncomeId] ? `Auto from ${byId[it.linkedIncomeId].name}` : `${freqLabel(it.freq)} \xB7 from ${MO_SHORT[parseISO(it.date).getMonth()]} ${parseISO(it.date).getDate()}`)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0", style: { color: it.type === "income" ? INCOME_COLOR : "#16202B" } }, it.type === "income" ? "+" : "", money(it.amount))))))))), editor && /* @__PURE__ */ React.createElement(
+    Editor,
+    {
+      entry: editor,
+      incomes: items.filter((x) => x.type === "income"),
+      accounts,
+      onClose: () => setEditor(null),
+      onSave: upsert,
+      onDelete: remove,
+      onAdvise: (bill, onApplyDate) => setAdvisor({ mode: "bill", bill, onApplyDate }),
+      onAsk: (draft) => setAdvisor({ mode: "entry", draft })
+    }
+  ), advisor && /* @__PURE__ */ React.createElement(
+    Advisor,
+    {
+      advisor,
+      items: eff,
+      startBalance,
+      cleared,
+      accounts,
+      onClose: () => setAdvisor(null)
+    }
+  ), accountsOpen && /* @__PURE__ */ React.createElement(
+    AccountsSheet,
+    {
+      accounts,
+      onSave: upsertAccount,
+      onDelete: removeAccount,
+      onClose: () => setAccountsOpen(false)
+    }
+  ), settingsOpen && /* @__PURE__ */ React.createElement(
+    Settings,
+    {
+      itemCount: items.length,
+      lastBackup,
+      onExport: exportBackup,
+      onImport: applyData,
+      onRestore: applyData,
+      onClose: () => setSettingsOpen(false)
+    }
+  ), /* @__PURE__ */ React.createElement("input", { ref: scanRef, type: "file", accept: "image/*", onChange: onScanFile, style: { display: "none" } }), scan && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      className: "fixed inset-0 z-50 flex items-center justify-center bx-fade px-8",
+      style: { background: "rgba(19,32,46,.55)" },
+      onClick: () => scan.error && setScan(null)
+    },
+    /* @__PURE__ */ React.createElement("div", { className: "w-full bg-white rounded-3xl p-6 text-center", style: { maxWidth: 320 }, onClick: (e) => e.stopPropagation() }, scan.loading ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "flex justify-center mb-3" }, /* @__PURE__ */ React.createElement(Spinner, null)), /* @__PURE__ */ React.createElement("div", { className: "text-[15px] font-semibold" }, "Reading your bill\u2026"), /* @__PURE__ */ React.createElement("div", { className: "text-[13px] mt-1", style: { color: "#8A95A3" } }, "Pulling out the payee, amount and due date.")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-[15px] font-semibold", style: { color: "#C2410C" } }, "Couldn't read it"), /* @__PURE__ */ React.createElement("div", { className: "text-[13px] mt-1 mb-4", style: { color: "#6B7785" } }, scan.error), /* @__PURE__ */ React.createElement("button", { onClick: () => setScan(null), className: "w-full rounded-xl py-2.5 text-[14px] font-semibold", style: { background: "#13202E", color: "#fff" } }, "OK")))
+  ));
+}
+function NavBtn({ children, onClick, label }) {
+  return /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick,
+      "aria-label": label,
+      className: "h-9 w-9 rounded-full bg-white flex items-center justify-center text-[20px] active:scale-90",
+      style: { color: "#16202B", boxShadow: "0 1px 2px rgba(16,24,40,.08)", transition: "transform .1s", lineHeight: 1 }
+    },
+    children
+  );
+}
+function Stat({ label, value, color }) {
+  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3 py-2.5", style: { background: "rgba(255,255,255,.07)" } }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-medium", style: { color: "#8FA0B3" } }, label), /* @__PURE__ */ React.createElement("div", { className: "bx-num text-[14px] font-semibold mt-0.5", style: { color } }, value));
+}
+function BalanceEditor({ value, onSave, onCancel }) {
+  const [v, setV] = useState(String(value));
+  return /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-2" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      autoFocus: true,
+      value: v,
+      inputMode: "decimal",
+      onChange: (e) => setV(e.target.value.replace(/[^0-9.-]/g, "")),
+      className: "bx-num flex-1 rounded-xl px-3 py-2.5 text-[16px] outline-none",
+      style: { background: "rgba(255,255,255,.12)", color: "#fff" },
+      placeholder: "Starting balance"
+    }
+  ), /* @__PURE__ */ React.createElement("button", { onClick: () => onSave(v), className: "rounded-xl px-4 py-2.5 text-[14px] font-semibold", style: { background: "#5EEAD4", color: "#0B1620" } }, "Set"), /* @__PURE__ */ React.createElement("button", { onClick: onCancel, className: "text-[13px] px-1", style: { color: "#8FA0B3" } }, "\u2715"));
+}
+function Editor({ entry, incomes = [], accounts = [], onClose, onSave, onDelete, onAdvise, onAsk }) {
+  const item = entry.item;
+  const seed = item || entry.prefill || {};
+  const [type, setType] = useState(seed.type || "expense");
+  const [name, setName] = useState(seed.name || "");
+  const [payee, setPayee] = useState(seed.payee || "");
+  const [amount, setAmount] = useState(seed.amount != null && seed.amount !== "" ? String(seed.amount) : "");
+  const [date, setDate] = useState(seed.date || entry.date);
+  const [fr, setFr] = useState(seed.freq || "monthly");
+  const [grace, setGrace] = useState(seed.grace != null ? String(seed.grace) : "");
+  const [notes, setNotes] = useState(seed.notes || "");
+  const [auto, setAuto] = useState(!!seed.auto);
+  const [linkedIncomeId, setLinkedIncomeId] = useState(seed.linkedIncomeId || (incomes[0] ? incomes[0].id : ""));
+  const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
+  const [category, setCategory] = useState(seed.category || (type === "income" ? "wages" : "home"));
+  const linked = type === "expense" && auto && !!linkedIncomeId;
+  function switchType(t) {
+    setType(t);
+    setCategory(t === "income" ? "wages" : "home");
+    if (t === "income") setAuto(false);
+  }
+  const amt = parseFloat(amount);
+  const valid = name.trim() && amt > 0 && (date || linked);
+  const inputStyle = { background: "#F2F4F7", border: "1px solid transparent" };
+  const focus = (e) => e.target.style.border = "1px solid #13202E";
+  const blur = (e) => e.target.style.border = "1px solid transparent";
+  function build() {
+    const isAuto = type === "expense" && auto && !!linkedIncomeId;
+    return {
+      id: item?.id || uid(),
+      type,
+      name: name.trim(),
+      payee: payee.trim(),
+      amount: Math.round(amt * 100) / 100,
+      date,
+      freq: fr,
+      category,
+      grace: type === "expense" && !isAuto && grace !== "" ? Math.max(0, parseInt(grace, 10) || 0) : null,
+      notes: notes.trim(),
+      auto: isAuto || void 0,
+      linkedIncomeId: isAuto ? linkedIncomeId : void 0
+    };
+  }
+  function save() {
+    if (valid) onSave(build());
+  }
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 mb-4 p-1 rounded-2xl", style: { background: "#F2F4F7" } }, ["expense", "income"].map((t) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: t,
+      onClick: () => switchType(t),
+      className: "flex-1 rounded-xl py-2.5 text-[14px] font-semibold capitalize active:scale-[.98]",
+      style: { transition: "all .12s", background: type === t ? t === "income" ? INCOME_COLOR : "#13202E" : "transparent", color: type === t ? "#fff" : "#6B7785" }
+    },
+    t === "expense" ? "Bill / expense" : "Income"
+  ))), /* @__PURE__ */ React.createElement(Field, { label: "Name" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: name,
+      onChange: (e) => setName(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      placeholder: type === "income" ? "Paycheck, side gig\u2026" : "Rent, electric, Netflix\u2026",
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: type === "income" ? "Who it's from" : "Who it's for" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: payee,
+      onChange: (e) => setPayee(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      placeholder: type === "income" ? "Employer, client\u2026" : "Landlord, ComEd, Visa\u2026",
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: "Amount" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: amount,
+      onChange: (e) => setAmount(e.target.value.replace(/[^0-9.]/g, "")),
+      inputMode: "decimal",
+      placeholder: "0",
+      onFocus: focus,
+      onBlur: blur,
+      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), type === "expense" && incomes.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-4" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setAuto((v) => !v),
+      className: "w-full flex items-center justify-between rounded-xl px-3.5 py-3 active:scale-[.99]",
+      style: { transition: "transform .1s", background: auto ? "#EEF2FF" : "#F2F4F7" }
+    },
+    /* @__PURE__ */ React.createElement("span", { className: "text-left" }, /* @__PURE__ */ React.createElement("span", { className: "block text-[14px] font-semibold", style: { color: auto ? "#4338CA" : "#16202B" } }, "Automatic transfer"), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, "Pulled straight from a paycheck")),
+    /* @__PURE__ */ React.createElement("span", { className: "relative inline-block", style: { width: 42, height: 24 } }, /* @__PURE__ */ React.createElement("span", { className: "absolute inset-0 rounded-full", style: { background: auto ? "#4338CA" : "#CBD3DC", transition: "background .15s" } }), /* @__PURE__ */ React.createElement("span", { className: "absolute top-0.5 h-5 w-5 rounded-full bg-white", style: { left: auto ? 19 : 3, transition: "left .15s" } }))
+  ), auto && /* @__PURE__ */ React.createElement("div", { className: "mt-2 relative" }, /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: linkedIncomeId,
+      onChange: (e) => setLinkedIncomeId(e.target.value),
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none",
+      style: inputStyle
+    },
+    incomes.map((inc) => /* @__PURE__ */ React.createElement("option", { key: inc.id, value: inc.id }, "Comes from: ", inc.name))
+  ), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), linked ? /* @__PURE__ */ React.createElement("div", { className: "mb-4 rounded-xl px-3.5 py-3 text-[13px]", style: { background: "#F6F7FB", color: "#6B7785" } }, "Lands on every ", /* @__PURE__ */ React.createElement("b", { style: { color: "#16202B" } }, (incomes.find((i) => i.id === linkedIncomeId) || {}).name), " deposit and follows its schedule automatically.") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: "Date" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "date",
+      value: date,
+      onChange: (e) => setDate(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: "Repeat" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, FREQS.map((f) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: f.id,
+      onClick: () => setFr(f.id),
+      className: "rounded-full px-3.5 py-2 text-[13px] font-medium active:scale-95",
+      style: { transition: "all .12s", background: fr === f.id ? "#13202E" : "#F2F4F7", color: fr === f.id ? "#fff" : "#16202B" }
+    },
+    f.label
+  ))))), type !== "transfer" && /* @__PURE__ */ React.createElement(Field, { label: "Category" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: category,
+      onChange: (e) => setCategory(e.target.value),
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none",
+      style: inputStyle
+    },
+    cats.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.label))
+  ), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), type === "expense" && !linked && /* @__PURE__ */ React.createElement(Field, { label: /* @__PURE__ */ React.createElement(React.Fragment, null, "Grace period ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, color: "#A0AAB6" } }, "(days you can pay late without penalty \u2014 optional)")) }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: grace,
+      onChange: (e) => setGrace(e.target.value.replace(/[^0-9]/g, "").slice(0, 3)),
+      inputMode: "numeric",
+      placeholder: "e.g. 15",
+      onFocus: focus,
+      onBlur: blur,
+      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: /* @__PURE__ */ React.createElement(React.Fragment, null, "Notes ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, color: "#A0AAB6" } }, "(optional)")) }, /* @__PURE__ */ React.createElement(
+    "textarea",
+    {
+      value: notes,
+      onChange: (e) => setNotes(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      rows: 2,
+      placeholder: type === "income" ? "Account, splits\u2026" : "Account #, autopay, confirmation\u2026",
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none resize-none",
+      style: inputStyle
+    }
+  )), type === "expense" && !auto && valid && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => onAdvise(build(), (iso) => setDate(iso)),
+      className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99] mb-2 flex items-center justify-center gap-2",
+      style: { transition: "all .12s", background: "#EEF2FF", color: "#4338CA" }
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2728"),
+    " Best day to pay this"
+  ), valid && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => onAsk(build()),
+      className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99] mb-2 flex items-center justify-center gap-2",
+      style: { transition: "all .12s", background: "#F2F4F7", color: "#16202B" }
+    },
+    /* @__PURE__ */ React.createElement("span", null, "\u2728"),
+    " Ask about this"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: save,
+      disabled: !valid,
+      className: "w-full rounded-xl py-3.5 text-[15px] font-semibold active:scale-[.99] mt-2",
+      style: { transition: "all .12s", background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" }
+    },
+    item ? "Save changes" : `Add ${type === "income" ? "income" : "expense"}`
+  ), item ? /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(item.id), className: "w-full py-3 mt-1 text-[14px] font-semibold", style: { color: "#C2410C" } }, "Delete") : /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-1 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Cancel")));
+}
+function Field({ label, children }) {
+  return /* @__PURE__ */ React.createElement("div", { className: "mb-4" }, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, label), children);
+}
+function AutoBadge() {
+  return /* @__PURE__ */ React.createElement(
+    "span",
+    {
+      className: "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0",
+      style: { background: "#EEF2FF", color: "#4338CA" }
+    },
+    "auto"
+  );
+}
+const SCAN_SYS = "You read a photo or screenshot of a bill, invoice, statement, or paystub and extract its details. Respond ONLY with a JSON object \u2014 no markdown, no preamble. Keys: type ('expense' or 'income'); name (short label, e.g. 'Electric bill'); payee (who it is paid to / who it is from); amount (number only, the amount due or received \u2014 no currency symbol; never guess if not shown, use 0); dueDate (YYYY-MM-DD if a due/statement date is visible, else empty string); freq ('once','weekly','biweekly','monthly','quarterly','yearly' \u2014 best guess, default 'monthly' for a recurring bill); category (for expenses one of: home, daily, transport, health, insurance, obligations, subscriptions, children, education, entertainment, pets, charity, vacation, savings, business, misc; for income use 'wages'); notes (account number or other useful detail, else empty). Use the provided today's date to resolve partial dates. Never invent an amount.";
+const INSIGHTS_SYS = "You are a sharp, plain-spoken budgeting advisor embedded in a personal budget app. You are given the user's full projected cash flow with running balances. Surface the few things most worth knowing. Be concrete with dates and dollar amounts, and never invent numbers. Output 2-4 lines, each starting with '- ', no preamble, no headers.";
+function Insights({ items, eff, startBalance, cleared, accounts }) {
+  const sig = useMemo(
+    () => JSON.stringify(items.map((i) => [i.type, i.name, i.amount, i.date, i.freq, i.category, i.auto, i.linkedIncomeId])) + "|" + startBalance,
+    [items, startBalance]
+  );
+  const [text, setText] = useState("");
+  const [genSig, setGenSig] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const timer = useRef(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("budget-insights");
+      if (raw) {
+        const c = JSON.parse(raw);
+        setText(c.text || "");
+        setGenSig(c.sig || null);
+      }
+    } catch (e) {
+    }
+  }, []);
+  async function run() {
+    if (items.length === 0) return;
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const ctx = buildContext(eff, startBalance, cleared);
+      const autos = items.filter((i) => i.type === "expense" && i.auto);
+      const acctLine = accounts && accounts.length ? "Accounts (current balance): " + accounts.map((a) => `${a.name} ${acctType(a.type).label} ${Number(a.balance) || 0}`).join(", ") + ".\n\n" : "";
+      const user = `Today is ${ctx.todayISO}.
+
+` + acctLine + `Projected cash flow (date, amount, item, running balance):
+${ctx.lines.join("\n")}
+
+` + (autos.length ? `Automatic transfers pulled from paychecks (fixed, not movable): ${autos.map((a) => a.name + " " + a.amount).join(", ")}.
+
+` : "") + `Give 2-4 short observations: tight spots before the next paycheck, days where bills stack up, how much is left uncommitted, and anything risky or worth acting on.`;
+      const out = await callClaude(INSIGHTS_SYS, user);
+      setText(out);
+      setGenSig(sig);
+      try {
+        localStorage.setItem("budget-insights", JSON.stringify({ sig, text: out }));
+      } catch (e) {
+      }
+    } catch (e) {
+      setError("Couldn't refresh insights \u2014 tap to retry.");
+    } finally {
+      setLoading(false);
+    }
+  }
+  if (items.length === 0) return null;
+  const stale = genSig !== sig;
+  return /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-5", style: { background: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,.06)", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[15px]" }, "\u2728"), /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Insights")), /* @__PURE__ */ React.createElement("button", { onClick: run, disabled: loading, className: "flex items-center gap-1.5 text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, loading ? /* @__PURE__ */ React.createElement(Spinner, null) : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, "\u21BB"), loading ? "Reading" : stale ? "Update" : "Refresh")), error ? /* @__PURE__ */ React.createElement("button", { onClick: run, className: "text-[13px] text-left", style: { color: "#C2410C" } }, error) : text ? /* @__PURE__ */ React.createElement("div", { style: { opacity: stale && !loading ? 0.55 : 1, transition: "opacity .2s" } }, /* @__PURE__ */ React.createElement(RichText, { text }), stale && !loading && /* @__PURE__ */ React.createElement("p", { className: "text-[11px] mt-2", style: { color: "#A0AAB6" } }, "Budget changed \u2014 updating shortly\u2026")) : /* @__PURE__ */ React.createElement("p", { className: "text-[13px] flex items-center gap-2", style: { color: "#8A95A3" } }, loading ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Spinner, null), " Reading your budget\u2026") : "Tap Refresh whenever you want a read on tight spots and what's left over."));
+}
+async function claudeRequest(messages, system, model) {
+  const res = await fetch(WORKER_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: model || MODEL, max_tokens: 1500, system, messages })
+  });
+  if (!res.ok) throw new Error("Request failed (" + res.status + ")");
+  const data = await res.json();
+  if (data && Array.isArray(data.content)) return data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+  if (data && typeof data.text === "string") return data.text.trim();
+  if (data && typeof data.completion === "string") return data.completion.trim();
+  if (typeof data === "string") return data.trim();
+  throw new Error("Unexpected response from Worker");
+}
+async function callClaude(system, userContent) {
+  return claudeRequest([{ role: "user", content: userContent }], system);
+}
+async function callClaudeVision(system, text, imageData, mediaType) {
+  return claudeRequest(
+    [{ role: "user", content: [
+      { type: "image", source: { type: "base64", media_type: mediaType, data: imageData } },
+      { type: "text", text }
+    ] }],
+    system,
+    SCAN_MODEL
+  );
+}
+function nextDue(bill, from) {
+  let cy = from.getFullYear(), cm = from.getMonth(), g = 0;
+  while (g < 36) {
+    for (const d of occurrences(bill, cy, cm)) {
+      const dt = new Date(cy, cm, d);
+      if (dt >= from) return dt;
+    }
+    cm++;
+    if (cm > 11) {
+      cm = 0;
+      cy++;
+    }
+    g++;
+  }
+  return parseISO(bill.date);
+}
+function buildContext(items, startBalance, cleared) {
+  const c = cleared || {};
+  const today = /* @__PURE__ */ new Date();
+  const horizon = toISO(addDays(today, 80));
+  const led = ledger(items, startBalance, horizon);
+  const fromISO = toISO(addDays(today, -3));
+  const lines = led.filter((e) => e.iso >= fromISO).map((e) => {
+    const paid = c[ck(e.id, e.iso)] ? e.type === "income" ? " [received]" : " [paid]" : "";
+    return `${e.iso}  ${e.type === "income" ? "+" : "-"}${e.amount}  ${e.name}${e.payee ? ` (${e.payee})` : ""}${paid}  -> balance ${Math.round(e.balance)}`;
+  });
+  return { todayISO: toISO(today), lines };
+}
+const fmtLong = (iso) => {
+  const d = parseISO(iso);
+  return `${DOW[d.getDay()]}, ${MO_SHORT[d.getMonth()]} ${d.getDate()}`;
+};
+function RichText({ text }) {
+  return /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, text.split(/\n+/).map((line, i) => {
+    const t = line.trim();
+    if (!t) return null;
+    if (/^[-•]\s/.test(t))
+      return /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[14px] leading-relaxed" }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, t.replace(/^[-•]\s/, "")));
+    return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[14px] leading-relaxed" }, t);
+  }));
+}
+function Advisor({ advisor, items, startBalance, cleared, accounts, onClose }) {
+  const isBill = advisor.mode === "bill";
+  const isEntry = advisor.mode === "entry";
+  const bill = advisor.bill;
+  const draft = advisor.draft;
+  const [loading, setLoading] = useState(isBill);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+  const [applied, setApplied] = useState(false);
+  const [q, setQ] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [asking, setAsking] = useState(false);
+  function catLabel() {
+    if (isBill) return expCat(bill.category).label;
+    if (isEntry) return draft.type === "income" ? inCat(draft.category).label : expCat(draft.category).label;
+    return "";
+  }
+  const chips = (() => {
+    if (isBill) return ["Can I split this into two payments?", `Is ${money(bill.amount)} a lot for ${catLabel().toLowerCase()}?`, "What if I skip it this month?"];
+    if (isEntry) {
+      if (draft.type === "income") return ["How should I split this paycheck?", "How much of this can I safely save?", "What bills should land right after this?"];
+      return [`Is ${draft.amount ? money(draft.amount) : "this"} typical for ${catLabel().toLowerCase()}?`, "When should I pay this each month?", "Worth putting on autopay?"];
+    }
+    return ["Where can I free up cash?", "Which bill should I move to a safer day?", "How much is left uncommitted?", "Can I afford a big purchase this month?"];
+  })();
+  const SYS_BASE = "You are a practical, plain-spoken budgeting advisor embedded in a personal budgeting app. You reason about real dates and running cash balances. Be specific and reference the numbers you are given. Never invent figures. Keep advice realistic and concise.";
+  useEffect(() => {
+    if (!isBill) return;
+    (async () => {
+      try {
+        const ctx = buildContext(items, startBalance, cleared);
+        const due = nextDue(bill, /* @__PURE__ */ new Date());
+        const dueISO = toISO(due);
+        const graceEnd = bill.grace != null ? toISO(addDays(due, bill.grace)) : null;
+        const sys = SYS_BASE + " Respond ONLY with a JSON object, no markdown and no preamble, with exactly these keys: recommendedDate (a date string YYYY-MM-DD, the single best day to pay), headline (<= 8 words), reasoning (1-2 sentences citing balances or paydays), suggestions (array of 2-3 short strings: other ways to make this bill easier \u2014 e.g. autopay timing, splitting it, lowering it, aligning the due date).";
+        const user = `Today is ${ctx.todayISO}.
+
+Projected cash flow (date, amount, item, running balance):
+${ctx.lines.join("\n")}
+
+Bill to schedule:
+- Name: ${bill.name}${bill.payee ? ` (paid to ${bill.payee})` : ""}
+- Amount: ${bill.amount}
+- Next due: ${dueISO} (repeats ${freqLabel(bill.freq).toLowerCase()})
+- Grace period: ${bill.grace != null ? `${bill.grace} days (can pay through ${graceEnd} without penalty)` : "unknown \u2014 assume none unless typical for this bill type"}
+` + (bill.notes ? `- Notes: ${bill.notes}
+` : "") + `
+Recommend the single best day to pay this bill within the next 60 days. Payment is safe from the due date through the end of any grace period; paying later within grace can help if a paycheck lands in between. Prioritize keeping the running balance from going negative and paying just after income arrives. recommendedDate must be a real calendar date.`;
+        const text = await callClaude(sys, user);
+        const clean = text.replace(/```json|```/g, "").trim();
+        setResult(JSON.parse(clean));
+      } catch (e) {
+        setError("Couldn't get advice right now. Check your connection and try again.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+  async function ask(textOverride) {
+    const question = (textOverride != null ? textOverride : q).trim();
+    if (!question || asking) return;
+    setQ(question);
+    setAsking(true);
+    setAnswer("");
+    setError("");
+    try {
+      const ctx = buildContext(items, startBalance, cleared);
+      const sys = SYS_BASE + " Answer in plain text (short paragraphs or simple '- ' bullets). No markdown headers or bold.";
+      const acctLine = accounts && accounts.length ? "Accounts (current balance): " + accounts.map((a) => `${a.name} ${acctType(a.type).label} ${Number(a.balance) || 0}`).join(", ") + ".\n\n" : "";
+      let focus = "";
+      if (isBill) focus = `The user is looking at this bill: ${bill.name}, ${bill.amount}, due around ${toISO(nextDue(bill, /* @__PURE__ */ new Date()))}.
+
+`;
+      else if (isEntry) focus = `The user is entering this ${draft.type}: ${draft.name || "(unnamed)"}, amount ${draft.amount || "?"}, category ${catLabel()}, repeats ${freqLabel(draft.freq).toLowerCase()}.
+
+`;
+      const user = `Today is ${ctx.todayISO}.
+
+` + acctLine + `Projected cash flow (date, amount, item, running balance):
+${ctx.lines.join("\n")}
+
+` + focus + `Question: ${question}`;
+      setAnswer(await callClaude(sys, user));
+    } catch (e) {
+      setError("Couldn't answer right now. Try again in a moment.");
+    } finally {
+      setAsking(false);
+    }
+  }
+  const recValid = result?.recommendedDate && /^\d{4}-\d{2}-\d{2}$/.test(result.recommendedDate);
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "\u2728"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, isBill ? "Best day to pay" : isEntry ? "Ask about this" : "Budget advisor")), isBill && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, bill.name, " \xB7 ", money(bill.amount), bill.grace != null ? ` \xB7 ${bill.grace}-day grace` : ""), isEntry && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, draft.name || (draft.type === "income" ? "New income" : "New expense"), draft.amount ? ` \xB7 ${money(draft.amount)}` : "", " \xB7 ", catLabel()), isBill && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-4", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, loading ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[14px]", style: { color: "#6B7785" } }, /* @__PURE__ */ React.createElement(Spinner, null), " Reading your cash flow\u2026") : result ? /* @__PURE__ */ React.createElement("div", null, recValid && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-semibold uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Pay on"), /* @__PURE__ */ React.createElement("div", { className: "bx-num text-[22px] font-bold mt-0.5", style: { color: "#4338CA", letterSpacing: "-0.01em" } }, fmtLong(result.recommendedDate))), result.headline && /* @__PURE__ */ React.createElement("div", { className: "font-semibold text-[15px] mt-2" }, result.headline), result.reasoning && /* @__PURE__ */ React.createElement("p", { className: "text-[14px] leading-relaxed mt-1", style: { color: "#3C4654" } }, result.reasoning), Array.isArray(result.suggestions) && result.suggestions.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mt-3 space-y-1.5" }, result.suggestions.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[13px] leading-relaxed", style: { color: "#3C4654" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, s)))), recValid && advisor.onApplyDate && (applied ? /* @__PURE__ */ React.createElement("div", { className: "mt-3 text-[13px] font-semibold", style: { color: "#11875E" } }, "\u2713 Pay day set \u2014 save the bill to keep it.") : /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => {
+        advisor.onApplyDate(result.recommendedDate);
+        setApplied(true);
+      },
+      className: "mt-3 w-full rounded-xl py-2.5 text-[14px] font-semibold active:scale-[.99]",
+      style: { background: "#4338CA", color: "#fff" }
+    },
+    "Set this as the pay day"
+  ))) : /* @__PURE__ */ React.createElement("p", { className: "text-[14px]", style: { color: "#C2410C" } }, error)), /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, isBill ? "Ask a follow-up" : "Try asking"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2 mb-3" }, chips.map((c, i) => /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      key: i,
+      onClick: () => ask(c),
+      disabled: asking,
+      className: "rounded-full px-3 py-2 text-[13px] font-medium text-left active:scale-95",
+      style: { transition: "transform .1s", background: "#EEF2FF", color: "#4338CA" }
+    },
+    c
+  ))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: q,
+      onChange: (e) => setQ(e.target.value),
+      onKeyDown: (e) => {
+        if (e.key === "Enter") ask();
+      },
+      placeholder: "Ask anything\u2026",
+      className: "flex-1 rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: { background: "#F2F4F7", border: "1px solid transparent" },
+      onFocus: (e) => e.target.style.border = "1px solid #13202E",
+      onBlur: (e) => e.target.style.border = "1px solid transparent"
+    }
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => ask(),
+      disabled: !q.trim() || asking,
+      className: "rounded-xl px-4 text-[14px] font-semibold active:scale-95",
+      style: { background: q.trim() && !asking ? "#13202E" : "#E2E6EB", color: q.trim() && !asking ? "#fff" : "#A0AAB6" }
+    },
+    asking ? /* @__PURE__ */ React.createElement(Spinner, { light: true }) : "Ask"
+  )), answer && /* @__PURE__ */ React.createElement("div", { className: "mt-4 rounded-2xl p-4 bx-fade", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(RichText, { text: answer })), error && !loading && !answer && /* @__PURE__ */ React.createElement("p", { className: "mt-3 text-[13px]", style: { color: "#C2410C" } }, error), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] leading-relaxed mt-4", style: { color: "#A0AAB6" } }, "Suggestions are general guidance from AI, not financial advice. Check grace periods and fees with each biller before changing a payment date."), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
+}
+function Spinner({ light }) {
+  return /* @__PURE__ */ React.createElement(
+    "span",
+    {
+      className: "inline-block h-4 w-4 rounded-full animate-spin",
+      style: { border: "2px solid " + (light ? "rgba(255,255,255,.4)" : "#CBD3DC"), borderTopColor: light ? "#fff" : "#13202E" }
+    }
+  );
+}
+function relTime(iso) {
+  if (!iso) return "never";
+  const d = new Date(iso), now = /* @__PURE__ */ new Date();
+  const days = Math.floor((now - d) / 864e5);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return days + " days ago";
+  return d.toLocaleDateString();
+}
+function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, onClose }) {
+  const fileRef = useRef(null);
+  const [msg, setMsg] = useState("");
+  const [snaps] = useState(() => loadSnapshots());
+  function pick() {
+    if (fileRef.current) fileRef.current.click();
+  }
+  function onFile(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+        if (!Array.isArray(d.items)) throw new Error("bad");
+        if (itemCount > 0 && !window.confirm("Replace your current budget with this backup?")) return;
+        onImport(d.items, Number(d.startBalance) || 0);
+        setMsg("Restored " + d.items.length + " items from backup.");
+      } catch (err) {
+        setMsg("That file isn't a valid budget backup.");
+      }
+    };
+    r.onerror = () => setMsg("Couldn't read that file.");
+    r.readAsText(file);
+  }
+  function restore(s) {
+    if (!window.confirm("Roll back to this saved version? Your current entries will be replaced.")) return;
+    onRestore(s.items, Number(s.startBalance) || 0);
+    setMsg("Rolled back to " + new Date(s.at).toLocaleString() + ".");
+  }
+  const stale = !lastBackup || Date.now() - new Date(lastBackup).getTime() > 7 * 864e5;
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold mb-1" }, "Settings & backup"), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Your budget is saved on this device. Back up to a file to keep it safe or move it to another phone."), /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-[14px] font-semibold" }, "Backup file"), /* @__PURE__ */ React.createElement("div", { className: "text-[12px]", style: { color: stale ? "#C2410C" : "#8A95A3" } }, "Last backup: ", relTime(lastBackup), stale ? " \xB7 back up soon" : ""))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: onExport, className: "flex-1 rounded-xl py-3 text-[14px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, "Save backup"), /* @__PURE__ */ React.createElement("button", { onClick: pick, className: "flex-1 rounded-xl py-3 text-[14px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "Restore from file")), /* @__PURE__ */ React.createElement("input", { ref: fileRef, type: "file", accept: "application/json,.json", onChange: onFile, style: { display: "none" } })), /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "text-[14px] font-semibold mb-1" }, "Version history"), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] mb-3", style: { color: "#8A95A3" } }, "Automatic snapshots saved on this device \u2014 roll back a mistake."), snaps.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "text-[13px]", style: { color: "#A0AAB6" } }, "No snapshots yet \u2014 they start saving as you make changes.") : /* @__PURE__ */ React.createElement("ul", { className: "space-y-1.5" }, snaps.map((s, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[13px] min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block truncate" }, new Date(s.at).toLocaleString()), /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, (s.items || []).length, " items")), /* @__PURE__ */ React.createElement("button", { onClick: () => restore(s), className: "text-[13px] font-semibold shrink-0 active:scale-95", style: { color: "#4338CA" } }, "Restore"))))), msg && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mt-3 font-medium", style: { color: "#11875E" } }, msg), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-3 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
+}
+function AccountForm({ acct, onSave, onDelete, onCancel, canDelete }) {
+  const [name, setName] = useState(acct.name || "");
+  const [atype, setAtype] = useState(acct.type || "checking");
+  const [bal, setBal] = useState(acct.balance != null && acct.balance !== "" ? String(acct.balance) : "");
+  const valid = name.trim().length > 0;
+  const inputStyle = { background: "#F2F4F7", border: "1px solid transparent" };
+  const focus = (e) => e.target.style.border = "1px solid #13202E";
+  const blur = (e) => e.target.style.border = "1px solid transparent";
+  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(Field, { label: "Account name" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: name,
+      onChange: (e) => setName(e.target.value),
+      onFocus: focus,
+      onBlur: blur,
+      placeholder: "Checking, Savings, Coinbase\u2026",
+      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(Field, { label: "Type" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("select", { value: atype, onChange: (e) => setAtype(e.target.value), className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none", style: inputStyle }, ACCT_TYPES.map((t) => /* @__PURE__ */ React.createElement("option", { key: t.id, value: t.id }, t.label))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), /* @__PURE__ */ React.createElement(Field, { label: "Current balance" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: bal,
+      onChange: (e) => setBal(e.target.value.replace(/[^0-9.-]/g, "")),
+      inputMode: "decimal",
+      placeholder: "0",
+      onFocus: focus,
+      onBlur: blur,
+      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
+      style: inputStyle
+    }
+  )), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => valid && onSave({ id: acct.id, name: name.trim(), type: atype, balance: Math.round((parseFloat(bal) || 0) * 100) / 100 }),
+      disabled: !valid,
+      className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99]",
+      style: { background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" }
+    },
+    "Save account"
+  ), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between mt-1" }, /* @__PURE__ */ React.createElement("button", { onClick: onCancel, className: "py-2 text-[13px] font-medium", style: { color: "#8A95A3" } }, "Cancel"), canDelete && /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(acct.id), className: "py-2 text-[13px] font-semibold", style: { color: "#C2410C" } }, "Delete")));
+}
+function AccountsSheet({ accounts, onSave, onDelete, onClose }) {
+  const [editing, setEditing] = useState(null);
+  const total = accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold mb-1" }, "Accounts"), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Where your money sits. Balances seed your projection; transfers move money between them."), editing ? /* @__PURE__ */ React.createElement(
+    AccountForm,
+    {
+      acct: editing,
+      canDelete: accounts.length > 1 && !editing._new,
+      onSave: (a) => {
+        onSave(a);
+        setEditing(null);
+      },
+      onDelete: (id) => {
+        onDelete(id);
+        setEditing(null);
+      },
+      onCancel: () => setEditing(null)
+    }
+  ) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("ul", { className: "mb-3" }, accounts.map((a) => /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setEditing(a), className: "w-full flex items-center gap-3 py-2.5 text-left active:opacity-60 border-b", style: { borderColor: "#F0F2F5" } }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px]" }, money(Number(a.balance) || 0)))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 px-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[13px] font-semibold", style: { color: "#6B7785" } }, "Total now"), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-bold text-[15px]" }, money(total))), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setEditing({ id: uid(), name: "", type: "checking", balance: "", _new: true }),
+      className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99]",
+      style: { background: "#EEF2FF", color: "#4338CA" }
+    },
+    "+ Add account"
+  )), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
+}
+
+try {
+  ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AppErrorBoundary, null, React.createElement(BudgetPlanner)));
+} catch (e) {
+  var b = document.getElementById("boot");
+  if (b) { b.textContent = "Error: " + (e && e.message ? e.message : e); b.style.color = "#C2410C"; }
+}
+
+} catch (e) {
+  var b = document.getElementById("boot");
+  if (b) { b.textContent = "Error: " + (e && e.message ? e.message : e); b.style.color = "#C2410C"; }
+}
+</script>
+</body>
+</html>
