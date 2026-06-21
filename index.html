@@ -31,20 +31,18 @@
 </style>
 <script>
   window.__bootErr = "";
-  window.addEventListener("error", function (e) {
-    window.__bootErr = (e.message || (e.error && e.error.message) || "script error");
-    var b = document.getElementById("boot");
-    if (b) { b.textContent = "Error: " + window.__bootErr; b.style.color = "#C2410C"; }
-  });
-  // If the app hasn't mounted after 5s, surface why instead of a silent stall.
+  function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
+  window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
+  window.addEventListener("unhandledrejection", function (e) { __note("promise: " + ((e.reason && e.reason.message) || e.reason || "rejected")); });
+  // Guarantee we never show a silent blank: if the app hasn't rendered after 4s, write the reason into the page.
   setTimeout(function () {
-    var b = document.getElementById("boot");
-    if (b) {
-      b.textContent = "Didn't start. React=" + (typeof React) + " ReactDOM=" + (typeof ReactDOM)
-        + (window.__bootErr ? (" · " + window.__bootErr) : " · no error thrown");
-      b.style.color = "#C2410C";
+    var root = document.getElementById("root");
+    if (root && !root.querySelector(".bx-body") && !root.querySelector("[data-eb]")) {
+      root.innerHTML = '<div style="font-family:system-ui,sans-serif;padding:60px 24px;text-align:center;color:#C2410C;font-size:14px;line-height:1.6">'
+        + '<b>App did not render (v15).</b><br><br>React=' + (typeof React) + ' · ReactDOM=' + (typeof ReactDOM)
+        + '<br><br>' + (window.__bootErr ? window.__bootErr : 'no error was thrown') + '</div>';
     }
-  }, 5000);
+  }, 4000);
 </script>
 <script>/**
  * @license React
@@ -227,4 +225,4 @@ d|=e.subtreeFlags,d|=e.flags,e.return=a,e=e.sibling;a.subtreeFlags|=d;a.childLan
 256)||(b.flags|=1024,null!==wa&&(Gf(wa),wa=null));yi(a,b);W(b);return null;case 5:kf(b);var e=vb(xc.current);c=b.type;if(null!==a&&null!=b.stateNode)zk(a,b,c,d,e),a.ref!==b.ref&&(b.flags|=512,b.flags|=2097152);else{if(!d){if(null===b.stateNode)throw Error(n(166));W(b);return null}a=vb(Ea.current);if(pd(b)){d=b.stateNode;c=b.type;var f=b.memoizedProps;d[Da]=b;d[uc]=f;a=0!==(b.mode&1);switch(c){case "dialog":B("cancel",d);B("close",d);break;case "iframe":case "object":case "embed":B("load",d);break;
 case "video":case "audio":for(e=0;e<Ec.length;e++)B(Ec[e],d);break;case "source":B("error",d);break;case "img":case "image":case "link":B("error",d);B("load",d);break;case "details":B("toggle",d);break;case "input":kg(d,f);B("invalid",d);break;case "select":d._wrapperState={wasMultiple:!!f.multiple};B("invalid",d);break;case "textarea":ng(d,f),B("invalid",d)}pe(c,f);e=null;for(var g in f)if(f.hasOwnProperty(g)){var h=f[g];"children"===g?"string"===typeof h?d.textContent!==h&&(!0!==f.suppressHydrationWarning&&
 jd(d.textContent,h,a),e=["children",h]):"number"===typeof h&&d.textContent!==""+h&&(!0!==f.suppressHydrationWarning&&jd(d.textContent,h,a),e=["children",""+h]):$b.hasOwnProperty(g)&&null!=h&&"onScroll"===g&&B("scroll",d)}switch(c){case "input":Pc(d);mg(d,f,!0);break;case "textarea":Pc(d);pg(d);break;case "select":case "option":break;default:"function"===typeof f.onClick&&(d.onclick=kd)}d=e;b.updateQueue=d;null!==d&&(b.flags|=4)}else{g=9===e.nodeType?e:e.ownerDocument;"http://www.w3.org/1999/xhtml"===
-a&&(a=qg(c));"http://www.w3.org/1999/xhtml"===a?"script"===c?(a=g.createElement("div"),a.innerHTML="<script>\x3c/script>",a=a.removeChild(a.firstChild)):"string"===typeof d.is?a=g.createElement(c,{is:d.is}):(a=g.createElement(c),"select"===c&&(g=a,d.multiple?g.multiple=!0:d.size&&(g.size=d.size))):a=g.createElementNS(a,c);a[Da]=b;a[uc]=d;Ak(a,b,!1,!1);b.stateNode=a;a:{g=qe(c,d);switch(c){case "dialog":B("cancel",a);B("close",a);e=d;break;case "iframe":case "object":case "embed
+a&&(a=qg(c));"http://www.w3.org/1999/xhtml"===a?"script"===c?(a=g.createElement("div"),a.innerHTML="<script>\x3c/script>",a=a.rem
