@@ -30,1258 +30,202 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
+  window.__bootErr = "";
   window.addEventListener("error", function (e) {
+    window.__bootErr = (e.message || (e.error && e.error.message) || "script error");
     var b = document.getElementById("boot");
-    if (b) { b.textContent = "Load error: " + (e.message || (e.error && e.error.message) || "a script failed to load"); b.style.color = "#C2410C"; }
+    if (b) { b.textContent = "Error: " + window.__bootErr; b.style.color = "#C2410C"; }
   });
+  // If the app hasn't mounted after 5s, surface why instead of a silent stall.
+  setTimeout(function () {
+    var b = document.getElementById("boot");
+    if (b) {
+      b.textContent = "Didn't start. React=" + (typeof React) + " ReactDOM=" + (typeof ReactDOM)
+        + (window.__bootErr ? (" · " + window.__bootErr) : " · no error thrown");
+      b.style.color = "#C2410C";
+    }
+  }, 5000);
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" crossorigin></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin></script>
-</head>
-<body>
-<div id="root"><div id="boot">Loading Budget Planner… v11</div></div>
-<script>
-const { useState, useEffect, useRef, useMemo } = React;
-const WORKER_URL = "https://mts-assistant.lukedorsett.workers.dev";
-const MODEL = "claude-sonnet-4-6";
-const SCAN_MODEL = "claude-haiku-4-5";
-const INCOME_CATS = [
-  { id: "wages", label: "Wages & Tips" },
-  { id: "interest", label: "Interest" },
-  { id: "dividends", label: "Dividends" },
-  { id: "gifts", label: "Gifts received" },
-  { id: "refunds", label: "Refunds" },
-  { id: "transfer", label: "Transfer from savings" },
-  { id: "other-in", label: "Other income" }
-];
-const INCOME_COLOR = "#11875E";
-const EXPENSE_CATS = [
-  { id: "home", label: "Home & Utilities", color: "#6366F1" },
-  { id: "daily", label: "Daily Living", color: "#0EA5E9" },
-  { id: "transport", label: "Transportation", color: "#EC4899" },
-  { id: "health", label: "Health", color: "#14B8A6" },
-  { id: "insurance", label: "Insurance", color: "#0D9488" },
-  { id: "obligations", label: "Loans & Debt", color: "#F59E0B" },
-  { id: "subscriptions", label: "Subscriptions", color: "#A855F7" },
-  { id: "children", label: "Children", color: "#F472B6" },
-  { id: "education", label: "Education", color: "#8B5CF6" },
-  { id: "entertainment", label: "Entertainment", color: "#FB923C" },
-  { id: "pets", label: "Pets", color: "#84CC16" },
-  { id: "charity", label: "Charity & Gifts", color: "#EF4444" },
-  { id: "vacation", label: "Vacation", color: "#06B6D4" },
-  { id: "savings", label: "Savings", color: "#22C55E" },
-  { id: "business", label: "Business", color: "#475569" },
-  { id: "misc", label: "Miscellaneous", color: "#94A3B8" }
-];
-const expCat = (id) => EXPENSE_CATS.find((c) => c.id === id) || EXPENSE_CATS[EXPENSE_CATS.length - 1];
-const inCat = (id) => INCOME_CATS.find((c) => c.id === id) || INCOME_CATS[INCOME_CATS.length - 1];
-const TRANSFER_COLOR = "#475569";
-const itemColor = (it) => it.type === "income" ? INCOME_COLOR : it.type === "transfer" ? TRANSFER_COLOR : expCat(it.category).color;
-const ACCT_TYPES = [
-  { id: "checking", label: "Checking", color: "#2563EB" },
-  { id: "savings", label: "Savings", color: "#11875E" },
-  { id: "crypto", label: "Crypto / exchange", color: "#F59E0B" },
-  { id: "cash", label: "Cash", color: "#64748B" },
-  { id: "investment", label: "Investment", color: "#7C3AED" },
-  { id: "credit", label: "Credit card", color: "#DB2777" },
-  { id: "other", label: "Other", color: "#0EA5E9" }
-];
-const acctType = (id) => ACCT_TYPES.find((t) => t.id === id) || ACCT_TYPES[ACCT_TYPES.length - 1];
-const FREQS = [
-  { id: "once", label: "One time" },
-  { id: "weekly", label: "Weekly" },
-  { id: "biweekly", label: "Every 2 weeks" },
-  { id: "monthly", label: "Monthly" },
-  { id: "quarterly", label: "Quarterly" },
-  { id: "yearly", label: "Yearly" }
-];
-const freqLabel = (id) => (FREQS.find((f) => f.id === id) || FREQS[3]).label;
-const STORAGE_KEY = "budget-planner-v2";
-const SNAP_KEY = "budget-snapshots";
-const CLEARED_KEY = "budget-cleared";
-const ck = (id, iso) => id + ":" + iso;
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const MO_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-function loadSnapshots() {
-  try {
-    const a = JSON.parse(localStorage.getItem(SNAP_KEY) || "[]");
-    return Array.isArray(a) ? a : [];
-  } catch (e) {
-    return [];
-  }
-}
-function addSnapshot(items, startBalance) {
-  try {
-    const snaps = loadSnapshots();
-    const entry = { at: (/* @__PURE__ */ new Date()).toISOString(), items, startBalance };
-    const last = snaps[0];
-    if (last && Date.now() - new Date(last.at).getTime() < 30 * 60 * 1e3) snaps[0] = entry;
-    else snaps.unshift(entry);
-    localStorage.setItem(SNAP_KEY, JSON.stringify(snaps.slice(0, 10)));
-  } catch (e) {
-  }
-}
-const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
-const parseISO = (s) => {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
-};
-const toISO = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-const addDays = (d, n) => {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-};
-const money = (n) => {
-  const v = Math.abs(n);
-  return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(v) ? 0 : 2 });
-};
-const signed = (n) => (n < 0 ? "\u2212" : "") + money(n);
-function occurrences(item, y, m) {
-  const a = parseISO(item.date);
-  const ms = new Date(y, m, 1);
-  const me = new Date(y, m + 1, 0);
-  const res = [];
-  if (item.freq === "once") {
-    if (a.getFullYear() === y && a.getMonth() === m) res.push(a.getDate());
-    return res;
-  }
-  if (item.freq === "weekly" || item.freq === "biweekly") {
-    const step = item.freq === "weekly" ? 7 : 14;
-    let d = new Date(a);
-    if (d > me) return res;
-    while (d < ms) d = addDays(d, step);
-    while (d <= me) {
-      res.push(d.getDate());
-      d = addDays(d, step);
-    }
-    return res;
-  }
-  const before = new Date(y, m, 1) < new Date(a.getFullYear(), a.getMonth(), 1);
-  if (item.freq === "monthly") {
-    if (!before) res.push(Math.min(a.getDate(), me.getDate()));
-    return res;
-  }
-  if (item.freq === "quarterly") {
-    const md = (y - a.getFullYear()) * 12 + (m - a.getMonth());
-    if (md >= 0 && md % 3 === 0) res.push(Math.min(a.getDate(), me.getDate()));
-    return res;
-  }
-  if (item.freq === "yearly") {
-    if (y >= a.getFullYear() && m === a.getMonth()) res.push(Math.min(a.getDate(), me.getDate()));
-    return res;
-  }
-  return res;
-}
-function effectiveItems(items) {
-  return items.map((it) => {
-    if (it.type === "expense" && it.linkedIncomeId) {
-      const inc = items.find((x) => x.id === it.linkedIncomeId && x.type === "income");
-      if (inc) return { ...it, date: inc.date, freq: inc.freq };
-    }
-    return it;
-  });
-}
-function monthTotals(items, y, m) {
-  let inc = 0, exp = 0;
-  for (const it of items) {
-    if (it.type === "transfer") continue;
-    const t = occurrences(it, y, m).length * it.amount;
-    if (it.type === "income") inc += t;
-    else exp += t;
-  }
-  return { inc, exp, net: inc - exp };
-}
-function accountFlow(it, accountId) {
-  if (it.type === "income" && it.accountId === accountId) return 1;
-  if (it.type === "expense" && it.accountId === accountId) return -1;
-  if (it.type === "transfer" && it.toAccountId === accountId) return 1;
-  if (it.type === "transfer" && it.fromAccountId === accountId) return -1;
-  return 0;
-}
-function accountNetForMonth(items, accountId, y, m) {
-  let net = 0;
-  for (const it of items) {
-    const s = accountFlow(it, accountId);
-    if (s) net += s * occurrences(it, y, m).length * it.amount;
-  }
-  return net;
-}
-function earliestMonth(items, y, m) {
-  let sy = y, sm = m;
-  for (const it of items) {
-    const a = parseISO(it.date);
-    if (a.getFullYear() < sy || a.getFullYear() === sy && a.getMonth() < sm) {
-      sy = a.getFullYear();
-      sm = a.getMonth();
-    }
-  }
-  return { sy, sm };
-}
-function accountProjected(items, accounts, accountId, y, m) {
-  const acct = accounts.find((a) => a.id === accountId);
-  let bal = acct ? Number(acct.balance) || 0 : 0;
-  if (items.length === 0) return bal;
-  let { sy, sm } = earliestMonth(items, y, m);
-  let cy = sy, cm = sm, guard = 0;
-  while ((cy < y || cy === y && cm <= m) && guard < 240) {
-    bal += accountNetForMonth(items, accountId, cy, cm);
-    cm++;
-    if (cm > 11) {
-      cm = 0;
-      cy++;
-    }
-    guard++;
-  }
-  return bal;
-}
-function runningBalance(items, startBalance, y, m) {
-  if (items.length === 0) return startBalance;
-  let sy = y, sm = m;
-  for (const it of items) {
-    const a = parseISO(it.date);
-    if (a.getFullYear() < sy || a.getFullYear() === sy && a.getMonth() < sm) {
-      sy = a.getFullYear();
-      sm = a.getMonth();
-    }
-  }
-  let bal = startBalance, cy = sy, cm = sm, guard = 0;
-  while ((cy < y || cy === y && cm <= m) && guard < 240) {
-    bal += monthTotals(items, cy, cm).net;
-    cm++;
-    if (cm > 11) {
-      cm = 0;
-      cy++;
-    }
-    guard++;
-  }
-  return bal;
-}
-function generateEvents(items, toISOstr) {
-  const to = parseISO(toISOstr);
-  const evs = [];
-  for (const it of items) {
-    const a = parseISO(it.date);
-    if (a > to) continue;
-    let cy = a.getFullYear(), cm = a.getMonth(), g = 0;
-    while ((cy < to.getFullYear() || cy === to.getFullYear() && cm <= to.getMonth()) && g < 240) {
-      for (const day of occurrences(it, cy, cm)) {
-        const d = new Date(cy, cm, day);
-        if (d >= a && d <= to) evs.push({ iso: toISO(d), t: d.getTime(), item: it });
-      }
-      cm++;
-      if (cm > 11) {
-        cm = 0;
-        cy++;
-      }
-      g++;
-    }
-  }
-  evs.sort((x, y) => x.t - y.t || (x.item.type === y.item.type ? 0 : x.item.type === "income" ? -1 : 1));
-  let bal = 0;
-  return evs;
-}
-function ledger(items, startBalance, toISOstr) {
-  const evs = generateEvents(items, toISOstr);
-  let bal = startBalance;
-  return evs.map((e) => {
-    bal += e.item.type === "income" ? e.item.amount : e.item.type === "expense" ? -e.item.amount : 0;
-    return { id: e.item.id, iso: e.iso, name: e.item.name, type: e.item.type, amount: e.item.amount, payee: e.item.payee || "", balance: bal };
-  });
-}
-function useTheme() {
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap";
-    document.head.appendChild(link);
-    const style = document.createElement("style");
-    style.textContent = `
-      .bx-body{font-family:'Inter',system-ui,sans-serif}
-      .bx-num{font-family:'Space Grotesk',system-ui,sans-serif;font-variant-numeric:tabular-nums}
-      .bx-sheet{animation:bxUp .28s cubic-bezier(.22,1,.36,1)}
-      @keyframes bxUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-      .bx-fade{animation:bxFade .2s ease both}
-      @keyframes bxFade{from{opacity:0}to{opacity:1}}
-      @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
-    `;
-    document.head.appendChild(style);
-  }, []);
-}
-function downscaleImage(file, maxEdge) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-        URL.revokeObjectURL(url);
-        resolve({ data: dataUrl.slice(dataUrl.indexOf(",") + 1), mediaType: "image/jpeg" });
-      } catch (e) {
-        URL.revokeObjectURL(url);
-        reject(e);
-      }
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("image load failed"));
-    };
-    img.src = url;
-  });
-}
-function BudgetPlanner() {
-  useTheme();
-  const now = /* @__PURE__ */ new Date();
-  const [items, setItems] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() });
-  const [selDay, setSelDay] = useState(now.getDate());
-  const [editor, setEditor] = useState(null);
-  const [advisor, setAdvisor] = useState(null);
-  const [showAll, setShowAll] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [accountsOpen, setAccountsOpen] = useState(false);
-  const [acctView, setAcctView] = useState(null);
-  const [lastBackup, setLastBackup] = useState(null);
-  const [cleared, setCleared] = useState({});
-  const startBalance = useMemo(() => accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0), [accounts]);
-  useEffect(() => {
-    (async () => {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const d = JSON.parse(raw);
-          setItems(Array.isArray(d.items) ? d.items : []);
-          if (Array.isArray(d.accounts) && d.accounts.length) setAccounts(d.accounts);
-          else setAccounts([{ id: uid(), name: "Checking", type: "checking", balance: Number(d.startBalance) || 0 }]);
-        } else {
-          setAccounts([{ id: uid(), name: "Checking", type: "checking", balance: 0 }]);
-        }
-      } catch (e) {
-        setAccounts([{ id: uid(), name: "Checking", type: "checking", balance: 0 }]);
-      }
-      try {
-        const lb = localStorage.getItem("budget-last-backup");
-        if (lb) setLastBackup(lb);
-      } catch (e) {
-      }
-      try {
-        const c = localStorage.getItem(CLEARED_KEY);
-        if (c) setCleared(JSON.parse(c) || {});
-      } catch (e) {
-      }
-      setLoading(false);
-    })();
-  }, []);
-  function toggleCleared(id, iso) {
-    setCleared((prev) => {
-      const next = { ...prev };
-      const k = ck(id, iso);
-      if (next[k]) delete next[k];
-      else next[k] = true;
-      try {
-        localStorage.setItem(CLEARED_KEY, JSON.stringify(next));
-      } catch (e) {
-      }
-      return next;
-    });
-  }
-  useEffect(() => {
-    try {
-      if (navigator.storage && navigator.storage.persist) {
-        navigator.storage.persisted().then((p) => {
-          if (!p) navigator.storage.persist();
-        }).catch(() => {
-        });
-      }
-    } catch (e) {
-    }
-  }, []);
-  async function persist(nextItems, nextAccounts) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: nextItems, accounts: nextAccounts }));
-      addSnapshot(nextItems, nextAccounts);
-    } catch (e) {
-      console.error("Could not save:", e);
-    }
-  }
-  function upsertAccount(acct) {
-    const next = accounts.some((a) => a.id === acct.id) ? accounts.map((a) => a.id === acct.id ? acct : a) : [...accounts, acct];
-    setAccounts(next);
-    persist(items, next);
-  }
-  function removeAccount(id) {
-    const next = accounts.filter((a) => a.id !== id);
-    setAccounts(next);
-    persist(items, next);
-  }
-  function exportBackup() {
-    try {
-      const payload = JSON.stringify({ app: "budget-planner", version: 3, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), items, accounts }, null, 2);
-      const blob = new Blob([payload], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "budget-backup-" + toISO(/* @__PURE__ */ new Date()) + ".json";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      const stamp = (/* @__PURE__ */ new Date()).toISOString();
-      try {
-        localStorage.setItem("budget-last-backup", stamp);
-      } catch (e) {
-      }
-      setLastBackup(stamp);
-    } catch (e) {
-      console.error("Export failed:", e);
-    }
-  }
-  function applyData(nextItems, nextAccounts) {
-    setItems(nextItems);
-    const accts = Array.isArray(nextAccounts) && nextAccounts.length ? nextAccounts : accounts;
-    setAccounts(accts);
-    persist(nextItems, accts);
-  }
-  const scanRef = useRef(null);
-  const [scan, setScan] = useState(null);
-  function startScan() {
-    if (scanRef.current) scanRef.current.click();
-  }
-  async function onScanFile(e) {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    setScan({ loading: true });
-    try {
-      const { data, mediaType } = await downscaleImage(file, 1100);
-      const out = await callClaudeVision(SCAN_SYS, "Extract this into the JSON schema. Today is " + toISO(/* @__PURE__ */ new Date()) + ".", data, mediaType);
-      const d = JSON.parse(out.replace(/```json|```/g, "").trim());
-      const isIncome = d.type === "income";
-      const amt = typeof d.amount === "number" ? d.amount : parseFloat(d.amount);
-      const prefill = {
-        type: isIncome ? "income" : "expense",
-        name: d.name || "",
-        payee: d.payee || "",
-        amount: amt > 0 ? amt : "",
-        date: /^\d{4}-\d{2}-\d{2}$/.test(d.dueDate || "") ? d.dueDate : toISO(selDate),
-        freq: ["once", "weekly", "biweekly", "monthly", "quarterly", "yearly"].includes(d.freq) ? d.freq : "monthly",
-        category: isIncome ? INCOME_CATS.some((c) => c.id === d.category) ? d.category : "wages" : EXPENSE_CATS.some((c) => c.id === d.category) ? d.category : "misc",
-        notes: d.notes || ""
-      };
-      setScan(null);
-      setEditor({ item: null, date: prefill.date, prefill });
-    } catch (err) {
-      setScan({ error: "Couldn't read that image. Try a clearer shot, or add it manually." });
-    }
-  }
-  function upsert(it) {
-    const next = items.some((x) => x.id === it.id) ? items.map((x) => x.id === it.id ? it : x) : [...items, it];
-    setItems(next);
-    persist(next, accounts);
-    setEditor(null);
-  }
-  function remove(id) {
-    const next = items.filter((x) => x.id !== id);
-    setItems(next);
-    persist(next, accounts);
-    setEditor(null);
-  }
-  const { y, m } = view;
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const firstDow = new Date(y, m, 1).getDay();
-  const eff = useMemo(() => effectiveItems(items), [items]);
-  const byId = useMemo(() => Object.fromEntries(items.map((x) => [x.id, x])), [items]);
-  const acctName = (id) => (accounts.find((a) => a.id === id) || {}).name || "account";
-  const totals = useMemo(() => monthTotals(eff, y, m), [eff, y, m]);
-  const endBalance = useMemo(() => runningBalance(eff, startBalance, y, m), [eff, startBalance, y, m]);
-  const dayMap = useMemo(() => {
-    const map = {};
-    for (const it of eff) for (const day of occurrences(it, y, m)) {
-      (map[day] = map[day] || []).push(it);
-    }
-    return map;
-  }, [eff, y, m]);
-  const selItems = dayMap[selDay] || [];
-  const selDate = new Date(y, m, selDay);
-  function shiftMonth(delta) {
-    let nm = m + delta, ny = y;
-    if (nm < 0) {
-      nm = 11;
-      ny--;
-    }
-    if (nm > 11) {
-      nm = 0;
-      ny++;
-    }
-    setView({ y: ny, m: nm });
-    const today = /* @__PURE__ */ new Date();
-    setSelDay(today.getFullYear() === ny && today.getMonth() === nm ? today.getDate() : 1);
-  }
-  function goToday() {
-    const t = /* @__PURE__ */ new Date();
-    setView({ y: t.getFullYear(), m: t.getMonth() });
-    setSelDay(t.getDate());
-  }
-  const isToday = (day) => {
-    const t = /* @__PURE__ */ new Date();
-    return t.getFullYear() === y && t.getMonth() === m && t.getDate() === day;
-  };
-  const cells = [];
-  for (let i = 0; i < firstDow; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5 truncate", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setSettingsOpen(true), label: "Settings and backup" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2699")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected total \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, accounts.length, " account", accounts.length === 1 ? "" : "s", " \xB7 now ", money(startBalance))), /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Accounts"), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, "Manage")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, accounts.map((a) => {
-    const proj = accountProjected(eff, accounts, a.id, y, m);
-    return /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setAcctView(a.id), className: "w-full flex items-center gap-3 py-2 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label, " \xB7 now ", money(Number(a.balance) || 0))), /* @__PURE__ */ React.createElement("span", { className: "text-right shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "bx-num block font-semibold text-[14px]", style: { color: proj >= 0 ? "#16202B" : "#C2410C" } }, signed(Math.round(proj))), /* @__PURE__ */ React.createElement("span", { className: "block text-[11px]", style: { color: "#A0AAB6" } }, "end of ", MO_SHORT[m]))));
-  }))), /* @__PURE__ */ React.createElement(Insights, { items, eff, startBalance, cleared, accounts }), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => shiftMonth(-1),
-      "aria-label": "Previous month",
-      className: "h-9 w-9 rounded-full flex items-center justify-center text-[20px] active:scale-90",
-      style: { background: "#F2F4F7", color: "#16202B", transition: "transform .1s", lineHeight: 1 }
-    },
-    "\u2039"
-  ), /* @__PURE__ */ React.createElement("button", { onClick: goToday, className: "text-[15px] font-bold active:opacity-60", style: { letterSpacing: "-0.01em" } }, MONTHS[m], " ", y), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => shiftMonth(1),
-      "aria-label": "Next month",
-      className: "h-9 w-9 rounded-full flex items-center justify-center text-[20px] active:scale-90",
-      style: { background: "#F2F4F7", color: "#16202B", transition: "transform .1s", lineHeight: 1 }
-    },
-    "\u203A"
-  )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-7 mb-1" }, DOW.map((d) => /* @__PURE__ */ React.createElement("div", { key: d, className: "text-center text-[11px] font-semibold py-1", style: { color: "#A0AAB6" } }, d[0]))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-7 gap-1" }, cells.map((day, i) => {
-    if (day === null) return /* @__PURE__ */ React.createElement("div", { key: `e${i}` });
-    const its = dayMap[day] || [];
-    const sel = day === selDay;
-    const cols = [...new Set(its.map(itemColor))].slice(0, 3);
-    return /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: day,
-        onClick: () => setSelDay(day),
-        className: "relative rounded-xl flex flex-col items-center justify-start pt-1.5 active:scale-95",
-        style: { height: 46, transition: "transform .1s", background: sel ? "#13202E" : "transparent", outline: isToday(day) && !sel ? "1.5px solid #CBD3DC" : "none", outlineOffset: -1.5 }
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "bx-num text-[13px] font-semibold", style: { color: sel ? "#fff" : "#16202B" } }, day),
-      /* @__PURE__ */ React.createElement("span", { className: "flex gap-0.5 mt-1 h-1.5" }, cols.map((c, k) => /* @__PURE__ */ React.createElement("span", { key: k, className: "h-1.5 w-1.5 rounded-full", style: { background: sel ? "#fff" : c } })))
-    );
-  }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[15px] font-bold" }, DOW[selDate.getDay()], ", ", MO_SHORT[m], " ", selDay), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: startScan,
-      className: "flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold active:scale-95",
-      style: { background: "#EEF2FF", color: "#4338CA", transition: "transform .1s" }
-    },
-    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, "\u{1F4F7}"),
-    " Scan"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setEditor({ item: null, date: toISO(selDate) }),
-      className: "flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold active:scale-95",
-      style: { background: "#13202E", color: "#fff", transition: "transform .1s" }
-    },
-    /* @__PURE__ */ React.createElement("span", { className: "text-[15px] leading-none", style: { marginTop: -1 } }, "+"),
-    " Add"
-  ))), selItems.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-[13px] py-1", style: { color: "#8A95A3" } }, "Nothing on this day. Tap Add to put income or a bill here.") : /* @__PURE__ */ React.createElement("ul", { className: "divide-y", style: { borderColor: "#F0F2F5" } }, selItems.map((it) => {
-    const dayISO = toISO(selDate);
-    const paid = !!cleared[ck(it.id, dayISO)];
-    return /* @__PURE__ */ React.createElement("li", { key: it.id, className: "flex items-center gap-2.5 py-2.5" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => toggleCleared(it.id, dayISO),
-        "aria-label": paid ? "Mark as not paid" : "Mark as paid",
-        className: "shrink-0 h-6 w-6 rounded-full flex items-center justify-center active:scale-90",
-        style: { transition: "transform .1s", border: paid ? "none" : "2px solid #D5DBE2", background: paid ? "#11875E" : "transparent" }
-      },
-      paid && /* @__PURE__ */ React.createElement("span", { style: { color: "#fff", fontSize: 12, lineHeight: 1 } }, "\u2713")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => setEditor({ item: byId[it.id] || it, date: it.date }),
-        className: "flex-1 min-w-0 flex items-center gap-3 text-left active:opacity-60",
-        style: { opacity: paid ? 0.5 : 1 }
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: itemColor(it) } }),
-      /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[14px] truncate flex items-center gap-1.5", style: { textDecoration: paid ? "line-through" : "none" } }, it.name, it.auto && /* @__PURE__ */ React.createElement(AutoBadge, null)), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, paid ? (it.type === "income" ? "Received" : it.type === "transfer" ? "Done" : "Paid") + " \xB7 " : "", it.type === "transfer" ? `${acctName(it.fromAccountId)} \u2192 ${acctName(it.toAccountId)}` : it.linkedIncomeId && byId[it.linkedIncomeId] ? `Auto from ${byId[it.linkedIncomeId].name}` : `${it.payee ? it.payee + " \xB7 " : ""}${it.type === "income" ? inCat(it.category).label : expCat(it.category).label} \xB7 ${freqLabel(it.freq)}`)),
-      /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0", style: { color: it.type === "income" ? INCOME_COLOR : "#16202B" } }, it.type === "income" ? "+" : "", money(it.amount))
-    ));
-  }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setShowAll((v) => !v), className: "w-full flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "All items (", items.length, ")"), /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6", transform: showAll ? "rotate(180deg)" : "none", transition: "transform .2s" } }, "\u2304")), showAll && /* @__PURE__ */ React.createElement("ul", { className: "divide-y mt-3 bx-fade", style: { borderColor: "#F0F2F5" } }, items.length === 0 && /* @__PURE__ */ React.createElement("li", { className: "text-[13px] py-1", style: { color: "#8A95A3" } }, "No items yet."), items.slice().sort((a, b) => a.date.localeCompare(b.date)).map((it) => /* @__PURE__ */ React.createElement("li", { key: it.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setEditor({ item: it, date: it.date }), className: "w-full flex items-center gap-3 py-2.5 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-2 w-2 rounded-full shrink-0", style: { background: itemColor(it) } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[14px] truncate flex items-center gap-1.5" }, it.name, it.auto && /* @__PURE__ */ React.createElement(AutoBadge, null)), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, it.type === "transfer" ? `${acctName(it.fromAccountId)} \u2192 ${acctName(it.toAccountId)} \xB7 ${freqLabel(it.freq)}` : it.linkedIncomeId && byId[it.linkedIncomeId] ? `Auto from ${byId[it.linkedIncomeId].name}` : `${freqLabel(it.freq)} \xB7 from ${MO_SHORT[parseISO(it.date).getMonth()]} ${parseISO(it.date).getDate()}`)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0", style: { color: it.type === "income" ? INCOME_COLOR : "#16202B" } }, it.type === "income" ? "+" : "", money(it.amount))))))))), editor && /* @__PURE__ */ React.createElement(
-    Editor,
-    {
-      entry: editor,
-      incomes: items.filter((x) => x.type === "income"),
-      accounts,
-      onClose: () => setEditor(null),
-      onSave: upsert,
-      onDelete: remove,
-      onAdvise: (bill, onApplyDate) => setAdvisor({ mode: "bill", bill, onApplyDate }),
-      onAsk: (draft) => setAdvisor({ mode: "entry", draft })
-    }
-  ), advisor && /* @__PURE__ */ React.createElement(
-    Advisor,
-    {
-      advisor,
-      items: eff,
-      startBalance,
-      cleared,
-      accounts,
-      onClose: () => setAdvisor(null)
-    }
-  ), accountsOpen && /* @__PURE__ */ React.createElement(
-    AccountsSheet,
-    {
-      accounts,
-      onSave: upsertAccount,
-      onDelete: removeAccount,
-      onClose: () => setAccountsOpen(false)
-    }
-  ), acctView && /* @__PURE__ */ React.createElement(
-    AccountLedger,
-    {
-      account: accounts.find((a) => a.id === acctView),
-      eff,
-      accounts,
-      onClose: () => setAcctView(null)
-    }
-  ), settingsOpen && /* @__PURE__ */ React.createElement(
-    Settings,
-    {
-      itemCount: items.length,
-      lastBackup,
-      onExport: exportBackup,
-      onImport: applyData,
-      onRestore: applyData,
-      onClose: () => setSettingsOpen(false)
-    }
-  ), /* @__PURE__ */ React.createElement("input", { ref: scanRef, type: "file", accept: "image/*", onChange: onScanFile, style: { display: "none" } }), scan && /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      className: "fixed inset-0 z-50 flex items-center justify-center bx-fade px-8",
-      style: { background: "rgba(19,32,46,.55)" },
-      onClick: () => scan.error && setScan(null)
-    },
-    /* @__PURE__ */ React.createElement("div", { className: "w-full bg-white rounded-3xl p-6 text-center", style: { maxWidth: 320 }, onClick: (e) => e.stopPropagation() }, scan.loading ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "flex justify-center mb-3" }, /* @__PURE__ */ React.createElement(Spinner, null)), /* @__PURE__ */ React.createElement("div", { className: "text-[15px] font-semibold" }, "Reading your bill\u2026"), /* @__PURE__ */ React.createElement("div", { className: "text-[13px] mt-1", style: { color: "#8A95A3" } }, "Pulling out the payee, amount and due date.")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-[15px] font-semibold", style: { color: "#C2410C" } }, "Couldn't read it"), /* @__PURE__ */ React.createElement("div", { className: "text-[13px] mt-1 mb-4", style: { color: "#6B7785" } }, scan.error), /* @__PURE__ */ React.createElement("button", { onClick: () => setScan(null), className: "w-full rounded-xl py-2.5 text-[14px] font-semibold", style: { background: "#13202E", color: "#fff" } }, "OK")))
-  ));
-}
-function NavBtn({ children, onClick, label }) {
-  return /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick,
-      "aria-label": label,
-      className: "h-9 w-9 rounded-full bg-white flex items-center justify-center text-[20px] active:scale-90",
-      style: { color: "#16202B", boxShadow: "0 1px 2px rgba(16,24,40,.08)", transition: "transform .1s", lineHeight: 1 }
-    },
-    children
-  );
-}
-function Stat({ label, value, color }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3 py-2.5", style: { background: "rgba(255,255,255,.07)" } }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-medium", style: { color: "#8FA0B3" } }, label), /* @__PURE__ */ React.createElement("div", { className: "bx-num text-[14px] font-semibold mt-0.5", style: { color } }, value));
-}
-function BalanceEditor({ value, onSave, onCancel }) {
-  const [v, setV] = useState(String(value));
-  return /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-2" }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      autoFocus: true,
-      value: v,
-      inputMode: "decimal",
-      onChange: (e) => setV(e.target.value.replace(/[^0-9.-]/g, "")),
-      className: "bx-num flex-1 rounded-xl px-3 py-2.5 text-[16px] outline-none",
-      style: { background: "rgba(255,255,255,.12)", color: "#fff" },
-      placeholder: "Starting balance"
-    }
-  ), /* @__PURE__ */ React.createElement("button", { onClick: () => onSave(v), className: "rounded-xl px-4 py-2.5 text-[14px] font-semibold", style: { background: "#5EEAD4", color: "#0B1620" } }, "Set"), /* @__PURE__ */ React.createElement("button", { onClick: onCancel, className: "text-[13px] px-1", style: { color: "#8FA0B3" } }, "\u2715"));
-}
-function Editor({ entry, incomes = [], accounts = [], onClose, onSave, onDelete, onAdvise, onAsk }) {
-  const item = entry.item;
-  const seed = item || entry.prefill || {};
-  const [type, setType] = useState(seed.type || "expense");
-  const [name, setName] = useState(seed.name || "");
-  const [payee, setPayee] = useState(seed.payee || "");
-  const [amount, setAmount] = useState(seed.amount != null && seed.amount !== "" ? String(seed.amount) : "");
-  const [date, setDate] = useState(seed.date || entry.date);
-  const [fr, setFr] = useState(seed.freq || "monthly");
-  const [grace, setGrace] = useState(seed.grace != null ? String(seed.grace) : "");
-  const [notes, setNotes] = useState(seed.notes || "");
-  const [auto, setAuto] = useState(!!seed.auto);
-  const [linkedIncomeId, setLinkedIncomeId] = useState(seed.linkedIncomeId || (incomes[0] ? incomes[0].id : ""));
-  const a0 = accounts[0] ? accounts[0].id : "";
-  const a1 = accounts[1] ? accounts[1].id : a0;
-  const [accountId, setAccountId] = useState(seed.accountId || a0);
-  const [fromAccountId, setFromAccountId] = useState(seed.fromAccountId || a0);
-  const [toAccountId, setToAccountId] = useState(seed.toAccountId || a1);
-  const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
-  const [category, setCategory] = useState(seed.category || (type === "income" ? "wages" : "home"));
-  const canAuto = type === "expense" || type === "transfer";
-  const linked = canAuto && auto && !!linkedIncomeId;
-  function switchType(t) {
-    setType(t);
-    if (t === "income") {
-      setCategory("wages");
-      setAuto(false);
-    } else if (t === "expense") setCategory("home");
-  }
-  const amt = parseFloat(amount);
-  const baseValid = amt > 0 && (date || linked);
-  const valid = type === "transfer" ? baseValid && fromAccountId && toAccountId && fromAccountId !== toAccountId : baseValid && name.trim() && accountId;
-  const inputStyle = { background: "#F2F4F7", border: "1px solid transparent" };
-  const focus = (e) => e.target.style.border = "1px solid #13202E";
-  const blur = (e) => e.target.style.border = "1px solid transparent";
-  function build() {
-    const isAuto = canAuto && auto && !!linkedIncomeId;
-    const base = {
-      id: item?.id || uid(),
-      type,
-      amount: Math.round(amt * 100) / 100,
-      date,
-      freq: fr,
-      notes: notes.trim(),
-      auto: isAuto || void 0,
-      linkedIncomeId: isAuto ? linkedIncomeId : void 0
-    };
-    if (type === "transfer") {
-      return { ...base, name: name.trim() || "Transfer", fromAccountId, toAccountId };
-    }
-    return {
-      ...base,
-      name: name.trim(),
-      payee: payee.trim(),
-      category,
-      accountId,
-      grace: type === "expense" && !isAuto && grace !== "" ? Math.max(0, parseInt(grace, 10) || 0) : null
-    };
-  }
-  function save() {
-    if (valid) onSave(build());
-  }
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 mb-4 p-1 rounded-2xl", style: { background: "#F2F4F7" } }, [["expense", "Bill"], ["income", "Income"], ["transfer", "Transfer"]].map(([t, lbl]) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: t,
-      onClick: () => switchType(t),
-      className: "flex-1 rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.98]",
-      style: { transition: "all .12s", background: type === t ? t === "income" ? INCOME_COLOR : t === "transfer" ? TRANSFER_COLOR : "#13202E" : "transparent", color: type === t ? "#fff" : "#6B7785" }
-    },
-    lbl
-  ))), /* @__PURE__ */ React.createElement(Field, { label: type === "transfer" ? /* @__PURE__ */ React.createElement(React.Fragment, null, "Label ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, color: "#A0AAB6" } }, "(optional)")) : "Name" }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: name,
-      onChange: (e) => setName(e.target.value),
-      onFocus: focus,
-      onBlur: blur,
-      placeholder: type === "income" ? "Paycheck, side gig\u2026" : type === "transfer" ? "To savings\u2026" : "Rent, electric, Netflix\u2026",
-      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
-      style: inputStyle
-    }
-  )), type !== "transfer" && /* @__PURE__ */ React.createElement(Field, { label: type === "income" ? "Who it's from" : "Who it's for" }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: payee,
-      onChange: (e) => setPayee(e.target.value),
-      onFocus: focus,
-      onBlur: blur,
-      placeholder: type === "income" ? "Employer, client\u2026" : "Landlord, ComEd, Visa\u2026",
-      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
-      style: inputStyle
-    }
-  )), /* @__PURE__ */ React.createElement(Field, { label: "Amount" }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: amount,
-      onChange: (e) => setAmount(e.target.value.replace(/[^0-9.]/g, "")),
-      inputMode: "decimal",
-      placeholder: "0",
-      onFocus: focus,
-      onBlur: blur,
-      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
-      style: inputStyle
-    }
-  )), type === "transfer" ? /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 mb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1" }, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, "From"), /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("select", { value: fromAccountId, onChange: (e) => setFromAccountId(e.target.value), className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none", style: inputStyle }, accounts.map((a) => /* @__PURE__ */ React.createElement("option", { key: a.id, value: a.id }, a.name))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-end pb-3", style: { color: "#A0AAB6" } }, "\u2192"), /* @__PURE__ */ React.createElement("div", { className: "flex-1" }, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, "To"), /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("select", { value: toAccountId, onChange: (e) => setToAccountId(e.target.value), className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none", style: inputStyle }, accounts.map((a) => /* @__PURE__ */ React.createElement("option", { key: a.id, value: a.id }, a.name))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304")))) : /* @__PURE__ */ React.createElement(Field, { label: type === "income" ? "Deposit to" : "Pay from" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("select", { value: accountId, onChange: (e) => setAccountId(e.target.value), className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none", style: inputStyle }, accounts.map((a) => /* @__PURE__ */ React.createElement("option", { key: a.id, value: a.id }, a.name))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), type === "transfer" && fromAccountId === toAccountId && /* @__PURE__ */ React.createElement("p", { className: "text-[12px] -mt-2 mb-3", style: { color: "#C2410C" } }, "Pick two different accounts."), canAuto && incomes.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-4" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setAuto((v) => !v),
-      className: "w-full flex items-center justify-between rounded-xl px-3.5 py-3 active:scale-[.99]",
-      style: { transition: "transform .1s", background: auto ? "#EEF2FF" : "#F2F4F7" }
-    },
-    /* @__PURE__ */ React.createElement("span", { className: "text-left" }, /* @__PURE__ */ React.createElement("span", { className: "block text-[14px] font-semibold", style: { color: auto ? "#4338CA" : "#16202B" } }, type === "transfer" ? "On every payday" : "Automatic transfer"), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, type === "transfer" ? "Moves with a paycheck automatically" : "Pulled straight from a paycheck")),
-    /* @__PURE__ */ React.createElement("span", { className: "relative inline-block", style: { width: 42, height: 24 } }, /* @__PURE__ */ React.createElement("span", { className: "absolute inset-0 rounded-full", style: { background: auto ? "#4338CA" : "#CBD3DC", transition: "background .15s" } }), /* @__PURE__ */ React.createElement("span", { className: "absolute top-0.5 h-5 w-5 rounded-full bg-white", style: { left: auto ? 19 : 3, transition: "left .15s" } }))
-  ), auto && /* @__PURE__ */ React.createElement("div", { className: "mt-2 relative" }, /* @__PURE__ */ React.createElement(
-    "select",
-    {
-      value: linkedIncomeId,
-      onChange: (e) => setLinkedIncomeId(e.target.value),
-      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none",
-      style: inputStyle
-    },
-    incomes.map((inc) => /* @__PURE__ */ React.createElement("option", { key: inc.id, value: inc.id }, "Comes from: ", inc.name))
-  ), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), linked ? /* @__PURE__ */ React.createElement("div", { className: "mb-4 rounded-xl px-3.5 py-3 text-[13px]", style: { background: "#F6F7FB", color: "#6B7785" } }, "Lands on every ", /* @__PURE__ */ React.createElement("b", { style: { color: "#16202B" } }, (incomes.find((i) => i.id === linkedIncomeId) || {}).name), " deposit and follows its schedule automatically.") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: "Date" }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      type: "date",
-      value: date,
-      onChange: (e) => setDate(e.target.value),
-      onFocus: focus,
-      onBlur: blur,
-      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
-      style: inputStyle
-    }
-  )), /* @__PURE__ */ React.createElement(Field, { label: "Repeat" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2" }, FREQS.map((f) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: f.id,
-      onClick: () => setFr(f.id),
-      className: "rounded-full px-3.5 py-2 text-[13px] font-medium active:scale-95",
-      style: { transition: "all .12s", background: fr === f.id ? "#13202E" : "#F2F4F7", color: fr === f.id ? "#fff" : "#16202B" }
-    },
-    f.label
-  ))))), type !== "transfer" && /* @__PURE__ */ React.createElement(Field, { label: "Category" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(
-    "select",
-    {
-      value: category,
-      onChange: (e) => setCategory(e.target.value),
-      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none",
-      style: inputStyle
-    },
-    cats.map((c) => /* @__PURE__ */ React.createElement("option", { key: c.id, value: c.id }, c.label))
-  ), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), type === "expense" && !linked && /* @__PURE__ */ React.createElement(Field, { label: /* @__PURE__ */ React.createElement(React.Fragment, null, "Grace period ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, color: "#A0AAB6" } }, "(days you can pay late without penalty \u2014 optional)")) }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: grace,
-      onChange: (e) => setGrace(e.target.value.replace(/[^0-9]/g, "").slice(0, 3)),
-      inputMode: "numeric",
-      placeholder: "e.g. 15",
-      onFocus: focus,
-      onBlur: blur,
-      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
-      style: inputStyle
-    }
-  )), /* @__PURE__ */ React.createElement(Field, { label: /* @__PURE__ */ React.createElement(React.Fragment, null, "Notes ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, color: "#A0AAB6" } }, "(optional)")) }, /* @__PURE__ */ React.createElement(
-    "textarea",
-    {
-      value: notes,
-      onChange: (e) => setNotes(e.target.value),
-      onFocus: focus,
-      onBlur: blur,
-      rows: 2,
-      placeholder: type === "income" ? "Account, splits\u2026" : "Account #, autopay, confirmation\u2026",
-      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none resize-none",
-      style: inputStyle
-    }
-  )), type === "expense" && !auto && valid && /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => onAdvise(build(), (iso) => setDate(iso)),
-      className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99] mb-2 flex items-center justify-center gap-2",
-      style: { transition: "all .12s", background: "#EEF2FF", color: "#4338CA" }
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u2728"),
-    " Best day to pay this"
-  ), valid && /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => onAsk(build()),
-      className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99] mb-2 flex items-center justify-center gap-2",
-      style: { transition: "all .12s", background: "#F2F4F7", color: "#16202B" }
-    },
-    /* @__PURE__ */ React.createElement("span", null, "\u2728"),
-    " Ask about this"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: save,
-      disabled: !valid,
-      className: "w-full rounded-xl py-3.5 text-[15px] font-semibold active:scale-[.99] mt-2",
-      style: { transition: "all .12s", background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" }
-    },
-    item ? "Save changes" : `Add ${type === "income" ? "income" : "expense"}`
-  ), item ? /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(item.id), className: "w-full py-3 mt-1 text-[14px] font-semibold", style: { color: "#C2410C" } }, "Delete") : /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-1 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Cancel")));
-}
-function Field({ label, children }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "mb-4" }, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, label), children);
-}
-function AutoBadge() {
-  return /* @__PURE__ */ React.createElement(
-    "span",
-    {
-      className: "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0",
-      style: { background: "#EEF2FF", color: "#4338CA" }
-    },
-    "auto"
-  );
-}
-const SCAN_SYS = "You read a photo or screenshot of a bill, invoice, statement, or paystub and extract its details. Respond ONLY with a JSON object \u2014 no markdown, no preamble. Keys: type ('expense' or 'income'); name (short label, e.g. 'Electric bill'); payee (who it is paid to / who it is from); amount (number only, the amount due or received \u2014 no currency symbol; never guess if not shown, use 0); dueDate (YYYY-MM-DD if a due/statement date is visible, else empty string); freq ('once','weekly','biweekly','monthly','quarterly','yearly' \u2014 best guess, default 'monthly' for a recurring bill); category (for expenses one of: home, daily, transport, health, insurance, obligations, subscriptions, children, education, entertainment, pets, charity, vacation, savings, business, misc; for income use 'wages'); notes (account number or other useful detail, else empty). Use the provided today's date to resolve partial dates. Never invent an amount.";
-const INSIGHTS_SYS = "You are a sharp, plain-spoken budgeting advisor embedded in a personal budget app. You are given the user's full projected cash flow with running balances. Surface the few things most worth knowing. Be concrete with dates and dollar amounts, and never invent numbers. Output 2-4 lines, each starting with '- ', no preamble, no headers.";
-function Insights({ items, eff, startBalance, cleared, accounts }) {
-  const sig = useMemo(
-    () => JSON.stringify(items.map((i) => [i.type, i.name, i.amount, i.date, i.freq, i.category, i.auto, i.linkedIncomeId])) + "|" + startBalance,
-    [items, startBalance]
-  );
-  const [text, setText] = useState("");
-  const [genSig, setGenSig] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const timer = useRef(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("budget-insights");
-      if (raw) {
-        const c = JSON.parse(raw);
-        setText(c.text || "");
-        setGenSig(c.sig || null);
-      }
-    } catch (e) {
-    }
-  }, []);
-  async function run() {
-    if (items.length === 0) return;
-    if (timer.current) {
-      clearTimeout(timer.current);
-      timer.current = null;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const ctx = buildContext(eff, startBalance, cleared);
-      const autos = items.filter((i) => i.type === "expense" && i.auto);
-      const acctLine = accounts && accounts.length ? "Accounts (current balance): " + accounts.map((a) => `${a.name} ${acctType(a.type).label} ${Number(a.balance) || 0}`).join(", ") + ".\n\n" : "";
-      const user = `Today is ${ctx.todayISO}.
-
-` + acctLine + `Projected cash flow (date, amount, item, running balance):
-${ctx.lines.join("\n")}
-
-` + (autos.length ? `Automatic transfers pulled from paychecks (fixed, not movable): ${autos.map((a) => a.name + " " + a.amount).join(", ")}.
-
-` : "") + `Give 2-4 short observations: tight spots before the next paycheck, days where bills stack up, how much is left uncommitted, and anything risky or worth acting on.`;
-      const out = await callClaude(INSIGHTS_SYS, user);
-      setText(out);
-      setGenSig(sig);
-      try {
-        localStorage.setItem("budget-insights", JSON.stringify({ sig, text: out }));
-      } catch (e) {
-      }
-    } catch (e) {
-      setError("Couldn't refresh insights \u2014 tap to retry.");
-    } finally {
-      setLoading(false);
-    }
-  }
-  if (items.length === 0) return null;
-  const stale = genSig !== sig;
-  return /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-5", style: { background: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,.06)", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[15px]" }, "\u2728"), /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Insights")), /* @__PURE__ */ React.createElement("button", { onClick: run, disabled: loading, className: "flex items-center gap-1.5 text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, loading ? /* @__PURE__ */ React.createElement(Spinner, null) : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14 } }, "\u21BB"), loading ? "Reading" : stale ? "Update" : "Refresh")), error ? /* @__PURE__ */ React.createElement("button", { onClick: run, className: "text-[13px] text-left", style: { color: "#C2410C" } }, error) : text ? /* @__PURE__ */ React.createElement("div", { style: { opacity: stale && !loading ? 0.55 : 1, transition: "opacity .2s" } }, /* @__PURE__ */ React.createElement(RichText, { text }), stale && !loading && /* @__PURE__ */ React.createElement("p", { className: "text-[11px] mt-2", style: { color: "#A0AAB6" } }, "Budget changed \u2014 updating shortly\u2026")) : /* @__PURE__ */ React.createElement("p", { className: "text-[13px] flex items-center gap-2", style: { color: "#8A95A3" } }, loading ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Spinner, null), " Reading your budget\u2026") : "Tap Refresh whenever you want a read on tight spots and what's left over."));
-}
-async function claudeRequest(messages, system, model) {
-  const res = await fetch(WORKER_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: model || MODEL, max_tokens: 1500, system, messages })
-  });
-  if (!res.ok) throw new Error("Request failed (" + res.status + ")");
-  const data = await res.json();
-  if (data && Array.isArray(data.content)) return data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
-  if (data && typeof data.text === "string") return data.text.trim();
-  if (data && typeof data.completion === "string") return data.completion.trim();
-  if (typeof data === "string") return data.trim();
-  throw new Error("Unexpected response from Worker");
-}
-async function callClaude(system, userContent) {
-  return claudeRequest([{ role: "user", content: userContent }], system);
-}
-async function callClaudeVision(system, text, imageData, mediaType) {
-  return claudeRequest(
-    [{ role: "user", content: [
-      { type: "image", source: { type: "base64", media_type: mediaType, data: imageData } },
-      { type: "text", text }
-    ] }],
-    system,
-    SCAN_MODEL
-  );
-}
-function nextDue(bill, from) {
-  let cy = from.getFullYear(), cm = from.getMonth(), g = 0;
-  while (g < 36) {
-    for (const d of occurrences(bill, cy, cm)) {
-      const dt = new Date(cy, cm, d);
-      if (dt >= from) return dt;
-    }
-    cm++;
-    if (cm > 11) {
-      cm = 0;
-      cy++;
-    }
-    g++;
-  }
-  return parseISO(bill.date);
-}
-function buildContext(items, startBalance, cleared) {
-  const c = cleared || {};
-  const today = /* @__PURE__ */ new Date();
-  const horizon = toISO(addDays(today, 80));
-  const led = ledger(items, startBalance, horizon);
-  const fromISO = toISO(addDays(today, -3));
-  const lines = led.filter((e) => e.iso >= fromISO).map((e) => {
-    const paid = c[ck(e.id, e.iso)] ? e.type === "income" ? " [received]" : " [paid]" : "";
-    return `${e.iso}  ${e.type === "income" ? "+" : "-"}${e.amount}  ${e.name}${e.payee ? ` (${e.payee})` : ""}${paid}  -> balance ${Math.round(e.balance)}`;
-  });
-  return { todayISO: toISO(today), lines };
-}
-const fmtLong = (iso) => {
-  const d = parseISO(iso);
-  return `${DOW[d.getDay()]}, ${MO_SHORT[d.getMonth()]} ${d.getDate()}`;
-};
-function RichText({ text }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, text.split(/\n+/).map((line, i) => {
-    const t = line.trim();
-    if (!t) return null;
-    if (/^[-•]\s/.test(t))
-      return /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[14px] leading-relaxed" }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, t.replace(/^[-•]\s/, "")));
-    return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[14px] leading-relaxed" }, t);
-  }));
-}
-function Advisor({ advisor, items, startBalance, cleared, accounts, onClose }) {
-  const isBill = advisor.mode === "bill";
-  const isEntry = advisor.mode === "entry";
-  const bill = advisor.bill;
-  const draft = advisor.draft;
-  const [loading, setLoading] = useState(isBill);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState(null);
-  const [applied, setApplied] = useState(false);
-  const [q, setQ] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [asking, setAsking] = useState(false);
-  function catLabel() {
-    if (isBill) return expCat(bill.category).label;
-    if (isEntry) return draft.type === "income" ? inCat(draft.category).label : expCat(draft.category).label;
-    return "";
-  }
-  const chips = (() => {
-    if (isBill) return ["Can I split this into two payments?", `Is ${money(bill.amount)} a lot for ${catLabel().toLowerCase()}?`, "What if I skip it this month?"];
-    if (isEntry) {
-      if (draft.type === "income") return ["How should I split this paycheck?", "How much of this can I safely save?", "What bills should land right after this?"];
-      return [`Is ${draft.amount ? money(draft.amount) : "this"} typical for ${catLabel().toLowerCase()}?`, "When should I pay this each month?", "Worth putting on autopay?"];
-    }
-    return ["Where can I free up cash?", "Which bill should I move to a safer day?", "How much is left uncommitted?", "Can I afford a big purchase this month?"];
-  })();
-  const SYS_BASE = "You are a practical, plain-spoken budgeting advisor embedded in a personal budgeting app. You reason about real dates and running cash balances. Be specific and reference the numbers you are given. Never invent figures. Keep advice realistic and concise.";
-  useEffect(() => {
-    if (!isBill) return;
-    (async () => {
-      try {
-        const ctx = buildContext(items, startBalance, cleared);
-        const due = nextDue(bill, /* @__PURE__ */ new Date());
-        const dueISO = toISO(due);
-        const graceEnd = bill.grace != null ? toISO(addDays(due, bill.grace)) : null;
-        const sys = SYS_BASE + " Respond ONLY with a JSON object, no markdown and no preamble, with exactly these keys: recommendedDate (a date string YYYY-MM-DD, the single best day to pay), headline (<= 8 words), reasoning (1-2 sentences citing balances or paydays), suggestions (array of 2-3 short strings: other ways to make this bill easier \u2014 e.g. autopay timing, splitting it, lowering it, aligning the due date).";
-        const user = `Today is ${ctx.todayISO}.
-
-Projected cash flow (date, amount, item, running balance):
-${ctx.lines.join("\n")}
-
-Bill to schedule:
-- Name: ${bill.name}${bill.payee ? ` (paid to ${bill.payee})` : ""}
-- Amount: ${bill.amount}
-- Next due: ${dueISO} (repeats ${freqLabel(bill.freq).toLowerCase()})
-- Grace period: ${bill.grace != null ? `${bill.grace} days (can pay through ${graceEnd} without penalty)` : "unknown \u2014 assume none unless typical for this bill type"}
-` + (bill.notes ? `- Notes: ${bill.notes}
-` : "") + `
-Recommend the single best day to pay this bill within the next 60 days. Payment is safe from the due date through the end of any grace period; paying later within grace can help if a paycheck lands in between. Prioritize keeping the running balance from going negative and paying just after income arrives. recommendedDate must be a real calendar date.`;
-        const text = await callClaude(sys, user);
-        const clean = text.replace(/```json|```/g, "").trim();
-        setResult(JSON.parse(clean));
-      } catch (e) {
-        setError("Couldn't get advice right now. Check your connection and try again.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-  async function ask(textOverride) {
-    const question = (textOverride != null ? textOverride : q).trim();
-    if (!question || asking) return;
-    setQ(question);
-    setAsking(true);
-    setAnswer("");
-    setError("");
-    try {
-      const ctx = buildContext(items, startBalance, cleared);
-      const sys = SYS_BASE + " Answer in plain text (short paragraphs or simple '- ' bullets). No markdown headers or bold.";
-      const acctLine = accounts && accounts.length ? "Accounts (current balance): " + accounts.map((a) => `${a.name} ${acctType(a.type).label} ${Number(a.balance) || 0}`).join(", ") + ".\n\n" : "";
-      let focus = "";
-      if (isBill) focus = `The user is looking at this bill: ${bill.name}, ${bill.amount}, due around ${toISO(nextDue(bill, /* @__PURE__ */ new Date()))}.
-
-`;
-      else if (isEntry) focus = `The user is entering this ${draft.type}: ${draft.name || "(unnamed)"}, amount ${draft.amount || "?"}, category ${catLabel()}, repeats ${freqLabel(draft.freq).toLowerCase()}.
-
-`;
-      const user = `Today is ${ctx.todayISO}.
-
-` + acctLine + `Projected cash flow (date, amount, item, running balance):
-${ctx.lines.join("\n")}
-
-` + focus + `Question: ${question}`;
-      setAnswer(await callClaude(sys, user));
-    } catch (e) {
-      setError("Couldn't answer right now. Try again in a moment.");
-    } finally {
-      setAsking(false);
-    }
-  }
-  const recValid = result?.recommendedDate && /^\d{4}-\d{2}-\d{2}$/.test(result.recommendedDate);
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "\u2728"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, isBill ? "Best day to pay" : isEntry ? "Ask about this" : "Budget advisor")), isBill && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, bill.name, " \xB7 ", money(bill.amount), bill.grace != null ? ` \xB7 ${bill.grace}-day grace` : ""), isEntry && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, draft.name || (draft.type === "income" ? "New income" : "New expense"), draft.amount ? ` \xB7 ${money(draft.amount)}` : "", " \xB7 ", catLabel()), isBill && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-4", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, loading ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[14px]", style: { color: "#6B7785" } }, /* @__PURE__ */ React.createElement(Spinner, null), " Reading your cash flow\u2026") : result ? /* @__PURE__ */ React.createElement("div", null, recValid && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-semibold uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Pay on"), /* @__PURE__ */ React.createElement("div", { className: "bx-num text-[22px] font-bold mt-0.5", style: { color: "#4338CA", letterSpacing: "-0.01em" } }, fmtLong(result.recommendedDate))), result.headline && /* @__PURE__ */ React.createElement("div", { className: "font-semibold text-[15px] mt-2" }, result.headline), result.reasoning && /* @__PURE__ */ React.createElement("p", { className: "text-[14px] leading-relaxed mt-1", style: { color: "#3C4654" } }, result.reasoning), Array.isArray(result.suggestions) && result.suggestions.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mt-3 space-y-1.5" }, result.suggestions.map((s, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[13px] leading-relaxed", style: { color: "#3C4654" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, s)))), recValid && advisor.onApplyDate && (applied ? /* @__PURE__ */ React.createElement("div", { className: "mt-3 text-[13px] font-semibold", style: { color: "#11875E" } }, "\u2713 Pay day set \u2014 save the bill to keep it.") : /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => {
-        advisor.onApplyDate(result.recommendedDate);
-        setApplied(true);
-      },
-      className: "mt-3 w-full rounded-xl py-2.5 text-[14px] font-semibold active:scale-[.99]",
-      style: { background: "#4338CA", color: "#fff" }
-    },
-    "Set this as the pay day"
-  ))) : /* @__PURE__ */ React.createElement("p", { className: "text-[14px]", style: { color: "#C2410C" } }, error)), /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, isBill ? "Ask a follow-up" : "Try asking"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2 mb-3" }, chips.map((c, i) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: i,
-      onClick: () => ask(c),
-      disabled: asking,
-      className: "rounded-full px-3 py-2 text-[13px] font-medium text-left active:scale-95",
-      style: { transition: "transform .1s", background: "#EEF2FF", color: "#4338CA" }
-    },
-    c
-  ))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: q,
-      onChange: (e) => setQ(e.target.value),
-      onKeyDown: (e) => {
-        if (e.key === "Enter") ask();
-      },
-      placeholder: "Ask anything\u2026",
-      className: "flex-1 rounded-xl px-3.5 py-3 text-[15px] outline-none",
-      style: { background: "#F2F4F7", border: "1px solid transparent" },
-      onFocus: (e) => e.target.style.border = "1px solid #13202E",
-      onBlur: (e) => e.target.style.border = "1px solid transparent"
-    }
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => ask(),
-      disabled: !q.trim() || asking,
-      className: "rounded-xl px-4 text-[14px] font-semibold active:scale-95",
-      style: { background: q.trim() && !asking ? "#13202E" : "#E2E6EB", color: q.trim() && !asking ? "#fff" : "#A0AAB6" }
-    },
-    asking ? /* @__PURE__ */ React.createElement(Spinner, { light: true }) : "Ask"
-  )), answer && /* @__PURE__ */ React.createElement("div", { className: "mt-4 rounded-2xl p-4 bx-fade", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(RichText, { text: answer })), error && !loading && !answer && /* @__PURE__ */ React.createElement("p", { className: "mt-3 text-[13px]", style: { color: "#C2410C" } }, error), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] leading-relaxed mt-4", style: { color: "#A0AAB6" } }, "Suggestions are general guidance from AI, not financial advice. Check grace periods and fees with each biller before changing a payment date."), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
-}
-function Spinner({ light }) {
-  return /* @__PURE__ */ React.createElement(
-    "span",
-    {
-      className: "inline-block h-4 w-4 rounded-full animate-spin",
-      style: { border: "2px solid " + (light ? "rgba(255,255,255,.4)" : "#CBD3DC"), borderTopColor: light ? "#fff" : "#13202E" }
-    }
-  );
-}
-function relTime(iso) {
-  if (!iso) return "never";
-  const d = new Date(iso), now = /* @__PURE__ */ new Date();
-  const days = Math.floor((now - d) / 864e5);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return days + " days ago";
-  return d.toLocaleDateString();
-}
-function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, onClose }) {
-  const fileRef = useRef(null);
-  const [msg, setMsg] = useState("");
-  const [snaps] = useState(() => loadSnapshots());
-  function pick() {
-    if (fileRef.current) fileRef.current.click();
-  }
-  function onFile(e) {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    const r = new FileReader();
-    r.onload = () => {
-      try {
-        const d = JSON.parse(r.result);
-        if (!Array.isArray(d.items)) throw new Error("bad");
-        if (itemCount > 0 && !window.confirm("Replace your current budget with this backup?")) return;
-        onImport(d.items, Number(d.startBalance) || 0);
-        setMsg("Restored " + d.items.length + " items from backup.");
-      } catch (err) {
-        setMsg("That file isn't a valid budget backup.");
-      }
-    };
-    r.onerror = () => setMsg("Couldn't read that file.");
-    r.readAsText(file);
-  }
-  function restore(s) {
-    if (!window.confirm("Roll back to this saved version? Your current entries will be replaced.")) return;
-    onRestore(s.items, Number(s.startBalance) || 0);
-    setMsg("Rolled back to " + new Date(s.at).toLocaleString() + ".");
-  }
-  const stale = !lastBackup || Date.now() - new Date(lastBackup).getTime() > 7 * 864e5;
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold mb-1" }, "Settings & backup"), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Your budget is saved on this device. Back up to a file to keep it safe or move it to another phone."), /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "text-[14px] font-semibold" }, "Backup file"), /* @__PURE__ */ React.createElement("div", { className: "text-[12px]", style: { color: stale ? "#C2410C" : "#8A95A3" } }, "Last backup: ", relTime(lastBackup), stale ? " \xB7 back up soon" : ""))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: onExport, className: "flex-1 rounded-xl py-3 text-[14px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, "Save backup"), /* @__PURE__ */ React.createElement("button", { onClick: pick, className: "flex-1 rounded-xl py-3 text-[14px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "Restore from file")), /* @__PURE__ */ React.createElement("input", { ref: fileRef, type: "file", accept: "application/json,.json", onChange: onFile, style: { display: "none" } })), /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "text-[14px] font-semibold mb-1" }, "Version history"), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] mb-3", style: { color: "#8A95A3" } }, "Automatic snapshots saved on this device \u2014 roll back a mistake."), snaps.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "text-[13px]", style: { color: "#A0AAB6" } }, "No snapshots yet \u2014 they start saving as you make changes.") : /* @__PURE__ */ React.createElement("ul", { className: "space-y-1.5" }, snaps.map((s, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[13px] min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block truncate" }, new Date(s.at).toLocaleString()), /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, (s.items || []).length, " items")), /* @__PURE__ */ React.createElement("button", { onClick: () => restore(s), className: "text-[13px] font-semibold shrink-0 active:scale-95", style: { color: "#4338CA" } }, "Restore"))))), msg && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mt-3 font-medium", style: { color: "#11875E" } }, msg), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-3 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
-}
-function AccountForm({ acct, onSave, onDelete, onCancel, canDelete }) {
-  const [name, setName] = useState(acct.name || "");
-  const [atype, setAtype] = useState(acct.type || "checking");
-  const [bal, setBal] = useState(acct.balance != null && acct.balance !== "" ? String(acct.balance) : "");
-  const valid = name.trim().length > 0;
-  const inputStyle = { background: "#F2F4F7", border: "1px solid transparent" };
-  const focus = (e) => e.target.style.border = "1px solid #13202E";
-  const blur = (e) => e.target.style.border = "1px solid transparent";
-  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(Field, { label: "Account name" }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: name,
-      onChange: (e) => setName(e.target.value),
-      onFocus: focus,
-      onBlur: blur,
-      placeholder: "Checking, Savings, Coinbase\u2026",
-      className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
-      style: inputStyle
-    }
-  )), /* @__PURE__ */ React.createElement(Field, { label: "Type" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("select", { value: atype, onChange: (e) => setAtype(e.target.value), className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none", style: inputStyle }, ACCT_TYPES.map((t) => /* @__PURE__ */ React.createElement("option", { key: t.id, value: t.id }, t.label))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "\u2304"))), /* @__PURE__ */ React.createElement(Field, { label: "Current balance" }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: bal,
-      onChange: (e) => setBal(e.target.value.replace(/[^0-9.-]/g, "")),
-      inputMode: "decimal",
-      placeholder: "0",
-      onFocus: focus,
-      onBlur: blur,
-      className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none",
-      style: inputStyle
-    }
-  )), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => valid && onSave({ id: acct.id, name: name.trim(), type: atype, balance: Math.round((parseFloat(bal) || 0) * 100) / 100 }),
-      disabled: !valid,
-      className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99]",
-      style: { background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" }
-    },
-    "Save account"
-  ), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between mt-1" }, /* @__PURE__ */ React.createElement("button", { onClick: onCancel, className: "py-2 text-[13px] font-medium", style: { color: "#8A95A3" } }, "Cancel"), canDelete && /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(acct.id), className: "py-2 text-[13px] font-semibold", style: { color: "#C2410C" } }, "Delete")));
-}
-function AccountsSheet({ accounts, onSave, onDelete, onClose }) {
-  const [editing, setEditing] = useState(null);
-  const total = accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold mb-1" }, "Accounts"), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Where y
+<script>/**
+ * @license React
+ * react.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+(function(){'use strict';(function(c,x){"object"===typeof exports&&"undefined"!==typeof module?x(exports):"function"===typeof define&&define.amd?define(["exports"],x):(c=c||self,x(c.React={}))})(this,function(c){function x(a){if(null===a||"object"!==typeof a)return null;a=V&&a[V]||a["@@iterator"];return"function"===typeof a?a:null}function w(a,b,e){this.props=a;this.context=b;this.refs=W;this.updater=e||X}function Y(){}function K(a,b,e){this.props=a;this.context=b;this.refs=W;this.updater=e||X}function Z(a,b,
+e){var m,d={},c=null,h=null;if(null!=b)for(m in void 0!==b.ref&&(h=b.ref),void 0!==b.key&&(c=""+b.key),b)aa.call(b,m)&&!ba.hasOwnProperty(m)&&(d[m]=b[m]);var l=arguments.length-2;if(1===l)d.children=e;else if(1<l){for(var f=Array(l),k=0;k<l;k++)f[k]=arguments[k+2];d.children=f}if(a&&a.defaultProps)for(m in l=a.defaultProps,l)void 0===d[m]&&(d[m]=l[m]);return{$$typeof:y,type:a,key:c,ref:h,props:d,_owner:L.current}}function na(a,b){return{$$typeof:y,type:a.type,key:b,ref:a.ref,props:a.props,_owner:a._owner}}
+function M(a){return"object"===typeof a&&null!==a&&a.$$typeof===y}function oa(a){var b={"=":"=0",":":"=2"};return"$"+a.replace(/[=:]/g,function(a){return b[a]})}function N(a,b){return"object"===typeof a&&null!==a&&null!=a.key?oa(""+a.key):b.toString(36)}function B(a,b,e,m,d){var c=typeof a;if("undefined"===c||"boolean"===c)a=null;var h=!1;if(null===a)h=!0;else switch(c){case "string":case "number":h=!0;break;case "object":switch(a.$$typeof){case y:case pa:h=!0}}if(h)return h=a,d=d(h),a=""===m?"."+
+N(h,0):m,ca(d)?(e="",null!=a&&(e=a.replace(da,"$&/")+"/"),B(d,b,e,"",function(a){return a})):null!=d&&(M(d)&&(d=na(d,e+(!d.key||h&&h.key===d.key?"":(""+d.key).replace(da,"$&/")+"/")+a)),b.push(d)),1;h=0;m=""===m?".":m+":";if(ca(a))for(var l=0;l<a.length;l++){c=a[l];var f=m+N(c,l);h+=B(c,b,e,f,d)}else if(f=x(a),"function"===typeof f)for(a=f.call(a),l=0;!(c=a.next()).done;)c=c.value,f=m+N(c,l++),h+=B(c,b,e,f,d);else if("object"===c)throw b=String(a),Error("Objects are not valid as a React child (found: "+
+("[object Object]"===b?"object with keys {"+Object.keys(a).join(", ")+"}":b)+"). If you meant to render a collection of children, use an array instead.");return h}function C(a,b,e){if(null==a)return a;var c=[],d=0;B(a,c,"","",function(a){return b.call(e,a,d++)});return c}function qa(a){if(-1===a._status){var b=a._result;b=b();b.then(function(b){if(0===a._status||-1===a._status)a._status=1,a._result=b},function(b){if(0===a._status||-1===a._status)a._status=2,a._result=b});-1===a._status&&(a._status=
+0,a._result=b)}if(1===a._status)return a._result.default;throw a._result;}function O(a,b){var e=a.length;a.push(b);a:for(;0<e;){var c=e-1>>>1,d=a[c];if(0<D(d,b))a[c]=b,a[e]=d,e=c;else break a}}function p(a){return 0===a.length?null:a[0]}function E(a){if(0===a.length)return null;var b=a[0],e=a.pop();if(e!==b){a[0]=e;a:for(var c=0,d=a.length,k=d>>>1;c<k;){var h=2*(c+1)-1,l=a[h],f=h+1,g=a[f];if(0>D(l,e))f<d&&0>D(g,l)?(a[c]=g,a[f]=e,c=f):(a[c]=l,a[h]=e,c=h);else if(f<d&&0>D(g,e))a[c]=g,a[f]=e,c=f;else break a}}return b}
+function D(a,b){var c=a.sortIndex-b.sortIndex;return 0!==c?c:a.id-b.id}function P(a){for(var b=p(r);null!==b;){if(null===b.callback)E(r);else if(b.startTime<=a)E(r),b.sortIndex=b.expirationTime,O(q,b);else break;b=p(r)}}function Q(a){z=!1;P(a);if(!u)if(null!==p(q))u=!0,R(S);else{var b=p(r);null!==b&&T(Q,b.startTime-a)}}function S(a,b){u=!1;z&&(z=!1,ea(A),A=-1);F=!0;var c=k;try{P(b);for(n=p(q);null!==n&&(!(n.expirationTime>b)||a&&!fa());){var m=n.callback;if("function"===typeof m){n.callback=null;
+k=n.priorityLevel;var d=m(n.expirationTime<=b);b=v();"function"===typeof d?n.callback=d:n===p(q)&&E(q);P(b)}else E(q);n=p(q)}if(null!==n)var g=!0;else{var h=p(r);null!==h&&T(Q,h.startTime-b);g=!1}return g}finally{n=null,k=c,F=!1}}function fa(){return v()-ha<ia?!1:!0}function R(a){G=a;H||(H=!0,I())}function T(a,b){A=ja(function(){a(v())},b)}var y=Symbol.for("react.element"),pa=Symbol.for("react.portal"),ra=Symbol.for("react.fragment"),sa=Symbol.for("react.strict_mode"),ta=Symbol.for("react.profiler"),
+ua=Symbol.for("react.provider"),va=Symbol.for("react.context"),wa=Symbol.for("react.forward_ref"),xa=Symbol.for("react.suspense"),ya=Symbol.for("react.memo"),za=Symbol.for("react.lazy"),V=Symbol.iterator,X={isMounted:function(a){return!1},enqueueForceUpdate:function(a,b,c){},enqueueReplaceState:function(a,b,c,m){},enqueueSetState:function(a,b,c,m){}},ka=Object.assign,W={};w.prototype.isReactComponent={};w.prototype.setState=function(a,b){if("object"!==typeof a&&"function"!==typeof a&&null!=a)throw Error("setState(...): takes an object of state variables to update or a function which returns an object of state variables.");
+this.updater.enqueueSetState(this,a,b,"setState")};w.prototype.forceUpdate=function(a){this.updater.enqueueForceUpdate(this,a,"forceUpdate")};Y.prototype=w.prototype;var t=K.prototype=new Y;t.constructor=K;ka(t,w.prototype);t.isPureReactComponent=!0;var ca=Array.isArray,aa=Object.prototype.hasOwnProperty,L={current:null},ba={key:!0,ref:!0,__self:!0,__source:!0},da=/\/+/g,g={current:null},J={transition:null};if("object"===typeof performance&&"function"===typeof performance.now){var Aa=performance;
+var v=function(){return Aa.now()}}else{var la=Date,Ba=la.now();v=function(){return la.now()-Ba}}var q=[],r=[],Ca=1,n=null,k=3,F=!1,u=!1,z=!1,ja="function"===typeof setTimeout?setTimeout:null,ea="function"===typeof clearTimeout?clearTimeout:null,ma="undefined"!==typeof setImmediate?setImmediate:null;"undefined"!==typeof navigator&&void 0!==navigator.scheduling&&void 0!==navigator.scheduling.isInputPending&&navigator.scheduling.isInputPending.bind(navigator.scheduling);var H=!1,G=null,A=-1,ia=5,ha=
+-1,U=function(){if(null!==G){var a=v();ha=a;var b=!0;try{b=G(!0,a)}finally{b?I():(H=!1,G=null)}}else H=!1};if("function"===typeof ma)var I=function(){ma(U)};else if("undefined"!==typeof MessageChannel){t=new MessageChannel;var Da=t.port2;t.port1.onmessage=U;I=function(){Da.postMessage(null)}}else I=function(){ja(U,0)};t={ReactCurrentDispatcher:g,ReactCurrentOwner:L,ReactCurrentBatchConfig:J,Scheduler:{__proto__:null,unstable_ImmediatePriority:1,unstable_UserBlockingPriority:2,unstable_NormalPriority:3,
+unstable_IdlePriority:5,unstable_LowPriority:4,unstable_runWithPriority:function(a,b){switch(a){case 1:case 2:case 3:case 4:case 5:break;default:a=3}var c=k;k=a;try{return b()}finally{k=c}},unstable_next:function(a){switch(k){case 1:case 2:case 3:var b=3;break;default:b=k}var c=k;k=b;try{return a()}finally{k=c}},unstable_scheduleCallback:function(a,b,c){var e=v();"object"===typeof c&&null!==c?(c=c.delay,c="number"===typeof c&&0<c?e+c:e):c=e;switch(a){case 1:var d=-1;break;case 2:d=250;break;case 5:d=
+1073741823;break;case 4:d=1E4;break;default:d=5E3}d=c+d;a={id:Ca++,callback:b,priorityLevel:a,startTime:c,expirationTime:d,sortIndex:-1};c>e?(a.sortIndex=c,O(r,a),null===p(q)&&a===p(r)&&(z?(ea(A),A=-1):z=!0,T(Q,c-e))):(a.sortIndex=d,O(q,a),u||F||(u=!0,R(S)));return a},unstable_cancelCallback:function(a){a.callback=null},unstable_wrapCallback:function(a){var b=k;return function(){var c=k;k=b;try{return a.apply(this,arguments)}finally{k=c}}},unstable_getCurrentPriorityLevel:function(){return k},unstable_shouldYield:fa,
+unstable_requestPaint:function(){},unstable_continueExecution:function(){u||F||(u=!0,R(S))},unstable_pauseExecution:function(){},unstable_getFirstCallbackNode:function(){return p(q)},get unstable_now(){return v},unstable_forceFrameRate:function(a){0>a||125<a?console.error("forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported"):ia=0<a?Math.floor(1E3/a):5},unstable_Profiling:null}};c.Children={map:C,forEach:function(a,b,c){C(a,function(){b.apply(this,
+arguments)},c)},count:function(a){var b=0;C(a,function(){b++});return b},toArray:function(a){return C(a,function(a){return a})||[]},only:function(a){if(!M(a))throw Error("React.Children.only expected to receive a single React element child.");return a}};c.Component=w;c.Fragment=ra;c.Profiler=ta;c.PureComponent=K;c.StrictMode=sa;c.Suspense=xa;c.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED=t;c.cloneElement=function(a,b,c){if(null===a||void 0===a)throw Error("React.cloneElement(...): The argument must be a React element, but you passed "+
+a+".");var e=ka({},a.props),d=a.key,k=a.ref,h=a._owner;if(null!=b){void 0!==b.ref&&(k=b.ref,h=L.current);void 0!==b.key&&(d=""+b.key);if(a.type&&a.type.defaultProps)var l=a.type.defaultProps;for(f in b)aa.call(b,f)&&!ba.hasOwnProperty(f)&&(e[f]=void 0===b[f]&&void 0!==l?l[f]:b[f])}var f=arguments.length-2;if(1===f)e.children=c;else if(1<f){l=Array(f);for(var g=0;g<f;g++)l[g]=arguments[g+2];e.children=l}return{$$typeof:y,type:a.type,key:d,ref:k,props:e,_owner:h}};c.createContext=function(a){a={$$typeof:va,
+_currentValue:a,_currentValue2:a,_threadCount:0,Provider:null,Consumer:null,_defaultValue:null,_globalName:null};a.Provider={$$typeof:ua,_context:a};return a.Consumer=a};c.createElement=Z;c.createFactory=function(a){var b=Z.bind(null,a);b.type=a;return b};c.createRef=function(){return{current:null}};c.forwardRef=function(a){return{$$typeof:wa,render:a}};c.isValidElement=M;c.lazy=function(a){return{$$typeof:za,_payload:{_status:-1,_result:a},_init:qa}};c.memo=function(a,b){return{$$typeof:ya,type:a,
+compare:void 0===b?null:b}};c.startTransition=function(a,b){b=J.transition;J.transition={};try{a()}finally{J.transition=b}};c.unstable_act=function(a){throw Error("act(...) is not supported in production builds of React.");};c.useCallback=function(a,b){return g.current.useCallback(a,b)};c.useContext=function(a){return g.current.useContext(a)};c.useDebugValue=function(a,b){};c.useDeferredValue=function(a){return g.current.useDeferredValue(a)};c.useEffect=function(a,b){return g.current.useEffect(a,
+b)};c.useId=function(){return g.current.useId()};c.useImperativeHandle=function(a,b,c){return g.current.useImperativeHandle(a,b,c)};c.useInsertionEffect=function(a,b){return g.current.useInsertionEffect(a,b)};c.useLayoutEffect=function(a,b){return g.current.useLayoutEffect(a,b)};c.useMemo=function(a,b){return g.current.useMemo(a,b)};c.useReducer=function(a,b,c){return g.current.useReducer(a,b,c)};c.useRef=function(a){return g.current.useRef(a)};c.useState=function(a){return g.current.useState(a)};
+c.useSyncExternalStore=function(a,b,c){return g.current.useSyncExternalStore(a,b,c)};c.useTransition=function(){return g.current.useTransition()};c.version="18.2.0"});
+})();
+</script>
+<script>/**
+ * @license React
+ * react-dom.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+(function(){/*
+ Modernizr 3.0.0pre (Custom Build) | MIT
+*/
+'use strict';(function(Q,mb){"object"===typeof exports&&"undefined"!==typeof module?mb(exports,require("react")):"function"===typeof define&&define.amd?define(["exports","react"],mb):(Q=Q||self,mb(Q.ReactDOM={},Q.React))})(this,function(Q,mb){function n(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}
+function nb(a,b){Ab(a,b);Ab(a+"Capture",b)}function Ab(a,b){$b[a]=b;for(a=0;a<b.length;a++)cg.add(b[a])}function cj(a){if(Zd.call(dg,a))return!0;if(Zd.call(eg,a))return!1;if(dj.test(a))return dg[a]=!0;eg[a]=!0;return!1}function ej(a,b,c,d){if(null!==c&&0===c.type)return!1;switch(typeof b){case "function":case "symbol":return!0;case "boolean":if(d)return!1;if(null!==c)return!c.acceptsBooleans;a=a.toLowerCase().slice(0,5);return"data-"!==a&&"aria-"!==a;default:return!1}}function fj(a,b,c,d){if(null===
+b||"undefined"===typeof b||ej(a,b,c,d))return!0;if(d)return!1;if(null!==c)switch(c.type){case 3:return!b;case 4:return!1===b;case 5:return isNaN(b);case 6:return isNaN(b)||1>b}return!1}function Y(a,b,c,d,e,f,g){this.acceptsBooleans=2===b||3===b||4===b;this.attributeName=d;this.attributeNamespace=e;this.mustUseProperty=c;this.propertyName=a;this.type=b;this.sanitizeURL=f;this.removeEmptyString=g}function $d(a,b,c,d){var e=R.hasOwnProperty(b)?R[b]:null;if(null!==e?0!==e.type:d||!(2<b.length)||"o"!==
+b[0]&&"O"!==b[0]||"n"!==b[1]&&"N"!==b[1])fj(b,c,e,d)&&(c=null),d||null===e?cj(b)&&(null===c?a.removeAttribute(b):a.setAttribute(b,""+c)):e.mustUseProperty?a[e.propertyName]=null===c?3===e.type?!1:"":c:(b=e.attributeName,d=e.attributeNamespace,null===c?a.removeAttribute(b):(e=e.type,c=3===e||4===e&&!0===c?"":""+c,d?a.setAttributeNS(d,b,c):a.setAttribute(b,c)))}function ac(a){if(null===a||"object"!==typeof a)return null;a=fg&&a[fg]||a["@@iterator"];return"function"===typeof a?a:null}function bc(a,b,
+c){if(void 0===ae)try{throw Error();}catch(d){ae=(b=d.stack.trim().match(/\n( *(at )?)/))&&b[1]||""}return"\n"+ae+a}function be(a,b){if(!a||ce)return"";ce=!0;var c=Error.prepareStackTrace;Error.prepareStackTrace=void 0;try{if(b)if(b=function(){throw Error();},Object.defineProperty(b.prototype,"props",{set:function(){throw Error();}}),"object"===typeof Reflect&&Reflect.construct){try{Reflect.construct(b,[])}catch(m){var d=m}Reflect.construct(a,[],b)}else{try{b.call()}catch(m){d=m}a.call(b.prototype)}else{try{throw Error();
+}catch(m){d=m}a()}}catch(m){if(m&&d&&"string"===typeof m.stack){for(var e=m.stack.split("\n"),f=d.stack.split("\n"),g=e.length-1,h=f.length-1;1<=g&&0<=h&&e[g]!==f[h];)h--;for(;1<=g&&0<=h;g--,h--)if(e[g]!==f[h]){if(1!==g||1!==h){do if(g--,h--,0>h||e[g]!==f[h]){var k="\n"+e[g].replace(" at new "," at ");a.displayName&&k.includes("<anonymous>")&&(k=k.replace("<anonymous>",a.displayName));return k}while(1<=g&&0<=h)}break}}}finally{ce=!1,Error.prepareStackTrace=c}return(a=a?a.displayName||a.name:"")?bc(a):
+""}function gj(a){switch(a.tag){case 5:return bc(a.type);case 16:return bc("Lazy");case 13:return bc("Suspense");case 19:return bc("SuspenseList");case 0:case 2:case 15:return a=be(a.type,!1),a;case 11:return a=be(a.type.render,!1),a;case 1:return a=be(a.type,!0),a;default:return""}}function de(a){if(null==a)return null;if("function"===typeof a)return a.displayName||a.name||null;if("string"===typeof a)return a;switch(a){case Bb:return"Fragment";case Cb:return"Portal";case ee:return"Profiler";case fe:return"StrictMode";
+case ge:return"Suspense";case he:return"SuspenseList"}if("object"===typeof a)switch(a.$$typeof){case gg:return(a.displayName||"Context")+".Consumer";case hg:return(a._context.displayName||"Context")+".Provider";case ie:var b=a.render;a=a.displayName;a||(a=b.displayName||b.name||"",a=""!==a?"ForwardRef("+a+")":"ForwardRef");return a;case je:return b=a.displayName||null,null!==b?b:de(a.type)||"Memo";case Ta:b=a._payload;a=a._init;try{return de(a(b))}catch(c){}}return null}function hj(a){var b=a.type;
+switch(a.tag){case 24:return"Cache";case 9:return(b.displayName||"Context")+".Consumer";case 10:return(b._context.displayName||"Context")+".Provider";case 18:return"DehydratedFragment";case 11:return a=b.render,a=a.displayName||a.name||"",b.displayName||(""!==a?"ForwardRef("+a+")":"ForwardRef");case 7:return"Fragment";case 5:return b;case 4:return"Portal";case 3:return"Root";case 6:return"Text";case 16:return de(b);case 8:return b===fe?"StrictMode":"Mode";case 22:return"Offscreen";case 12:return"Profiler";
+case 21:return"Scope";case 13:return"Suspense";case 19:return"SuspenseList";case 25:return"TracingMarker";case 1:case 0:case 17:case 2:case 14:case 15:if("function"===typeof b)return b.displayName||b.name||null;if("string"===typeof b)return b}return null}function Ua(a){switch(typeof a){case "boolean":case "number":case "string":case "undefined":return a;case "object":return a;default:return""}}function ig(a){var b=a.type;return(a=a.nodeName)&&"input"===a.toLowerCase()&&("checkbox"===b||"radio"===
+b)}function ij(a){var b=ig(a)?"checked":"value",c=Object.getOwnPropertyDescriptor(a.constructor.prototype,b),d=""+a[b];if(!a.hasOwnProperty(b)&&"undefined"!==typeof c&&"function"===typeof c.get&&"function"===typeof c.set){var e=c.get,f=c.set;Object.defineProperty(a,b,{configurable:!0,get:function(){return e.call(this)},set:function(a){d=""+a;f.call(this,a)}});Object.defineProperty(a,b,{enumerable:c.enumerable});return{getValue:function(){return d},setValue:function(a){d=""+a},stopTracking:function(){a._valueTracker=
+null;delete a[b]}}}}function Pc(a){a._valueTracker||(a._valueTracker=ij(a))}function jg(a){if(!a)return!1;var b=a._valueTracker;if(!b)return!0;var c=b.getValue();var d="";a&&(d=ig(a)?a.checked?"true":"false":a.value);a=d;return a!==c?(b.setValue(a),!0):!1}function Qc(a){a=a||("undefined"!==typeof document?document:void 0);if("undefined"===typeof a)return null;try{return a.activeElement||a.body}catch(b){return a.body}}function ke(a,b){var c=b.checked;return E({},b,{defaultChecked:void 0,defaultValue:void 0,
+value:void 0,checked:null!=c?c:a._wrapperState.initialChecked})}function kg(a,b){var c=null==b.defaultValue?"":b.defaultValue,d=null!=b.checked?b.checked:b.defaultChecked;c=Ua(null!=b.value?b.value:c);a._wrapperState={initialChecked:d,initialValue:c,controlled:"checkbox"===b.type||"radio"===b.type?null!=b.checked:null!=b.value}}function lg(a,b){b=b.checked;null!=b&&$d(a,"checked",b,!1)}function le(a,b){lg(a,b);var c=Ua(b.value),d=b.type;if(null!=c)if("number"===d){if(0===c&&""===a.value||a.value!=
+c)a.value=""+c}else a.value!==""+c&&(a.value=""+c);else if("submit"===d||"reset"===d){a.removeAttribute("value");return}b.hasOwnProperty("value")?me(a,b.type,c):b.hasOwnProperty("defaultValue")&&me(a,b.type,Ua(b.defaultValue));null==b.checked&&null!=b.defaultChecked&&(a.defaultChecked=!!b.defaultChecked)}function mg(a,b,c){if(b.hasOwnProperty("value")||b.hasOwnProperty("defaultValue")){var d=b.type;if(!("submit"!==d&&"reset"!==d||void 0!==b.value&&null!==b.value))return;b=""+a._wrapperState.initialValue;
+c||b===a.value||(a.value=b);a.defaultValue=b}c=a.name;""!==c&&(a.name="");a.defaultChecked=!!a._wrapperState.initialChecked;""!==c&&(a.name=c)}function me(a,b,c){if("number"!==b||Qc(a.ownerDocument)!==a)null==c?a.defaultValue=""+a._wrapperState.initialValue:a.defaultValue!==""+c&&(a.defaultValue=""+c)}function Db(a,b,c,d){a=a.options;if(b){b={};for(var e=0;e<c.length;e++)b["$"+c[e]]=!0;for(c=0;c<a.length;c++)e=b.hasOwnProperty("$"+a[c].value),a[c].selected!==e&&(a[c].selected=e),e&&d&&(a[c].defaultSelected=
+!0)}else{c=""+Ua(c);b=null;for(e=0;e<a.length;e++){if(a[e].value===c){a[e].selected=!0;d&&(a[e].defaultSelected=!0);return}null!==b||a[e].disabled||(b=a[e])}null!==b&&(b.selected=!0)}}function ne(a,b){if(null!=b.dangerouslySetInnerHTML)throw Error(n(91));return E({},b,{value:void 0,defaultValue:void 0,children:""+a._wrapperState.initialValue})}function ng(a,b){var c=b.value;if(null==c){c=b.children;b=b.defaultValue;if(null!=c){if(null!=b)throw Error(n(92));if(cc(c)){if(1<c.length)throw Error(n(93));
+c=c[0]}b=c}null==b&&(b="");c=b}a._wrapperState={initialValue:Ua(c)}}function og(a,b){var c=Ua(b.value),d=Ua(b.defaultValue);null!=c&&(c=""+c,c!==a.value&&(a.value=c),null==b.defaultValue&&a.defaultValue!==c&&(a.defaultValue=c));null!=d&&(a.defaultValue=""+d)}function pg(a,b){b=a.textContent;b===a._wrapperState.initialValue&&""!==b&&null!==b&&(a.value=b)}function qg(a){switch(a){case "svg":return"http://www.w3.org/2000/svg";case "math":return"http://www.w3.org/1998/Math/MathML";default:return"http://www.w3.org/1999/xhtml"}}
+function oe(a,b){return null==a||"http://www.w3.org/1999/xhtml"===a?qg(b):"http://www.w3.org/2000/svg"===a&&"foreignObject"===b?"http://www.w3.org/1999/xhtml":a}function rg(a,b,c){return null==b||"boolean"===typeof b||""===b?"":c||"number"!==typeof b||0===b||dc.hasOwnProperty(a)&&dc[a]?(""+b).trim():b+"px"}function sg(a,b){a=a.style;for(var c in b)if(b.hasOwnProperty(c)){var d=0===c.indexOf("--"),e=rg(c,b[c],d);"float"===c&&(c="cssFloat");d?a.setProperty(c,e):a[c]=e}}function pe(a,b){if(b){if(jj[a]&&
+(null!=b.children||null!=b.dangerouslySetInnerHTML))throw Error(n(137,a));if(null!=b.dangerouslySetInnerHTML){if(null!=b.children)throw Error(n(60));if("object"!==typeof b.dangerouslySetInnerHTML||!("__html"in b.dangerouslySetInnerHTML))throw Error(n(61));}if(null!=b.style&&"object"!==typeof b.style)throw Error(n(62));}}function qe(a,b){if(-1===a.indexOf("-"))return"string"===typeof b.is;switch(a){case "annotation-xml":case "color-profile":case "font-face":case "font-face-src":case "font-face-uri":case "font-face-format":case "font-face-name":case "missing-glyph":return!1;
+default:return!0}}function re(a){a=a.target||a.srcElement||window;a.correspondingUseElement&&(a=a.correspondingUseElement);return 3===a.nodeType?a.parentNode:a}function tg(a){if(a=ec(a)){if("function"!==typeof se)throw Error(n(280));var b=a.stateNode;b&&(b=Rc(b),se(a.stateNode,a.type,b))}}function ug(a){Eb?Fb?Fb.push(a):Fb=[a]:Eb=a}function vg(){if(Eb){var a=Eb,b=Fb;Fb=Eb=null;tg(a);if(b)for(a=0;a<b.length;a++)tg(b[a])}}function wg(a,b,c){if(te)return a(b,c);te=!0;try{return xg(a,b,c)}finally{if(te=
+!1,null!==Eb||null!==Fb)yg(),vg()}}function fc(a,b){var c=a.stateNode;if(null===c)return null;var d=Rc(c);if(null===d)return null;c=d[b];a:switch(b){case "onClick":case "onClickCapture":case "onDoubleClick":case "onDoubleClickCapture":case "onMouseDown":case "onMouseDownCapture":case "onMouseMove":case "onMouseMoveCapture":case "onMouseUp":case "onMouseUpCapture":case "onMouseEnter":(d=!d.disabled)||(a=a.type,d=!("button"===a||"input"===a||"select"===a||"textarea"===a));a=!d;break a;default:a=!1}if(a)return null;
+if(c&&"function"!==typeof c)throw Error(n(231,b,typeof c));return c}function kj(a,b,c,d,e,f,g,h,k){gc=!1;Sc=null;lj.apply(mj,arguments)}function nj(a,b,c,d,e,f,g,h,k){kj.apply(this,arguments);if(gc){if(gc){var m=Sc;gc=!1;Sc=null}else throw Error(n(198));Tc||(Tc=!0,ue=m)}}function ob(a){var b=a,c=a;if(a.alternate)for(;b.return;)b=b.return;else{a=b;do b=a,0!==(b.flags&4098)&&(c=b.return),a=b.return;while(a)}return 3===b.tag?c:null}function zg(a){if(13===a.tag){var b=a.memoizedState;null===b&&(a=a.alternate,
+null!==a&&(b=a.memoizedState));if(null!==b)return b.dehydrated}return null}function Ag(a){if(ob(a)!==a)throw Error(n(188));}function oj(a){var b=a.alternate;if(!b){b=ob(a);if(null===b)throw Error(n(188));return b!==a?null:a}for(var c=a,d=b;;){var e=c.return;if(null===e)break;var f=e.alternate;if(null===f){d=e.return;if(null!==d){c=d;continue}break}if(e.child===f.child){for(f=e.child;f;){if(f===c)return Ag(e),a;if(f===d)return Ag(e),b;f=f.sibling}throw Error(n(188));}if(c.return!==d.return)c=e,d=f;
+else{for(var g=!1,h=e.child;h;){if(h===c){g=!0;c=e;d=f;break}if(h===d){g=!0;d=e;c=f;break}h=h.sibling}if(!g){for(h=f.child;h;){if(h===c){g=!0;c=f;d=e;break}if(h===d){g=!0;d=f;c=e;break}h=h.sibling}if(!g)throw Error(n(189));}}if(c.alternate!==d)throw Error(n(190));}if(3!==c.tag)throw Error(n(188));return c.stateNode.current===c?a:b}function Bg(a){a=oj(a);return null!==a?Cg(a):null}function Cg(a){if(5===a.tag||6===a.tag)return a;for(a=a.child;null!==a;){var b=Cg(a);if(null!==b)return b;a=a.sibling}return null}
+function pj(a,b){if(Ca&&"function"===typeof Ca.onCommitFiberRoot)try{Ca.onCommitFiberRoot(Uc,a,void 0,128===(a.current.flags&128))}catch(c){}}function qj(a){a>>>=0;return 0===a?32:31-(rj(a)/sj|0)|0}function hc(a){switch(a&-a){case 1:return 1;case 2:return 2;case 4:return 4;case 8:return 8;case 16:return 16;case 32:return 32;case 64:case 128:case 256:case 512:case 1024:case 2048:case 4096:case 8192:case 16384:case 32768:case 65536:case 131072:case 262144:case 524288:case 1048576:case 2097152:return a&
+4194240;case 4194304:case 8388608:case 16777216:case 33554432:case 67108864:return a&130023424;case 134217728:return 134217728;case 268435456:return 268435456;case 536870912:return 536870912;case 1073741824:return 1073741824;default:return a}}function Vc(a,b){var c=a.pendingLanes;if(0===c)return 0;var d=0,e=a.suspendedLanes,f=a.pingedLanes,g=c&268435455;if(0!==g){var h=g&~e;0!==h?d=hc(h):(f&=g,0!==f&&(d=hc(f)))}else g=c&~e,0!==g?d=hc(g):0!==f&&(d=hc(f));if(0===d)return 0;if(0!==b&&b!==d&&0===(b&e)&&
+(e=d&-d,f=b&-b,e>=f||16===e&&0!==(f&4194240)))return b;0!==(d&4)&&(d|=c&16);b=a.entangledLanes;if(0!==b)for(a=a.entanglements,b&=d;0<b;)c=31-ta(b),e=1<<c,d|=a[c],b&=~e;return d}function tj(a,b){switch(a){case 1:case 2:case 4:return b+250;case 8:case 16:case 32:case 64:case 128:case 256:case 512:case 1024:case 2048:case 4096:case 8192:case 16384:case 32768:case 65536:case 131072:case 262144:case 524288:case 1048576:case 2097152:return b+5E3;case 4194304:case 8388608:case 16777216:case 33554432:case 67108864:return-1;
+case 134217728:case 268435456:case 536870912:case 1073741824:return-1;default:return-1}}function uj(a,b){for(var c=a.suspendedLanes,d=a.pingedLanes,e=a.expirationTimes,f=a.pendingLanes;0<f;){var g=31-ta(f),h=1<<g,k=e[g];if(-1===k){if(0===(h&c)||0!==(h&d))e[g]=tj(h,b)}else k<=b&&(a.expiredLanes|=h);f&=~h}}function ve(a){a=a.pendingLanes&-1073741825;return 0!==a?a:a&1073741824?1073741824:0}function Dg(){var a=Wc;Wc<<=1;0===(Wc&4194240)&&(Wc=64);return a}function we(a){for(var b=[],c=0;31>c;c++)b.push(a);
+return b}function ic(a,b,c){a.pendingLanes|=b;536870912!==b&&(a.suspendedLanes=0,a.pingedLanes=0);a=a.eventTimes;b=31-ta(b);a[b]=c}function vj(a,b){var c=a.pendingLanes&~b;a.pendingLanes=b;a.suspendedLanes=0;a.pingedLanes=0;a.expiredLanes&=b;a.mutableReadLanes&=b;a.entangledLanes&=b;b=a.entanglements;var d=a.eventTimes;for(a=a.expirationTimes;0<c;){var e=31-ta(c),f=1<<e;b[e]=0;d[e]=-1;a[e]=-1;c&=~f}}function xe(a,b){var c=a.entangledLanes|=b;for(a=a.entanglements;c;){var d=31-ta(c),e=1<<d;e&b|a[d]&
+b&&(a[d]|=b);c&=~e}}function Eg(a){a&=-a;return 1<a?4<a?0!==(a&268435455)?16:536870912:4:1}function Fg(a,b){switch(a){case "focusin":case "focusout":Va=null;break;case "dragenter":case "dragleave":Wa=null;break;case "mouseover":case "mouseout":Xa=null;break;case "pointerover":case "pointerout":jc.delete(b.pointerId);break;case "gotpointercapture":case "lostpointercapture":kc.delete(b.pointerId)}}function lc(a,b,c,d,e,f){if(null===a||a.nativeEvent!==f)return a={blockedOn:b,domEventName:c,eventSystemFlags:d,
+nativeEvent:f,targetContainers:[e]},null!==b&&(b=ec(b),null!==b&&Gg(b)),a;a.eventSystemFlags|=d;b=a.targetContainers;null!==e&&-1===b.indexOf(e)&&b.push(e);return a}function wj(a,b,c,d,e){switch(b){case "focusin":return Va=lc(Va,a,b,c,d,e),!0;case "dragenter":return Wa=lc(Wa,a,b,c,d,e),!0;case "mouseover":return Xa=lc(Xa,a,b,c,d,e),!0;case "pointerover":var f=e.pointerId;jc.set(f,lc(jc.get(f)||null,a,b,c,d,e));return!0;case "gotpointercapture":return f=e.pointerId,kc.set(f,lc(kc.get(f)||null,a,b,
+c,d,e)),!0}return!1}function Hg(a){var b=pb(a.target);if(null!==b){var c=ob(b);if(null!==c)if(b=c.tag,13===b){if(b=zg(c),null!==b){a.blockedOn=b;xj(a.priority,function(){yj(c)});return}}else if(3===b&&c.stateNode.current.memoizedState.isDehydrated){a.blockedOn=3===c.tag?c.stateNode.containerInfo:null;return}}a.blockedOn=null}function Xc(a){if(null!==a.blockedOn)return!1;for(var b=a.targetContainers;0<b.length;){var c=ye(a.domEventName,a.eventSystemFlags,b[0],a.nativeEvent);if(null===c){c=a.nativeEvent;
+var d=new c.constructor(c.type,c);ze=d;c.target.dispatchEvent(d);ze=null}else return b=ec(c),null!==b&&Gg(b),a.blockedOn=c,!1;b.shift()}return!0}function Ig(a,b,c){Xc(a)&&c.delete(b)}function zj(){Ae=!1;null!==Va&&Xc(Va)&&(Va=null);null!==Wa&&Xc(Wa)&&(Wa=null);null!==Xa&&Xc(Xa)&&(Xa=null);jc.forEach(Ig);kc.forEach(Ig)}function mc(a,b){a.blockedOn===b&&(a.blockedOn=null,Ae||(Ae=!0,Jg(Kg,zj)))}function nc(a){if(0<Yc.length){mc(Yc[0],a);for(var b=1;b<Yc.length;b++){var c=Yc[b];c.blockedOn===a&&(c.blockedOn=
+null)}}null!==Va&&mc(Va,a);null!==Wa&&mc(Wa,a);null!==Xa&&mc(Xa,a);b=function(b){return mc(b,a)};jc.forEach(b);kc.forEach(b);for(b=0;b<Ya.length;b++)c=Ya[b],c.blockedOn===a&&(c.blockedOn=null);for(;0<Ya.length&&(b=Ya[0],null===b.blockedOn);)Hg(b),null===b.blockedOn&&Ya.shift()}function Aj(a,b,c,d){var e=z,f=Gb.transition;Gb.transition=null;try{z=1,Be(a,b,c,d)}finally{z=e,Gb.transition=f}}function Bj(a,b,c,d){var e=z,f=Gb.transition;Gb.transition=null;try{z=4,Be(a,b,c,d)}finally{z=e,Gb.transition=
+f}}function Be(a,b,c,d){if(Zc){var e=ye(a,b,c,d);if(null===e)Ce(a,b,d,$c,c),Fg(a,d);else if(wj(e,a,b,c,d))d.stopPropagation();else if(Fg(a,d),b&4&&-1<Cj.indexOf(a)){for(;null!==e;){var f=ec(e);null!==f&&Dj(f);f=ye(a,b,c,d);null===f&&Ce(a,b,d,$c,c);if(f===e)break;e=f}null!==e&&d.stopPropagation()}else Ce(a,b,d,null,c)}}function ye(a,b,c,d){$c=null;a=re(d);a=pb(a);if(null!==a)if(b=ob(a),null===b)a=null;else if(c=b.tag,13===c){a=zg(b);if(null!==a)return a;a=null}else if(3===c){if(b.stateNode.current.memoizedState.isDehydrated)return 3===
+b.tag?b.stateNode.containerInfo:null;a=null}else b!==a&&(a=null);$c=a;return null}function Lg(a){switch(a){case "cancel":case "click":case "close":case "contextmenu":case "copy":case "cut":case "auxclick":case "dblclick":case "dragend":case "dragstart":case "drop":case "focusin":case "focusout":case "input":case "invalid":case "keydown":case "keypress":case "keyup":case "mousedown":case "mouseup":case "paste":case "pause":case "play":case "pointercancel":case "pointerdown":case "pointerup":case "ratechange":case "reset":case "resize":case "seeked":case "submit":case "touchcancel":case "touchend":case "touchstart":case "volumechange":case "change":case "selectionchange":case "textInput":case "compositionstart":case "compositionend":case "compositionupdate":case "beforeblur":case "afterblur":case "beforeinput":case "blur":case "fullscreenchange":case "focus":case "hashchange":case "popstate":case "select":case "selectstart":return 1;
+case "drag":case "dragenter":case "dragexit":case "dragleave":case "dragover":case "mousemove":case "mouseout":case "mouseover":case "pointermove":case "pointerout":case "pointerover":case "scroll":case "toggle":case "touchmove":case "wheel":case "mouseenter":case "mouseleave":case "pointerenter":case "pointerleave":return 4;case "message":switch(Ej()){case De:return 1;case Mg:return 4;case ad:case Fj:return 16;case Ng:return 536870912;default:return 16}default:return 16}}function Og(){if(bd)return bd;
+var a,b=Ee,c=b.length,d,e="value"in Za?Za.value:Za.textContent,f=e.length;for(a=0;a<c&&b[a]===e[a];a++);var g=c-a;for(d=1;d<=g&&b[c-d]===e[f-d];d++);return bd=e.slice(a,1<d?1-d:void 0)}function cd(a){var b=a.keyCode;"charCode"in a?(a=a.charCode,0===a&&13===b&&(a=13)):a=b;10===a&&(a=13);return 32<=a||13===a?a:0}function dd(){return!0}function Pg(){return!1}function ka(a){function b(b,d,e,f,g){this._reactName=b;this._targetInst=e;this.type=d;this.nativeEvent=f;this.target=g;this.currentTarget=null;
+for(var c in a)a.hasOwnProperty(c)&&(b=a[c],this[c]=b?b(f):f[c]);this.isDefaultPrevented=(null!=f.defaultPrevented?f.defaultPrevented:!1===f.returnValue)?dd:Pg;this.isPropagationStopped=Pg;return this}E(b.prototype,{preventDefault:function(){this.defaultPrevented=!0;var a=this.nativeEvent;a&&(a.preventDefault?a.preventDefault():"unknown"!==typeof a.returnValue&&(a.returnValue=!1),this.isDefaultPrevented=dd)},stopPropagation:function(){var a=this.nativeEvent;a&&(a.stopPropagation?a.stopPropagation():
+"unknown"!==typeof a.cancelBubble&&(a.cancelBubble=!0),this.isPropagationStopped=dd)},persist:function(){},isPersistent:dd});return b}function Gj(a){var b=this.nativeEvent;return b.getModifierState?b.getModifierState(a):(a=Hj[a])?!!b[a]:!1}function Fe(a){return Gj}function Qg(a,b){switch(a){case "keyup":return-1!==Ij.indexOf(b.keyCode);case "keydown":return 229!==b.keyCode;case "keypress":case "mousedown":case "focusout":return!0;default:return!1}}function Rg(a){a=a.detail;return"object"===typeof a&&
+"data"in a?a.data:null}function Jj(a,b){switch(a){case "compositionend":return Rg(b);case "keypress":if(32!==b.which)return null;Sg=!0;return Tg;case "textInput":return a=b.data,a===Tg&&Sg?null:a;default:return null}}function Kj(a,b){if(Hb)return"compositionend"===a||!Ge&&Qg(a,b)?(a=Og(),bd=Ee=Za=null,Hb=!1,a):null;switch(a){case "paste":return null;case "keypress":if(!(b.ctrlKey||b.altKey||b.metaKey)||b.ctrlKey&&b.altKey){if(b.char&&1<b.char.length)return b.char;if(b.which)return String.fromCharCode(b.which)}return null;
+case "compositionend":return Ug&&"ko"!==b.locale?null:b.data;default:return null}}function Vg(a){var b=a&&a.nodeName&&a.nodeName.toLowerCase();return"input"===b?!!Lj[a.type]:"textarea"===b?!0:!1}function Mj(a){if(!Ia)return!1;a="on"+a;var b=a in document;b||(b=document.createElement("div"),b.setAttribute(a,"return;"),b="function"===typeof b[a]);return b}function Wg(a,b,c,d){ug(d);b=ed(b,"onChange");0<b.length&&(c=new He("onChange","change",null,c,d),a.push({event:c,listeners:b}))}function Nj(a){Xg(a,
+0)}function fd(a){var b=Ib(a);if(jg(b))return a}function Oj(a,b){if("change"===a)return b}function Yg(){oc&&(oc.detachEvent("onpropertychange",Zg),pc=oc=null)}function Zg(a){if("value"===a.propertyName&&fd(pc)){var b=[];Wg(b,pc,a,re(a));wg(Nj,b)}}function Pj(a,b,c){"focusin"===a?(Yg(),oc=b,pc=c,oc.attachEvent("onpropertychange",Zg)):"focusout"===a&&Yg()}function Qj(a,b){if("selectionchange"===a||"keyup"===a||"keydown"===a)return fd(pc)}function Rj(a,b){if("click"===a)return fd(b)}function Sj(a,b){if("input"===
+a||"change"===a)return fd(b)}function Tj(a,b){return a===b&&(0!==a||1/a===1/b)||a!==a&&b!==b}function qc(a,b){if(ua(a,b))return!0;if("object"!==typeof a||null===a||"object"!==typeof b||null===b)return!1;var c=Object.keys(a),d=Object.keys(b);if(c.length!==d.length)return!1;for(d=0;d<c.length;d++){var e=c[d];if(!Zd.call(b,e)||!ua(a[e],b[e]))return!1}return!0}function $g(a){for(;a&&a.firstChild;)a=a.firstChild;return a}function ah(a,b){var c=$g(a);a=0;for(var d;c;){if(3===c.nodeType){d=a+c.textContent.length;
+if(a<=b&&d>=b)return{node:c,offset:b-a};a=d}a:{for(;c;){if(c.nextSibling){c=c.nextSibling;break a}c=c.parentNode}c=void 0}c=$g(c)}}function bh(a,b){return a&&b?a===b?!0:a&&3===a.nodeType?!1:b&&3===b.nodeType?bh(a,b.parentNode):"contains"in a?a.contains(b):a.compareDocumentPosition?!!(a.compareDocumentPosition(b)&16):!1:!1}function ch(){for(var a=window,b=Qc();b instanceof a.HTMLIFrameElement;){try{var c="string"===typeof b.contentWindow.location.href}catch(d){c=!1}if(c)a=b.contentWindow;else break;
+b=Qc(a.document)}return b}function Ie(a){var b=a&&a.nodeName&&a.nodeName.toLowerCase();return b&&("input"===b&&("text"===a.type||"search"===a.type||"tel"===a.type||"url"===a.type||"password"===a.type)||"textarea"===b||"true"===a.contentEditable)}function Uj(a){var b=ch(),c=a.focusedElem,d=a.selectionRange;if(b!==c&&c&&c.ownerDocument&&bh(c.ownerDocument.documentElement,c)){if(null!==d&&Ie(c))if(b=d.start,a=d.end,void 0===a&&(a=b),"selectionStart"in c)c.selectionStart=b,c.selectionEnd=Math.min(a,c.value.length);
+else if(a=(b=c.ownerDocument||document)&&b.defaultView||window,a.getSelection){a=a.getSelection();var e=c.textContent.length,f=Math.min(d.start,e);d=void 0===d.end?f:Math.min(d.end,e);!a.extend&&f>d&&(e=d,d=f,f=e);e=ah(c,f);var g=ah(c,d);e&&g&&(1!==a.rangeCount||a.anchorNode!==e.node||a.anchorOffset!==e.offset||a.focusNode!==g.node||a.focusOffset!==g.offset)&&(b=b.createRange(),b.setStart(e.node,e.offset),a.removeAllRanges(),f>d?(a.addRange(b),a.extend(g.node,g.offset)):(b.setEnd(g.node,g.offset),
+a.addRange(b)))}b=[];for(a=c;a=a.parentNode;)1===a.nodeType&&b.push({element:a,left:a.scrollLeft,top:a.scrollTop});"function"===typeof c.focus&&c.focus();for(c=0;c<b.length;c++)a=b[c],a.element.scrollLeft=a.left,a.element.scrollTop=a.top}}function dh(a,b,c){var d=c.window===c?c.document:9===c.nodeType?c:c.ownerDocument;Je||null==Jb||Jb!==Qc(d)||(d=Jb,"selectionStart"in d&&Ie(d)?d={start:d.selectionStart,end:d.selectionEnd}:(d=(d.ownerDocument&&d.ownerDocument.defaultView||window).getSelection(),d=
+{anchorNode:d.anchorNode,anchorOffset:d.anchorOffset,focusNode:d.focusNode,focusOffset:d.focusOffset}),rc&&qc(rc,d)||(rc=d,d=ed(Ke,"onSelect"),0<d.length&&(b=new He("onSelect","select",null,b,c),a.push({event:b,listeners:d}),b.target=Jb)))}function gd(a,b){var c={};c[a.toLowerCase()]=b.toLowerCase();c["Webkit"+a]="webkit"+b;c["Moz"+a]="moz"+b;return c}function hd(a){if(Le[a])return Le[a];if(!Kb[a])return a;var b=Kb[a],c;for(c in b)if(b.hasOwnProperty(c)&&c in eh)return Le[a]=b[c];return a}function $a(a,
+b){fh.set(a,b);nb(b,[a])}function gh(a,b,c){var d=a.type||"unknown-event";a.currentTarget=c;nj(d,b,void 0,a);a.currentTarget=null}function Xg(a,b){b=0!==(b&4);for(var c=0;c<a.length;c++){var d=a[c],e=d.event;d=d.listeners;a:{var f=void 0;if(b)for(var g=d.length-1;0<=g;g--){var h=d[g],k=h.instance,m=h.currentTarget;h=h.listener;if(k!==f&&e.isPropagationStopped())break a;gh(e,h,m);f=k}else for(g=0;g<d.length;g++){h=d[g];k=h.instance;m=h.currentTarget;h=h.listener;if(k!==f&&e.isPropagationStopped())break a;
+gh(e,h,m);f=k}}}if(Tc)throw a=ue,Tc=!1,ue=null,a;}function B(a,b){var c=b[Me];void 0===c&&(c=b[Me]=new Set);var d=a+"__bubble";c.has(d)||(hh(b,a,2,!1),c.add(d))}function Ne(a,b,c){var d=0;b&&(d|=4);hh(c,a,d,b)}function sc(a){if(!a[id]){a[id]=!0;cg.forEach(function(b){"selectionchange"!==b&&(Vj.has(b)||Ne(b,!1,a),Ne(b,!0,a))});var b=9===a.nodeType?a:a.ownerDocument;null===b||b[id]||(b[id]=!0,Ne("selectionchange",!1,b))}}function hh(a,b,c,d,e){switch(Lg(b)){case 1:e=Aj;break;case 4:e=Bj;break;default:e=
+Be}c=e.bind(null,b,c,a);e=void 0;!Oe||"touchstart"!==b&&"touchmove"!==b&&"wheel"!==b||(e=!0);d?void 0!==e?a.addEventListener(b,c,{capture:!0,passive:e}):a.addEventListener(b,c,!0):void 0!==e?a.addEventListener(b,c,{passive:e}):a.addEventListener(b,c,!1)}function Ce(a,b,c,d,e){var f=d;if(0===(b&1)&&0===(b&2)&&null!==d)a:for(;;){if(null===d)return;var g=d.tag;if(3===g||4===g){var h=d.stateNode.containerInfo;if(h===e||8===h.nodeType&&h.parentNode===e)break;if(4===g)for(g=d.return;null!==g;){var k=g.tag;
+if(3===k||4===k)if(k=g.stateNode.containerInfo,k===e||8===k.nodeType&&k.parentNode===e)return;g=g.return}for(;null!==h;){g=pb(h);if(null===g)return;k=g.tag;if(5===k||6===k){d=f=g;continue a}h=h.parentNode}}d=d.return}wg(function(){var d=f,e=re(c),g=[];a:{var h=fh.get(a);if(void 0!==h){var k=He,n=a;switch(a){case "keypress":if(0===cd(c))break a;case "keydown":case "keyup":k=Wj;break;case "focusin":n="focus";k=Pe;break;case "focusout":n="blur";k=Pe;break;case "beforeblur":case "afterblur":k=Pe;break;
+case "click":if(2===c.button)break a;case "auxclick":case "dblclick":case "mousedown":case "mousemove":case "mouseup":case "mouseout":case "mouseover":case "contextmenu":k=ih;break;case "drag":case "dragend":case "dragenter":case "dragexit":case "dragleave":case "dragover":case "dragstart":case "drop":k=Xj;break;case "touchcancel":case "touchend":case "touchmove":case "touchstart":k=Yj;break;case jh:case kh:case lh:k=Zj;break;case mh:k=ak;break;case "scroll":k=bk;break;case "wheel":k=ck;break;case "copy":case "cut":case "paste":k=
+dk;break;case "gotpointercapture":case "lostpointercapture":case "pointercancel":case "pointerdown":case "pointermove":case "pointerout":case "pointerover":case "pointerup":k=nh}var l=0!==(b&4),p=!l&&"scroll"===a,A=l?null!==h?h+"Capture":null:h;l=[];for(var v=d,q;null!==v;){q=v;var M=q.stateNode;5===q.tag&&null!==M&&(q=M,null!==A&&(M=fc(v,A),null!=M&&l.push(tc(v,M,q))));if(p)break;v=v.return}0<l.length&&(h=new k(h,n,null,c,e),g.push({event:h,listeners:l}))}}if(0===(b&7)){a:{h="mouseover"===a||"pointerover"===
+a;k="mouseout"===a||"pointerout"===a;if(h&&c!==ze&&(n=c.relatedTarget||c.fromElement)&&(pb(n)||n[Ja]))break a;if(k||h){h=e.window===e?e:(h=e.ownerDocument)?h.defaultView||h.parentWindow:window;if(k){if(n=c.relatedTarget||c.toElement,k=d,n=n?pb(n):null,null!==n&&(p=ob(n),n!==p||5!==n.tag&&6!==n.tag))n=null}else k=null,n=d;if(k!==n){l=ih;M="onMouseLeave";A="onMouseEnter";v="mouse";if("pointerout"===a||"pointerover"===a)l=nh,M="onPointerLeave",A="onPointerEnter",v="pointer";p=null==k?h:Ib(k);q=null==
+n?h:Ib(n);h=new l(M,v+"leave",k,c,e);h.target=p;h.relatedTarget=q;M=null;pb(e)===d&&(l=new l(A,v+"enter",n,c,e),l.target=q,l.relatedTarget=p,M=l);p=M;if(k&&n)b:{l=k;A=n;v=0;for(q=l;q;q=Lb(q))v++;q=0;for(M=A;M;M=Lb(M))q++;for(;0<v-q;)l=Lb(l),v--;for(;0<q-v;)A=Lb(A),q--;for(;v--;){if(l===A||null!==A&&l===A.alternate)break b;l=Lb(l);A=Lb(A)}l=null}else l=null;null!==k&&oh(g,h,k,l,!1);null!==n&&null!==p&&oh(g,p,n,l,!0)}}}a:{h=d?Ib(d):window;k=h.nodeName&&h.nodeName.toLowerCase();if("select"===k||"input"===
+k&&"file"===h.type)var ma=Oj;else if(Vg(h))if(ph)ma=Sj;else{ma=Qj;var va=Pj}else(k=h.nodeName)&&"input"===k.toLowerCase()&&("checkbox"===h.type||"radio"===h.type)&&(ma=Rj);if(ma&&(ma=ma(a,d))){Wg(g,ma,c,e);break a}va&&va(a,h,d);"focusout"===a&&(va=h._wrapperState)&&va.controlled&&"number"===h.type&&me(h,"number",h.value)}va=d?Ib(d):window;switch(a){case "focusin":if(Vg(va)||"true"===va.contentEditable)Jb=va,Ke=d,rc=null;break;case "focusout":rc=Ke=Jb=null;break;case "mousedown":Je=!0;break;case "contextmenu":case "mouseup":case "dragend":Je=
+!1;dh(g,c,e);break;case "selectionchange":if(ek)break;case "keydown":case "keyup":dh(g,c,e)}var ab;if(Ge)b:{switch(a){case "compositionstart":var da="onCompositionStart";break b;case "compositionend":da="onCompositionEnd";break b;case "compositionupdate":da="onCompositionUpdate";break b}da=void 0}else Hb?Qg(a,c)&&(da="onCompositionEnd"):"keydown"===a&&229===c.keyCode&&(da="onCompositionStart");da&&(Ug&&"ko"!==c.locale&&(Hb||"onCompositionStart"!==da?"onCompositionEnd"===da&&Hb&&(ab=Og()):(Za=e,Ee=
+"value"in Za?Za.value:Za.textContent,Hb=!0)),va=ed(d,da),0<va.length&&(da=new qh(da,a,null,c,e),g.push({event:da,listeners:va}),ab?da.data=ab:(ab=Rg(c),null!==ab&&(da.data=ab))));if(ab=fk?Jj(a,c):Kj(a,c))d=ed(d,"onBeforeInput"),0<d.length&&(e=new gk("onBeforeInput","beforeinput",null,c,e),g.push({event:e,listeners:d}),e.data=ab)}Xg(g,b)})}function tc(a,b,c){return{instance:a,listener:b,currentTarget:c}}function ed(a,b){for(var c=b+"Capture",d=[];null!==a;){var e=a,f=e.stateNode;5===e.tag&&null!==
+f&&(e=f,f=fc(a,c),null!=f&&d.unshift(tc(a,f,e)),f=fc(a,b),null!=f&&d.push(tc(a,f,e)));a=a.return}return d}function Lb(a){if(null===a)return null;do a=a.return;while(a&&5!==a.tag);return a?a:null}function oh(a,b,c,d,e){for(var f=b._reactName,g=[];null!==c&&c!==d;){var h=c,k=h.alternate,m=h.stateNode;if(null!==k&&k===d)break;5===h.tag&&null!==m&&(h=m,e?(k=fc(c,f),null!=k&&g.unshift(tc(c,k,h))):e||(k=fc(c,f),null!=k&&g.push(tc(c,k,h))));c=c.return}0!==g.length&&a.push({event:b,listeners:g})}function rh(a){return("string"===
+typeof a?a:""+a).replace(hk,"\n").replace(ik,"")}function jd(a,b,c,d){b=rh(b);if(rh(a)!==b&&c)throw Error(n(425));}function kd(){}function Qe(a,b){return"textarea"===a||"noscript"===a||"string"===typeof b.children||"number"===typeof b.children||"object"===typeof b.dangerouslySetInnerHTML&&null!==b.dangerouslySetInnerHTML&&null!=b.dangerouslySetInnerHTML.__html}function jk(a){setTimeout(function(){throw a;})}function Re(a,b){var c=b,d=0;do{var e=c.nextSibling;a.removeChild(c);if(e&&8===e.nodeType)if(c=
+e.data,"/$"===c){if(0===d){a.removeChild(e);nc(b);return}d--}else"$"!==c&&"$?"!==c&&"$!"!==c||d++;c=e}while(c);nc(b)}function Ka(a){for(;null!=a;a=a.nextSibling){var b=a.nodeType;if(1===b||3===b)break;if(8===b){b=a.data;if("$"===b||"$!"===b||"$?"===b)break;if("/$"===b)return null}}return a}function sh(a){a=a.previousSibling;for(var b=0;a;){if(8===a.nodeType){var c=a.data;if("$"===c||"$!"===c||"$?"===c){if(0===b)return a;b--}else"/$"===c&&b++}a=a.previousSibling}return null}function pb(a){var b=a[Da];
+if(b)return b;for(var c=a.parentNode;c;){if(b=c[Ja]||c[Da]){c=b.alternate;if(null!==b.child||null!==c&&null!==c.child)for(a=sh(a);null!==a;){if(c=a[Da])return c;a=sh(a)}return b}a=c;c=a.parentNode}return null}function ec(a){a=a[Da]||a[Ja];return!a||5!==a.tag&&6!==a.tag&&13!==a.tag&&3!==a.tag?null:a}function Ib(a){if(5===a.tag||6===a.tag)return a.stateNode;throw Error(n(33));}function Rc(a){return a[uc]||null}function bb(a){return{current:a}}function w(a,b){0>Mb||(a.current=Se[Mb],Se[Mb]=null,Mb--)}
+function y(a,b,c){Mb++;Se[Mb]=a.current;a.current=b}function Nb(a,b){var c=a.type.contextTypes;if(!c)return cb;var d=a.stateNode;if(d&&d.__reactInternalMemoizedUnmaskedChildContext===b)return d.__reactInternalMemoizedMaskedChildContext;var e={},f;for(f in c)e[f]=b[f];d&&(a=a.stateNode,a.__reactInternalMemoizedUnmaskedChildContext=b,a.__reactInternalMemoizedMaskedChildContext=e);return e}function ea(a){a=a.childContextTypes;return null!==a&&void 0!==a}function th(a,b,c){if(J.current!==cb)throw Error(n(168));
+y(J,b);y(S,c)}function uh(a,b,c){var d=a.stateNode;b=b.childContextTypes;if("function"!==typeof d.getChildContext)return c;d=d.getChildContext();for(var e in d)if(!(e in b))throw Error(n(108,hj(a)||"Unknown",e));return E({},c,d)}function ld(a){a=(a=a.stateNode)&&a.__reactInternalMemoizedMergedChildContext||cb;qb=J.current;y(J,a);y(S,S.current);return!0}function vh(a,b,c){var d=a.stateNode;if(!d)throw Error(n(169));c?(a=uh(a,b,qb),d.__reactInternalMemoizedMergedChildContext=a,w(S),w(J),y(J,a)):w(S);
+y(S,c)}function wh(a){null===La?La=[a]:La.push(a)}function kk(a){md=!0;wh(a)}function db(){if(!Te&&null!==La){Te=!0;var a=0,b=z;try{var c=La;for(z=1;a<c.length;a++){var d=c[a];do d=d(!0);while(null!==d)}La=null;md=!1}catch(e){throw null!==La&&(La=La.slice(a+1)),xh(De,db),e;}finally{z=b,Te=!1}}return null}function rb(a,b){Ob[Pb++]=nd;Ob[Pb++]=od;od=a;nd=b}function yh(a,b,c){na[oa++]=Ma;na[oa++]=Na;na[oa++]=sb;sb=a;var d=Ma;a=Na;var e=32-ta(d)-1;d&=~(1<<e);c+=1;var f=32-ta(b)+e;if(30<f){var g=e-e%5;
+f=(d&(1<<g)-1).toString(32);d>>=g;e-=g;Ma=1<<32-ta(b)+e|c<<e|d;Na=f+a}else Ma=1<<f|c<<e|d,Na=a}function Ue(a){null!==a.return&&(rb(a,1),yh(a,1,0))}function Ve(a){for(;a===od;)od=Ob[--Pb],Ob[Pb]=null,nd=Ob[--Pb],Ob[Pb]=null;for(;a===sb;)sb=na[--oa],na[oa]=null,Na=na[--oa],na[oa]=null,Ma=na[--oa],na[oa]=null}function zh(a,b){var c=pa(5,null,null,0);c.elementType="DELETED";c.stateNode=b;c.return=a;b=a.deletions;null===b?(a.deletions=[c],a.flags|=16):b.push(c)}function Ah(a,b){switch(a.tag){case 5:var c=
+a.type;b=1!==b.nodeType||c.toLowerCase()!==b.nodeName.toLowerCase()?null:b;return null!==b?(a.stateNode=b,la=a,fa=Ka(b.firstChild),!0):!1;case 6:return b=""===a.pendingProps||3!==b.nodeType?null:b,null!==b?(a.stateNode=b,la=a,fa=null,!0):!1;case 13:return b=8!==b.nodeType?null:b,null!==b?(c=null!==sb?{id:Ma,overflow:Na}:null,a.memoizedState={dehydrated:b,treeContext:c,retryLane:1073741824},c=pa(18,null,null,0),c.stateNode=b,c.return=a,a.child=c,la=a,fa=null,!0):!1;default:return!1}}function We(a){return 0!==
+(a.mode&1)&&0===(a.flags&128)}function Xe(a){if(D){var b=fa;if(b){var c=b;if(!Ah(a,b)){if(We(a))throw Error(n(418));b=Ka(c.nextSibling);var d=la;b&&Ah(a,b)?zh(d,c):(a.flags=a.flags&-4097|2,D=!1,la=a)}}else{if(We(a))throw Error(n(418));a.flags=a.flags&-4097|2;D=!1;la=a}}}function Bh(a){for(a=a.return;null!==a&&5!==a.tag&&3!==a.tag&&13!==a.tag;)a=a.return;la=a}function pd(a){if(a!==la)return!1;if(!D)return Bh(a),D=!0,!1;var b;(b=3!==a.tag)&&!(b=5!==a.tag)&&(b=a.type,b="head"!==b&&"body"!==b&&!Qe(a.type,
+a.memoizedProps));if(b&&(b=fa)){if(We(a)){for(a=fa;a;)a=Ka(a.nextSibling);throw Error(n(418));}for(;b;)zh(a,b),b=Ka(b.nextSibling)}Bh(a);if(13===a.tag){a=a.memoizedState;a=null!==a?a.dehydrated:null;if(!a)throw Error(n(317));a:{a=a.nextSibling;for(b=0;a;){if(8===a.nodeType){var c=a.data;if("/$"===c){if(0===b){fa=Ka(a.nextSibling);break a}b--}else"$"!==c&&"$!"!==c&&"$?"!==c||b++}a=a.nextSibling}fa=null}}else fa=la?Ka(a.stateNode.nextSibling):null;return!0}function Qb(){fa=la=null;D=!1}function Ye(a){null===
+wa?wa=[a]:wa.push(a)}function xa(a,b){if(a&&a.defaultProps){b=E({},b);a=a.defaultProps;for(var c in a)void 0===b[c]&&(b[c]=a[c]);return b}return b}function Ze(){$e=Rb=qd=null}function af(a,b){b=rd.current;w(rd);a._currentValue=b}function bf(a,b,c){for(;null!==a;){var d=a.alternate;(a.childLanes&b)!==b?(a.childLanes|=b,null!==d&&(d.childLanes|=b)):null!==d&&(d.childLanes&b)!==b&&(d.childLanes|=b);if(a===c)break;a=a.return}}function Sb(a,b){qd=a;$e=Rb=null;a=a.dependencies;null!==a&&null!==a.firstContext&&
+(0!==(a.lanes&b)&&(ha=!0),a.firstContext=null)}function qa(a){var b=a._currentValue;if($e!==a)if(a={context:a,memoizedValue:b,next:null},null===Rb){if(null===qd)throw Error(n(308));Rb=a;qd.dependencies={lanes:0,firstContext:a}}else Rb=Rb.next=a;return b}function cf(a){null===tb?tb=[a]:tb.push(a)}function Ch(a,b,c,d){var e=b.interleaved;null===e?(c.next=c,cf(b)):(c.next=e.next,e.next=c);b.interleaved=c;return Oa(a,d)}function Oa(a,b){a.lanes|=b;var c=a.alternate;null!==c&&(c.lanes|=b);c=a;for(a=a.return;null!==
+a;)a.childLanes|=b,c=a.alternate,null!==c&&(c.childLanes|=b),c=a,a=a.return;return 3===c.tag?c.stateNode:null}function df(a){a.updateQueue={baseState:a.memoizedState,firstBaseUpdate:null,lastBaseUpdate:null,shared:{pending:null,interleaved:null,lanes:0},effects:null}}function Dh(a,b){a=a.updateQueue;b.updateQueue===a&&(b.updateQueue={baseState:a.baseState,firstBaseUpdate:a.firstBaseUpdate,lastBaseUpdate:a.lastBaseUpdate,shared:a.shared,effects:a.effects})}function Pa(a,b){return{eventTime:a,lane:b,
+tag:0,payload:null,callback:null,next:null}}function eb(a,b,c){var d=a.updateQueue;if(null===d)return null;d=d.shared;if(0!==(p&2)){var e=d.pending;null===e?b.next=b:(b.next=e.next,e.next=b);d.pending=b;return lk(a,c)}e=d.interleaved;null===e?(b.next=b,cf(d)):(b.next=e.next,e.next=b);d.interleaved=b;return Oa(a,c)}function sd(a,b,c){b=b.updateQueue;if(null!==b&&(b=b.shared,0!==(c&4194240))){var d=b.lanes;d&=a.pendingLanes;c|=d;b.lanes=c;xe(a,c)}}function Eh(a,b){var c=a.updateQueue,d=a.alternate;
+if(null!==d&&(d=d.updateQueue,c===d)){var e=null,f=null;c=c.firstBaseUpdate;if(null!==c){do{var g={eventTime:c.eventTime,lane:c.lane,tag:c.tag,payload:c.payload,callback:c.callback,next:null};null===f?e=f=g:f=f.next=g;c=c.next}while(null!==c);null===f?e=f=b:f=f.next=b}else e=f=b;c={baseState:d.baseState,firstBaseUpdate:e,lastBaseUpdate:f,shared:d.shared,effects:d.effects};a.updateQueue=c;return}a=c.lastBaseUpdate;null===a?c.firstBaseUpdate=b:a.next=b;c.lastBaseUpdate=b}function td(a,b,c,d){var e=
+a.updateQueue;fb=!1;var f=e.firstBaseUpdate,g=e.lastBaseUpdate,h=e.shared.pending;if(null!==h){e.shared.pending=null;var k=h,m=k.next;k.next=null;null===g?f=m:g.next=m;g=k;var n=a.alternate;null!==n&&(n=n.updateQueue,h=n.lastBaseUpdate,h!==g&&(null===h?n.firstBaseUpdate=m:h.next=m,n.lastBaseUpdate=k))}if(null!==f){var l=e.baseState;g=0;n=m=k=null;h=f;do{var r=h.lane,p=h.eventTime;if((d&r)===r){null!==n&&(n=n.next={eventTime:p,lane:0,tag:h.tag,payload:h.payload,callback:h.callback,next:null});a:{var x=
+a,F=h;r=b;p=c;switch(F.tag){case 1:x=F.payload;if("function"===typeof x){l=x.call(p,l,r);break a}l=x;break a;case 3:x.flags=x.flags&-65537|128;case 0:x=F.payload;r="function"===typeof x?x.call(p,l,r):x;if(null===r||void 0===r)break a;l=E({},l,r);break a;case 2:fb=!0}}null!==h.callback&&0!==h.lane&&(a.flags|=64,r=e.effects,null===r?e.effects=[h]:r.push(h))}else p={eventTime:p,lane:r,tag:h.tag,payload:h.payload,callback:h.callback,next:null},null===n?(m=n=p,k=l):n=n.next=p,g|=r;h=h.next;if(null===h)if(h=
+e.shared.pending,null===h)break;else r=h,h=r.next,r.next=null,e.lastBaseUpdate=r,e.shared.pending=null}while(1);null===n&&(k=l);e.baseState=k;e.firstBaseUpdate=m;e.lastBaseUpdate=n;b=e.shared.interleaved;if(null!==b){e=b;do g|=e.lane,e=e.next;while(e!==b)}else null===f&&(e.shared.lanes=0);ra|=g;a.lanes=g;a.memoizedState=l}}function Fh(a,b,c){a=b.effects;b.effects=null;if(null!==a)for(b=0;b<a.length;b++){var d=a[b],e=d.callback;if(null!==e){d.callback=null;d=c;if("function"!==typeof e)throw Error(n(191,
+e));e.call(d)}}}function ef(a,b,c,d){b=a.memoizedState;c=c(d,b);c=null===c||void 0===c?b:E({},b,c);a.memoizedState=c;0===a.lanes&&(a.updateQueue.baseState=c)}function Gh(a,b,c,d,e,f,g){a=a.stateNode;return"function"===typeof a.shouldComponentUpdate?a.shouldComponentUpdate(d,f,g):b.prototype&&b.prototype.isPureReactComponent?!qc(c,d)||!qc(e,f):!0}function Hh(a,b,c){var d=!1,e=cb;var f=b.contextType;"object"===typeof f&&null!==f?f=qa(f):(e=ea(b)?qb:J.current,d=b.contextTypes,f=(d=null!==d&&void 0!==
+d)?Nb(a,e):cb);b=new b(c,f);a.memoizedState=null!==b.state&&void 0!==b.state?b.state:null;b.updater=ud;a.stateNode=b;b._reactInternals=a;d&&(a=a.stateNode,a.__reactInternalMemoizedUnmaskedChildContext=e,a.__reactInternalMemoizedMaskedChildContext=f);return b}function Ih(a,b,c,d){a=b.state;"function"===typeof b.componentWillReceiveProps&&b.componentWillReceiveProps(c,d);"function"===typeof b.UNSAFE_componentWillReceiveProps&&b.UNSAFE_componentWillReceiveProps(c,d);b.state!==a&&ud.enqueueReplaceState(b,
+b.state,null)}function ff(a,b,c,d){var e=a.stateNode;e.props=c;e.state=a.memoizedState;e.refs=Jh;df(a);var f=b.contextType;"object"===typeof f&&null!==f?e.context=qa(f):(f=ea(b)?qb:J.current,e.context=Nb(a,f));e.state=a.memoizedState;f=b.getDerivedStateFromProps;"function"===typeof f&&(ef(a,b,f,c),e.state=a.memoizedState);"function"===typeof b.getDerivedStateFromProps||"function"===typeof e.getSnapshotBeforeUpdate||"function"!==typeof e.UNSAFE_componentWillMount&&"function"!==typeof e.componentWillMount||
+(b=e.state,"function"===typeof e.componentWillMount&&e.componentWillMount(),"function"===typeof e.UNSAFE_componentWillMount&&e.UNSAFE_componentWillMount(),b!==e.state&&ud.enqueueReplaceState(e,e.state,null),td(a,c,e,d),e.state=a.memoizedState);"function"===typeof e.componentDidMount&&(a.flags|=4194308)}function vc(a,b,c){a=c.ref;if(null!==a&&"function"!==typeof a&&"object"!==typeof a){if(c._owner){c=c._owner;if(c){if(1!==c.tag)throw Error(n(309));var d=c.stateNode}if(!d)throw Error(n(147,a));var e=
+d,f=""+a;if(null!==b&&null!==b.ref&&"function"===typeof b.ref&&b.ref._stringRef===f)return b.ref;b=function(a){var b=e.refs;b===Jh&&(b=e.refs={});null===a?delete b[f]:b[f]=a};b._stringRef=f;return b}if("string"!==typeof a)throw Error(n(284));if(!c._owner)throw Error(n(290,a));}return a}function vd(a,b){a=Object.prototype.toString.call(b);throw Error(n(31,"[object Object]"===a?"object with keys {"+Object.keys(b).join(", ")+"}":a));}function Kh(a){var b=a._init;return b(a._payload)}function Lh(a){function b(b,
+c){if(a){var d=b.deletions;null===d?(b.deletions=[c],b.flags|=16):d.push(c)}}function c(c,d){if(!a)return null;for(;null!==d;)b(c,d),d=d.sibling;return null}function d(a,b){for(a=new Map;null!==b;)null!==b.key?a.set(b.key,b):a.set(b.index,b),b=b.sibling;return a}function e(a,b){a=gb(a,b);a.index=0;a.sibling=null;return a}function f(b,c,d){b.index=d;if(!a)return b.flags|=1048576,c;d=b.alternate;if(null!==d)return d=d.index,d<c?(b.flags|=2,c):d;b.flags|=2;return c}function g(b){a&&null===b.alternate&&
+(b.flags|=2);return b}function h(a,b,c,d){if(null===b||6!==b.tag)return b=gf(c,a.mode,d),b.return=a,b;b=e(b,c);b.return=a;return b}function k(a,b,c,d){var f=c.type;if(f===Bb)return l(a,b,c.props.children,d,c.key);if(null!==b&&(b.elementType===f||"object"===typeof f&&null!==f&&f.$$typeof===Ta&&Kh(f)===b.type))return d=e(b,c.props),d.ref=vc(a,b,c),d.return=a,d;d=wd(c.type,c.key,c.props,null,a.mode,d);d.ref=vc(a,b,c);d.return=a;return d}function m(a,b,c,d){if(null===b||4!==b.tag||b.stateNode.containerInfo!==
+c.containerInfo||b.stateNode.implementation!==c.implementation)return b=hf(c,a.mode,d),b.return=a,b;b=e(b,c.children||[]);b.return=a;return b}function l(a,b,c,d,f){if(null===b||7!==b.tag)return b=ub(c,a.mode,d,f),b.return=a,b;b=e(b,c);b.return=a;return b}function u(a,b,c){if("string"===typeof b&&""!==b||"number"===typeof b)return b=gf(""+b,a.mode,c),b.return=a,b;if("object"===typeof b&&null!==b){switch(b.$$typeof){case xd:return c=wd(b.type,b.key,b.props,null,a.mode,c),c.ref=vc(a,null,b),c.return=
+a,c;case Cb:return b=hf(b,a.mode,c),b.return=a,b;case Ta:var d=b._init;return u(a,d(b._payload),c)}if(cc(b)||ac(b))return b=ub(b,a.mode,c,null),b.return=a,b;vd(a,b)}return null}function r(a,b,c,d){var e=null!==b?b.key:null;if("string"===typeof c&&""!==c||"number"===typeof c)return null!==e?null:h(a,b,""+c,d);if("object"===typeof c&&null!==c){switch(c.$$typeof){case xd:return c.key===e?k(a,b,c,d):null;case Cb:return c.key===e?m(a,b,c,d):null;case Ta:return e=c._init,r(a,b,e(c._payload),d)}if(cc(c)||
+ac(c))return null!==e?null:l(a,b,c,d,null);vd(a,c)}return null}function p(a,b,c,d,e){if("string"===typeof d&&""!==d||"number"===typeof d)return a=a.get(c)||null,h(b,a,""+d,e);if("object"===typeof d&&null!==d){switch(d.$$typeof){case xd:return a=a.get(null===d.key?c:d.key)||null,k(b,a,d,e);case Cb:return a=a.get(null===d.key?c:d.key)||null,m(b,a,d,e);case Ta:var f=d._init;return p(a,b,c,f(d._payload),e)}if(cc(d)||ac(d))return a=a.get(c)||null,l(b,a,d,e,null);vd(b,d)}return null}function x(e,g,h,k){for(var n=
+null,m=null,l=g,q=g=0,v=null;null!==l&&q<h.length;q++){l.index>q?(v=l,l=null):v=l.sibling;var A=r(e,l,h[q],k);if(null===A){null===l&&(l=v);break}a&&l&&null===A.alternate&&b(e,l);g=f(A,g,q);null===m?n=A:m.sibling=A;m=A;l=v}if(q===h.length)return c(e,l),D&&rb(e,q),n;if(null===l){for(;q<h.length;q++)l=u(e,h[q],k),null!==l&&(g=f(l,g,q),null===m?n=l:m.sibling=l,m=l);D&&rb(e,q);return n}for(l=d(e,l);q<h.length;q++)v=p(l,e,q,h[q],k),null!==v&&(a&&null!==v.alternate&&l.delete(null===v.key?q:v.key),g=f(v,
+g,q),null===m?n=v:m.sibling=v,m=v);a&&l.forEach(function(a){return b(e,a)});D&&rb(e,q);return n}function F(e,g,h,k){var m=ac(h);if("function"!==typeof m)throw Error(n(150));h=m.call(h);if(null==h)throw Error(n(151));for(var l=m=null,q=g,v=g=0,A=null,t=h.next();null!==q&&!t.done;v++,t=h.next()){q.index>v?(A=q,q=null):A=q.sibling;var x=r(e,q,t.value,k);if(null===x){null===q&&(q=A);break}a&&q&&null===x.alternate&&b(e,q);g=f(x,g,v);null===l?m=x:l.sibling=x;l=x;q=A}if(t.done)return c(e,q),D&&rb(e,v),m;
+if(null===q){for(;!t.done;v++,t=h.next())t=u(e,t.value,k),null!==t&&(g=f(t,g,v),null===l?m=t:l.sibling=t,l=t);D&&rb(e,v);return m}for(q=d(e,q);!t.done;v++,t=h.next())t=p(q,e,v,t.value,k),null!==t&&(a&&null!==t.alternate&&q.delete(null===t.key?v:t.key),g=f(t,g,v),null===l?m=t:l.sibling=t,l=t);a&&q.forEach(function(a){return b(e,a)});D&&rb(e,v);return m}function w(a,d,f,h){"object"===typeof f&&null!==f&&f.type===Bb&&null===f.key&&(f=f.props.children);if("object"===typeof f&&null!==f){switch(f.$$typeof){case xd:a:{for(var k=
+f.key,m=d;null!==m;){if(m.key===k){k=f.type;if(k===Bb){if(7===m.tag){c(a,m.sibling);d=e(m,f.props.children);d.return=a;a=d;break a}}else if(m.elementType===k||"object"===typeof k&&null!==k&&k.$$typeof===Ta&&Kh(k)===m.type){c(a,m.sibling);d=e(m,f.props);d.ref=vc(a,m,f);d.return=a;a=d;break a}c(a,m);break}else b(a,m);m=m.sibling}f.type===Bb?(d=ub(f.props.children,a.mode,h,f.key),d.return=a,a=d):(h=wd(f.type,f.key,f.props,null,a.mode,h),h.ref=vc(a,d,f),h.return=a,a=h)}return g(a);case Cb:a:{for(m=f.key;null!==
+d;){if(d.key===m)if(4===d.tag&&d.stateNode.containerInfo===f.containerInfo&&d.stateNode.implementation===f.implementation){c(a,d.sibling);d=e(d,f.children||[]);d.return=a;a=d;break a}else{c(a,d);break}else b(a,d);d=d.sibling}d=hf(f,a.mode,h);d.return=a;a=d}return g(a);case Ta:return m=f._init,w(a,d,m(f._payload),h)}if(cc(f))return x(a,d,f,h);if(ac(f))return F(a,d,f,h);vd(a,f)}return"string"===typeof f&&""!==f||"number"===typeof f?(f=""+f,null!==d&&6===d.tag?(c(a,d.sibling),d=e(d,f),d.return=a,a=d):
+(c(a,d),d=gf(f,a.mode,h),d.return=a,a=d),g(a)):c(a,d)}return w}function vb(a){if(a===wc)throw Error(n(174));return a}function jf(a,b){y(xc,b);y(yc,a);y(Ea,wc);a=b.nodeType;switch(a){case 9:case 11:b=(b=b.documentElement)?b.namespaceURI:oe(null,"");break;default:a=8===a?b.parentNode:b,b=a.namespaceURI||null,a=a.tagName,b=oe(b,a)}w(Ea);y(Ea,b)}function Tb(a){w(Ea);w(yc);w(xc)}function Mh(a){vb(xc.current);var b=vb(Ea.current);var c=oe(b,a.type);b!==c&&(y(yc,a),y(Ea,c))}function kf(a){yc.current===a&&
+(w(Ea),w(yc))}function yd(a){for(var b=a;null!==b;){if(13===b.tag){var c=b.memoizedState;if(null!==c&&(c=c.dehydrated,null===c||"$?"===c.data||"$!"===c.data))return b}else if(19===b.tag&&void 0!==b.memoizedProps.revealOrder){if(0!==(b.flags&128))return b}else if(null!==b.child){b.child.return=b;b=b.child;continue}if(b===a)break;for(;null===b.sibling;){if(null===b.return||b.return===a)return null;b=b.return}b.sibling.return=b.return;b=b.sibling}return null}function lf(){for(var a=0;a<mf.length;a++)mf[a]._workInProgressVersionPrimary=
+null;mf.length=0}function V(){throw Error(n(321));}function nf(a,b){if(null===b)return!1;for(var c=0;c<b.length&&c<a.length;c++)if(!ua(a[c],b[c]))return!1;return!0}function of(a,b,c,d,e,f){wb=f;C=b;b.memoizedState=null;b.updateQueue=null;b.lanes=0;zd.current=null===a||null===a.memoizedState?mk:nk;a=c(d,e);if(zc){f=0;do{zc=!1;Ac=0;if(25<=f)throw Error(n(301));f+=1;N=K=null;b.updateQueue=null;zd.current=ok;a=c(d,e)}while(zc)}zd.current=Ad;b=null!==K&&null!==K.next;wb=0;N=K=C=null;Bd=!1;if(b)throw Error(n(300));
+return a}function pf(){var a=0!==Ac;Ac=0;return a}function Fa(){var a={memoizedState:null,baseState:null,baseQueue:null,queue:null,next:null};null===N?C.memoizedState=N=a:N=N.next=a;return N}function sa(){if(null===K){var a=C.alternate;a=null!==a?a.memoizedState:null}else a=K.next;var b=null===N?C.memoizedState:N.next;if(null!==b)N=b,K=a;else{if(null===a)throw Error(n(310));K=a;a={memoizedState:K.memoizedState,baseState:K.baseState,baseQueue:K.baseQueue,queue:K.queue,next:null};null===N?C.memoizedState=
+N=a:N=N.next=a}return N}function Bc(a,b){return"function"===typeof b?b(a):b}function qf(a,b,c){b=sa();c=b.queue;if(null===c)throw Error(n(311));c.lastRenderedReducer=a;var d=K,e=d.baseQueue,f=c.pending;if(null!==f){if(null!==e){var g=e.next;e.next=f.next;f.next=g}d.baseQueue=e=f;c.pending=null}if(null!==e){f=e.next;d=d.baseState;var h=g=null,k=null,m=f;do{var l=m.lane;if((wb&l)===l)null!==k&&(k=k.next={lane:0,action:m.action,hasEagerState:m.hasEagerState,eagerState:m.eagerState,next:null}),d=m.hasEagerState?
+m.eagerState:a(d,m.action);else{var u={lane:l,action:m.action,hasEagerState:m.hasEagerState,eagerState:m.eagerState,next:null};null===k?(h=k=u,g=d):k=k.next=u;C.lanes|=l;ra|=l}m=m.next}while(null!==m&&m!==f);null===k?g=d:k.next=h;ua(d,b.memoizedState)||(ha=!0);b.memoizedState=d;b.baseState=g;b.baseQueue=k;c.lastRenderedState=d}a=c.interleaved;if(null!==a){e=a;do f=e.lane,C.lanes|=f,ra|=f,e=e.next;while(e!==a)}else null===e&&(c.lanes=0);return[b.memoizedState,c.dispatch]}function rf(a,b,c){b=sa();
+c=b.queue;if(null===c)throw Error(n(311));c.lastRenderedReducer=a;var d=c.dispatch,e=c.pending,f=b.memoizedState;if(null!==e){c.pending=null;var g=e=e.next;do f=a(f,g.action),g=g.next;while(g!==e);ua(f,b.memoizedState)||(ha=!0);b.memoizedState=f;null===b.baseQueue&&(b.baseState=f);c.lastRenderedState=f}return[f,d]}function Nh(a,b,c){}function Oh(a,b,c){c=C;var d=sa(),e=b(),f=!ua(d.memoizedState,e);f&&(d.memoizedState=e,ha=!0);d=d.queue;sf(Ph.bind(null,c,d,a),[a]);if(d.getSnapshot!==b||f||null!==N&&
+N.memoizedState.tag&1){c.flags|=2048;Cc(9,Qh.bind(null,c,d,e,b),void 0,null);if(null===O)throw Error(n(349));0!==(wb&30)||Rh(c,b,e)}return e}function Rh(a,b,c){a.flags|=16384;a={getSnapshot:b,value:c};b=C.updateQueue;null===b?(b={lastEffect:null,stores:null},C.updateQueue=b,b.stores=[a]):(c=b.stores,null===c?b.stores=[a]:c.push(a))}function Qh(a,b,c,d){b.value=c;b.getSnapshot=d;Sh(b)&&Th(a)}function Ph(a,b,c){return c(function(){Sh(b)&&Th(a)})}function Sh(a){var b=a.getSnapshot;a=a.value;try{var c=
+b();return!ua(a,c)}catch(d){return!0}}function Th(a){var b=Oa(a,1);null!==b&&ya(b,a,1,-1)}function Uh(a){var b=Fa();"function"===typeof a&&(a=a());b.memoizedState=b.baseState=a;a={pending:null,interleaved:null,lanes:0,dispatch:null,lastRenderedReducer:Bc,lastRenderedState:a};b.queue=a;a=a.dispatch=pk.bind(null,C,a);return[b.memoizedState,a]}function Cc(a,b,c,d){a={tag:a,create:b,destroy:c,deps:d,next:null};b=C.updateQueue;null===b?(b={lastEffect:null,stores:null},C.updateQueue=b,b.lastEffect=a.next=
+a):(c=b.lastEffect,null===c?b.lastEffect=a.next=a:(d=c.next,c.next=a,a.next=d,b.lastEffect=a));return a}function Vh(a){return sa().memoizedState}function Cd(a,b,c,d){var e=Fa();C.flags|=a;e.memoizedState=Cc(1|b,c,void 0,void 0===d?null:d)}function Dd(a,b,c,d){var e=sa();d=void 0===d?null:d;var f=void 0;if(null!==K){var g=K.memoizedState;f=g.destroy;if(null!==d&&nf(d,g.deps)){e.memoizedState=Cc(b,c,f,d);return}}C.flags|=a;e.memoizedState=Cc(1|b,c,f,d)}function Wh(a,b){return Cd(8390656,8,a,b)}function sf(a,
+b){return Dd(2048,8,a,b)}function Xh(a,b){return Dd(4,2,a,b)}function Yh(a,b){return Dd(4,4,a,b)}function Zh(a,b){if("function"===typeof b)return a=a(),b(a),function(){b(null)};if(null!==b&&void 0!==b)return a=a(),b.current=a,function(){b.current=null}}function $h(a,b,c){c=null!==c&&void 0!==c?c.concat([a]):null;return Dd(4,4,Zh.bind(null,b,a),c)}function tf(a,b){}function ai(a,b){var c=sa();b=void 0===b?null:b;var d=c.memoizedState;if(null!==d&&null!==b&&nf(b,d[1]))return d[0];c.memoizedState=[a,
+b];return a}function bi(a,b){var c=sa();b=void 0===b?null:b;var d=c.memoizedState;if(null!==d&&null!==b&&nf(b,d[1]))return d[0];a=a();c.memoizedState=[a,b];return a}function ci(a,b,c){if(0===(wb&21))return a.baseState&&(a.baseState=!1,ha=!0),a.memoizedState=c;ua(c,b)||(c=Dg(),C.lanes|=c,ra|=c,a.baseState=!0);return b}function qk(a,b,c){c=z;z=0!==c&&4>c?c:4;a(!0);var d=uf.transition;uf.transition={};try{a(!1),b()}finally{z=c,uf.transition=d}}function di(){return sa().memoizedState}function rk(a,b,
+c){var d=hb(a);c={lane:d,action:c,hasEagerState:!1,eagerState:null,next:null};if(ei(a))fi(b,c);else if(c=Ch(a,b,c,d),null!==c){var e=Z();ya(c,a,d,e);gi(c,b,d)}}function pk(a,b,c){var d=hb(a),e={lane:d,action:c,hasEagerState:!1,eagerState:null,next:null};if(ei(a))fi(b,e);else{var f=a.alternate;if(0===a.lanes&&(null===f||0===f.lanes)&&(f=b.lastRenderedReducer,null!==f))try{var g=b.lastRenderedState,h=f(g,c);e.hasEagerState=!0;e.eagerState=h;if(ua(h,g)){var k=b.interleaved;null===k?(e.next=e,cf(b)):
+(e.next=k.next,k.next=e);b.interleaved=e;return}}catch(m){}finally{}c=Ch(a,b,e,d);null!==c&&(e=Z(),ya(c,a,d,e),gi(c,b,d))}}function ei(a){var b=a.alternate;return a===C||null!==b&&b===C}function fi(a,b){zc=Bd=!0;var c=a.pending;null===c?b.next=b:(b.next=c.next,c.next=b);a.pending=b}function gi(a,b,c){if(0!==(c&4194240)){var d=b.lanes;d&=a.pendingLanes;c|=d;b.lanes=c;xe(a,c)}}function Ub(a,b){try{var c="",d=b;do c+=gj(d),d=d.return;while(d);var e=c}catch(f){e="\nError generating stack: "+f.message+
+"\n"+f.stack}return{value:a,source:b,stack:e,digest:null}}function vf(a,b,c){return{value:a,source:null,stack:null!=c?c:null,digest:null!=b?b:null}}function wf(a,b){try{console.error(b.value)}catch(c){setTimeout(function(){throw c;})}}function hi(a,b,c){c=Pa(-1,c);c.tag=3;c.payload={element:null};var d=b.value;c.callback=function(){Ed||(Ed=!0,xf=d);wf(a,b)};return c}function ii(a,b,c){c=Pa(-1,c);c.tag=3;var d=a.type.getDerivedStateFromError;if("function"===typeof d){var e=b.value;c.payload=function(){return d(e)};
+c.callback=function(){wf(a,b)}}var f=a.stateNode;null!==f&&"function"===typeof f.componentDidCatch&&(c.callback=function(){wf(a,b);"function"!==typeof d&&(null===ib?ib=new Set([this]):ib.add(this));var c=b.stack;this.componentDidCatch(b.value,{componentStack:null!==c?c:""})});return c}function ji(a,b,c){var d=a.pingCache;if(null===d){d=a.pingCache=new sk;var e=new Set;d.set(b,e)}else e=d.get(b),void 0===e&&(e=new Set,d.set(b,e));e.has(c)||(e.add(c),a=tk.bind(null,a,b,c),b.then(a,a))}function ki(a){do{var b;
+if(b=13===a.tag)b=a.memoizedState,b=null!==b?null!==b.dehydrated?!0:!1:!0;if(b)return a;a=a.return}while(null!==a);return null}function li(a,b,c,d,e){if(0===(a.mode&1))return a===b?a.flags|=65536:(a.flags|=128,c.flags|=131072,c.flags&=-52805,1===c.tag&&(null===c.alternate?c.tag=17:(b=Pa(-1,1),b.tag=2,eb(c,b,1))),c.lanes|=1),a;a.flags|=65536;a.lanes=e;return a}function aa(a,b,c,d){b.child=null===a?mi(b,null,c,d):Vb(b,a.child,c,d)}function ni(a,b,c,d,e){c=c.render;var f=b.ref;Sb(b,e);d=of(a,b,c,d,f,
+e);c=pf();if(null!==a&&!ha)return b.updateQueue=a.updateQueue,b.flags&=-2053,a.lanes&=~e,Qa(a,b,e);D&&c&&Ue(b);b.flags|=1;aa(a,b,d,e);return b.child}function oi(a,b,c,d,e){if(null===a){var f=c.type;if("function"===typeof f&&!yf(f)&&void 0===f.defaultProps&&null===c.compare&&void 0===c.defaultProps)return b.tag=15,b.type=f,pi(a,b,f,d,e);a=wd(c.type,null,d,b,b.mode,e);a.ref=b.ref;a.return=b;return b.child=a}f=a.child;if(0===(a.lanes&e)){var g=f.memoizedProps;c=c.compare;c=null!==c?c:qc;if(c(g,d)&&a.ref===
+b.ref)return Qa(a,b,e)}b.flags|=1;a=gb(f,d);a.ref=b.ref;a.return=b;return b.child=a}function pi(a,b,c,d,e){if(null!==a){var f=a.memoizedProps;if(qc(f,d)&&a.ref===b.ref)if(ha=!1,b.pendingProps=d=f,0!==(a.lanes&e))0!==(a.flags&131072)&&(ha=!0);else return b.lanes=a.lanes,Qa(a,b,e)}return zf(a,b,c,d,e)}function qi(a,b,c){var d=b.pendingProps,e=d.children,f=null!==a?a.memoizedState:null;if("hidden"===d.mode)if(0===(b.mode&1))b.memoizedState={baseLanes:0,cachePool:null,transitions:null},y(Ga,ba),ba|=c;
+else{if(0===(c&1073741824))return a=null!==f?f.baseLanes|c:c,b.lanes=b.childLanes=1073741824,b.memoizedState={baseLanes:a,cachePool:null,transitions:null},b.updateQueue=null,y(Ga,ba),ba|=a,null;b.memoizedState={baseLanes:0,cachePool:null,transitions:null};d=null!==f?f.baseLanes:c;y(Ga,ba);ba|=d}else null!==f?(d=f.baseLanes|c,b.memoizedState=null):d=c,y(Ga,ba),ba|=d;aa(a,b,e,c);return b.child}function ri(a,b){var c=b.ref;if(null===a&&null!==c||null!==a&&a.ref!==c)b.flags|=512,b.flags|=2097152}function zf(a,
+b,c,d,e){var f=ea(c)?qb:J.current;f=Nb(b,f);Sb(b,e);c=of(a,b,c,d,f,e);d=pf();if(null!==a&&!ha)return b.updateQueue=a.updateQueue,b.flags&=-2053,a.lanes&=~e,Qa(a,b,e);D&&d&&Ue(b);b.flags|=1;aa(a,b,c,e);return b.child}function si(a,b,c,d,e){if(ea(c)){var f=!0;ld(b)}else f=!1;Sb(b,e);if(null===b.stateNode)Fd(a,b),Hh(b,c,d),ff(b,c,d,e),d=!0;else if(null===a){var g=b.stateNode,h=b.memoizedProps;g.props=h;var k=g.context,m=c.contextType;"object"===typeof m&&null!==m?m=qa(m):(m=ea(c)?qb:J.current,m=Nb(b,
+m));var l=c.getDerivedStateFromProps,n="function"===typeof l||"function"===typeof g.getSnapshotBeforeUpdate;n||"function"!==typeof g.UNSAFE_componentWillReceiveProps&&"function"!==typeof g.componentWillReceiveProps||(h!==d||k!==m)&&Ih(b,g,d,m);fb=!1;var r=b.memoizedState;g.state=r;td(b,d,g,e);k=b.memoizedState;h!==d||r!==k||S.current||fb?("function"===typeof l&&(ef(b,c,l,d),k=b.memoizedState),(h=fb||Gh(b,c,h,d,r,k,m))?(n||"function"!==typeof g.UNSAFE_componentWillMount&&"function"!==typeof g.componentWillMount||
+("function"===typeof g.componentWillMount&&g.componentWillMount(),"function"===typeof g.UNSAFE_componentWillMount&&g.UNSAFE_componentWillMount()),"function"===typeof g.componentDidMount&&(b.flags|=4194308)):("function"===typeof g.componentDidMount&&(b.flags|=4194308),b.memoizedProps=d,b.memoizedState=k),g.props=d,g.state=k,g.context=m,d=h):("function"===typeof g.componentDidMount&&(b.flags|=4194308),d=!1)}else{g=b.stateNode;Dh(a,b);h=b.memoizedProps;m=b.type===b.elementType?h:xa(b.type,h);g.props=
+m;n=b.pendingProps;r=g.context;k=c.contextType;"object"===typeof k&&null!==k?k=qa(k):(k=ea(c)?qb:J.current,k=Nb(b,k));var p=c.getDerivedStateFromProps;(l="function"===typeof p||"function"===typeof g.getSnapshotBeforeUpdate)||"function"!==typeof g.UNSAFE_componentWillReceiveProps&&"function"!==typeof g.componentWillReceiveProps||(h!==n||r!==k)&&Ih(b,g,d,k);fb=!1;r=b.memoizedState;g.state=r;td(b,d,g,e);var x=b.memoizedState;h!==n||r!==x||S.current||fb?("function"===typeof p&&(ef(b,c,p,d),x=b.memoizedState),
+(m=fb||Gh(b,c,m,d,r,x,k)||!1)?(l||"function"!==typeof g.UNSAFE_componentWillUpdate&&"function"!==typeof g.componentWillUpdate||("function"===typeof g.componentWillUpdate&&g.componentWillUpdate(d,x,k),"function"===typeof g.UNSAFE_componentWillUpdate&&g.UNSAFE_componentWillUpdate(d,x,k)),"function"===typeof g.componentDidUpdate&&(b.flags|=4),"function"===typeof g.getSnapshotBeforeUpdate&&(b.flags|=1024)):("function"!==typeof g.componentDidUpdate||h===a.memoizedProps&&r===a.memoizedState||(b.flags|=
+4),"function"!==typeof g.getSnapshotBeforeUpdate||h===a.memoizedProps&&r===a.memoizedState||(b.flags|=1024),b.memoizedProps=d,b.memoizedState=x),g.props=d,g.state=x,g.context=k,d=m):("function"!==typeof g.componentDidUpdate||h===a.memoizedProps&&r===a.memoizedState||(b.flags|=4),"function"!==typeof g.getSnapshotBeforeUpdate||h===a.memoizedProps&&r===a.memoizedState||(b.flags|=1024),d=!1)}return Af(a,b,c,d,f,e)}function Af(a,b,c,d,e,f){ri(a,b);var g=0!==(b.flags&128);if(!d&&!g)return e&&vh(b,c,!1),
+Qa(a,b,f);d=b.stateNode;uk.current=b;var h=g&&"function"!==typeof c.getDerivedStateFromError?null:d.render();b.flags|=1;null!==a&&g?(b.child=Vb(b,a.child,null,f),b.child=Vb(b,null,h,f)):aa(a,b,h,f);b.memoizedState=d.state;e&&vh(b,c,!0);return b.child}function ti(a){var b=a.stateNode;b.pendingContext?th(a,b.pendingContext,b.pendingContext!==b.context):b.context&&th(a,b.context,!1);jf(a,b.containerInfo)}function ui(a,b,c,d,e){Qb();Ye(e);b.flags|=256;aa(a,b,c,d);return b.child}function Bf(a){return{baseLanes:a,
+cachePool:null,transitions:null}}function vi(a,b,c){var d=b.pendingProps,e=G.current,f=!1,g=0!==(b.flags&128),h;(h=g)||(h=null!==a&&null===a.memoizedState?!1:0!==(e&2));if(h)f=!0,b.flags&=-129;else if(null===a||null!==a.memoizedState)e|=1;y(G,e&1);if(null===a){Xe(b);a=b.memoizedState;if(null!==a&&(a=a.dehydrated,null!==a))return 0===(b.mode&1)?b.lanes=1:"$!"===a.data?b.lanes=8:b.lanes=1073741824,null;g=d.children;a=d.fallback;return f?(d=b.mode,f=b.child,g={mode:"hidden",children:g},0===(d&1)&&null!==
+f?(f.childLanes=0,f.pendingProps=g):f=Gd(g,d,0,null),a=ub(a,d,c,null),f.return=b,a.return=b,f.sibling=a,b.child=f,b.child.memoizedState=Bf(c),b.memoizedState=Cf,a):Df(b,g)}e=a.memoizedState;if(null!==e&&(h=e.dehydrated,null!==h))return vk(a,b,g,d,h,e,c);if(f){f=d.fallback;g=b.mode;e=a.child;h=e.sibling;var k={mode:"hidden",children:d.children};0===(g&1)&&b.child!==e?(d=b.child,d.childLanes=0,d.pendingProps=k,b.deletions=null):(d=gb(e,k),d.subtreeFlags=e.subtreeFlags&14680064);null!==h?f=gb(h,f):(f=
+ub(f,g,c,null),f.flags|=2);f.return=b;d.return=b;d.sibling=f;b.child=d;d=f;f=b.child;g=a.child.memoizedState;g=null===g?Bf(c):{baseLanes:g.baseLanes|c,cachePool:null,transitions:g.transitions};f.memoizedState=g;f.childLanes=a.childLanes&~c;b.memoizedState=Cf;return d}f=a.child;a=f.sibling;d=gb(f,{mode:"visible",children:d.children});0===(b.mode&1)&&(d.lanes=c);d.return=b;d.sibling=null;null!==a&&(c=b.deletions,null===c?(b.deletions=[a],b.flags|=16):c.push(a));b.child=d;b.memoizedState=null;return d}
+function Df(a,b,c){b=Gd({mode:"visible",children:b},a.mode,0,null);b.return=a;return a.child=b}function Hd(a,b,c,d){null!==d&&Ye(d);Vb(b,a.child,null,c);a=Df(b,b.pendingProps.children);a.flags|=2;b.memoizedState=null;return a}function vk(a,b,c,d,e,f,g){if(c){if(b.flags&256)return b.flags&=-257,d=vf(Error(n(422))),Hd(a,b,g,d);if(null!==b.memoizedState)return b.child=a.child,b.flags|=128,null;f=d.fallback;e=b.mode;d=Gd({mode:"visible",children:d.children},e,0,null);f=ub(f,e,g,null);f.flags|=2;d.return=
+b;f.return=b;d.sibling=f;b.child=d;0!==(b.mode&1)&&Vb(b,a.child,null,g);b.child.memoizedState=Bf(g);b.memoizedState=Cf;return f}if(0===(b.mode&1))return Hd(a,b,g,null);if("$!"===e.data){d=e.nextSibling&&e.nextSibling.dataset;if(d)var h=d.dgst;d=h;f=Error(n(419));d=vf(f,d,void 0);return Hd(a,b,g,d)}h=0!==(g&a.childLanes);if(ha||h){d=O;if(null!==d){switch(g&-g){case 4:e=2;break;case 16:e=8;break;case 64:case 128:case 256:case 512:case 1024:case 2048:case 4096:case 8192:case 16384:case 32768:case 65536:case 131072:case 262144:case 524288:case 1048576:case 2097152:case 4194304:case 8388608:case 16777216:case 33554432:case 67108864:e=
+32;break;case 536870912:e=268435456;break;default:e=0}e=0!==(e&(d.suspendedLanes|g))?0:e;0!==e&&e!==f.retryLane&&(f.retryLane=e,Oa(a,e),ya(d,a,e,-1))}Ef();d=vf(Error(n(421)));return Hd(a,b,g,d)}if("$?"===e.data)return b.flags|=128,b.child=a.child,b=wk.bind(null,a),e._reactRetry=b,null;a=f.treeContext;fa=Ka(e.nextSibling);la=b;D=!0;wa=null;null!==a&&(na[oa++]=Ma,na[oa++]=Na,na[oa++]=sb,Ma=a.id,Na=a.overflow,sb=b);b=Df(b,d.children);b.flags|=4096;return b}function wi(a,b,c){a.lanes|=b;var d=a.alternate;
+null!==d&&(d.lanes|=b);bf(a.return,b,c)}function Ff(a,b,c,d,e){var f=a.memoizedState;null===f?a.memoizedState={isBackwards:b,rendering:null,renderingStartTime:0,last:d,tail:c,tailMode:e}:(f.isBackwards=b,f.rendering=null,f.renderingStartTime=0,f.last=d,f.tail=c,f.tailMode=e)}function xi(a,b,c){var d=b.pendingProps,e=d.revealOrder,f=d.tail;aa(a,b,d.children,c);d=G.current;if(0!==(d&2))d=d&1|2,b.flags|=128;else{if(null!==a&&0!==(a.flags&128))a:for(a=b.child;null!==a;){if(13===a.tag)null!==a.memoizedState&&
+wi(a,c,b);else if(19===a.tag)wi(a,c,b);else if(null!==a.child){a.child.return=a;a=a.child;continue}if(a===b)break a;for(;null===a.sibling;){if(null===a.return||a.return===b)break a;a=a.return}a.sibling.return=a.return;a=a.sibling}d&=1}y(G,d);if(0===(b.mode&1))b.memoizedState=null;else switch(e){case "forwards":c=b.child;for(e=null;null!==c;)a=c.alternate,null!==a&&null===yd(a)&&(e=c),c=c.sibling;c=e;null===c?(e=b.child,b.child=null):(e=c.sibling,c.sibling=null);Ff(b,!1,e,c,f);break;case "backwards":c=
+null;e=b.child;for(b.child=null;null!==e;){a=e.alternate;if(null!==a&&null===yd(a)){b.child=e;break}a=e.sibling;e.sibling=c;c=e;e=a}Ff(b,!0,c,null,f);break;case "together":Ff(b,!1,null,null,void 0);break;default:b.memoizedState=null}return b.child}function Fd(a,b){0===(b.mode&1)&&null!==a&&(a.alternate=null,b.alternate=null,b.flags|=2)}function Qa(a,b,c){null!==a&&(b.dependencies=a.dependencies);ra|=b.lanes;if(0===(c&b.childLanes))return null;if(null!==a&&b.child!==a.child)throw Error(n(153));if(null!==
+b.child){a=b.child;c=gb(a,a.pendingProps);b.child=c;for(c.return=b;null!==a.sibling;)a=a.sibling,c=c.sibling=gb(a,a.pendingProps),c.return=b;c.sibling=null}return b.child}function xk(a,b,c){switch(b.tag){case 3:ti(b);Qb();break;case 5:Mh(b);break;case 1:ea(b.type)&&ld(b);break;case 4:jf(b,b.stateNode.containerInfo);break;case 10:var d=b.type._context,e=b.memoizedProps.value;y(rd,d._currentValue);d._currentValue=e;break;case 13:d=b.memoizedState;if(null!==d){if(null!==d.dehydrated)return y(G,G.current&
+1),b.flags|=128,null;if(0!==(c&b.child.childLanes))return vi(a,b,c);y(G,G.current&1);a=Qa(a,b,c);return null!==a?a.sibling:null}y(G,G.current&1);break;case 19:d=0!==(c&b.childLanes);if(0!==(a.flags&128)){if(d)return xi(a,b,c);b.flags|=128}e=b.memoizedState;null!==e&&(e.rendering=null,e.tail=null,e.lastEffect=null);y(G,G.current);if(d)break;else return null;case 22:case 23:return b.lanes=0,qi(a,b,c)}return Qa(a,b,c)}function Dc(a,b){if(!D)switch(a.tailMode){case "hidden":b=a.tail;for(var c=null;null!==
+b;)null!==b.alternate&&(c=b),b=b.sibling;null===c?a.tail=null:c.sibling=null;break;case "collapsed":c=a.tail;for(var d=null;null!==c;)null!==c.alternate&&(d=c),c=c.sibling;null===d?b||null===a.tail?a.tail=null:a.tail.sibling=null:d.sibling=null}}function W(a){var b=null!==a.alternate&&a.alternate.child===a.child,c=0,d=0;if(b)for(var e=a.child;null!==e;)c|=e.lanes|e.childLanes,d|=e.subtreeFlags&14680064,d|=e.flags&14680064,e.return=a,e=e.sibling;else for(e=a.child;null!==e;)c|=e.lanes|e.childLanes,
+d|=e.subtreeFlags,d|=e.flags,e.return=a,e=e.sibling;a.subtreeFlags|=d;a.childLanes=c;return b}function yk(a,b,c){var d=b.pendingProps;Ve(b);switch(b.tag){case 2:case 16:case 15:case 0:case 11:case 7:case 8:case 12:case 9:case 14:return W(b),null;case 1:return ea(b.type)&&(w(S),w(J)),W(b),null;case 3:d=b.stateNode;Tb();w(S);w(J);lf();d.pendingContext&&(d.context=d.pendingContext,d.pendingContext=null);if(null===a||null===a.child)pd(b)?b.flags|=4:null===a||a.memoizedState.isDehydrated&&0===(b.flags&
+256)||(b.flags|=1024,null!==wa&&(Gf(wa),wa=null));yi(a,b);W(b);return null;case 5:kf(b);var e=vb(xc.current);c=b.type;if(null!==a&&null!=b.stateNode)zk(a,b,c,d,e),a.ref!==b.ref&&(b.flags|=512,b.flags|=2097152);else{if(!d){if(null===b.stateNode)throw Error(n(166));W(b);return null}a=vb(Ea.current);if(pd(b)){d=b.stateNode;c=b.type;var f=b.memoizedProps;d[Da]=b;d[uc]=f;a=0!==(b.mode&1);switch(c){case "dialog":B("cancel",d);B("close",d);break;case "iframe":case "object":case "embed":B("load",d);break;
+case "video":case "audio":for(e=0;e<Ec.length;e++)B(Ec[e],d);break;case "source":B("error",d);break;case "img":case "image":case "link":B("error",d);B("load",d);break;case "details":B("toggle",d);break;case "input":kg(d,f);B("invalid",d);break;case "select":d._wrapperState={wasMultiple:!!f.multiple};B("invalid",d);break;case "textarea":ng(d,f),B("invalid",d)}pe(c,f);e=null;for(var g in f)if(f.hasOwnProperty(g)){var h=f[g];"children"===g?"string"===typeof h?d.textContent!==h&&(!0!==f.suppressHydrationWarning&&
+jd(d.textContent,h,a),e=["children",h]):"number"===typeof h&&d.textContent!==""+h&&(!0!==f.suppressHydrationWarning&&jd(d.textContent,h,a),e=["children",""+h]):$b.hasOwnProperty(g)&&null!=h&&"onScroll"===g&&B("scroll",d)}switch(c){case "input":Pc(d);mg(d,f,!0);break;case "textarea":Pc(d);pg(d);break;case "select":case "option":break;default:"function"===typeof f.onClick&&(d.onclick=kd)}d=e;b.updateQueue=d;null!==d&&(b.flags|=4)}else{g=9===e.nodeType?e:e.ownerDocument;"http://www.w3.org/1999/xhtml"===
+a&&(a=qg(c));"http://www.w3.org/1999/xhtml"===a?"script"===c?(a=g.createElement("div"),a.innerHTML="<script>\x3c/script>",a=a.removeChild(a.firstChild)):"string"===typeof d.is?a=g.createElement(c,{is:d.is}):(a=g.createElement(c),"select"===c&&(g=a,d.multiple?g.multiple=!0:d.size&&(g.size=d.size))):a=g.createElementNS(a,c);a[Da]=b;a[uc]=d;Ak(a,b,!1,!1);b.stateNode=a;a:{g=qe(c,d);switch(c){case "dialog":B("cancel",a);B("close",a);e=d;break;case "iframe":case "object":case "embed":B("load",a);e=d;break;
+case "video":case "audio":for(e=0;e<Ec.length;e++)B(Ec[e],a);e=d;break;cas
