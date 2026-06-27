@@ -997,16 +997,7 @@ function BudgetPlanner() {
       incomes: items.filter((x) => x.type === "income"),
       accounts,
       onClose: () => setEditor(null),
-      onSave: function(it) {
-        const si = editor != null ? editor._scanIndex : null;
-        upsert(it);
-        if (si != null) {
-          setScan(function(prev) {
-            if (!prev || !prev.results) return prev;
-            return Object.assign({}, prev, { added: Object.assign({}, prev.added || {}, { [si]: it.id }) });
-          });
-        }
-      },
+      onSave: upsert,
       onDelete: remove,
       onSkip: skipOccurrence,
       onAdvise: (bill, onApplyDate) => setAdvisor({ mode: "bill", bill, onApplyDate }),
@@ -1041,7 +1032,7 @@ function BudgetPlanner() {
       onRestore: applyData,
       onClose: () => setSettingsOpen(false)
     }
-  ), /* @__PURE__ */ React.createElement("input", { ref: scanRef, type: "file", accept: "image/*", multiple: true, onChange: onScanFile, style: { display: "none" } }), scan && (scan.results ? /* @__PURE__ */ React.createElement(ScanResultsSheet, { results: scan.results, added: scan.added || {}, activeIndex: editor && editor._scanIndex != null ? editor._scanIndex : null, accounts, onAddItem: function(r, i) { setEditor({ item: null, date: r.date || toISO(new Date()), prefill: r, _scanIndex: i }); }, onUndoItem: function(i, itemId) { const next = items.filter(function(x) { return x.id !== itemId; }); setItems(next); persist(next, accounts); setScan(function(prev) { if (!prev) return prev; const a = Object.assign({}, prev.added || {}); delete a[i]; return Object.assign({}, prev, { added: a }); }); }, onUpdateAccount: upsertAccount, onClose: function() { setScan(null); } }) : /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("input", { ref: scanRef, type: "file", accept: "image/*", multiple: true, onChange: onScanFile, style: { display: "none" } }), scan && (scan.results ? /* @__PURE__ */ React.createElement(ScanResultsSheet, { results: scan.results, added: scan.added || {}, accounts, onSaveItem: function(it, i) { const next = [].concat(items, [it]); setItems(next); persist(next, accounts); setScan(function(prev) { if (!prev || !prev.results) return prev; return Object.assign({}, prev, { added: Object.assign({}, prev.added || {}, { [i]: it.id }) }); }); }, onUndoItem: function(i, itemId) { const next = items.filter(function(x) { return x.id !== itemId; }); setItems(next); persist(next, accounts); setScan(function(prev) { if (!prev) return prev; const a = Object.assign({}, prev.added || {}); delete a[i]; return Object.assign({}, prev, { added: a }); }); }, onUpdateAccount: upsertAccount, onClose: function() { setScan(null); } }) : /* @__PURE__ */ React.createElement(
     "div",
     {
       className: "fixed inset-0 z-50 flex items-center justify-center bx-fade px-8",
@@ -1693,102 +1684,162 @@ function AccountsSheet({ accounts, onSave, onDelete, onClose }) {
   )), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
 }
 
-function ScanResultsSheet({ results, added, activeIndex, accounts, onAddItem, onUndoItem, onUpdateAccount, onClose }) {
+function ScanResultsSheet({ results, added, accounts, onSaveItem, onUndoItem, onUpdateAccount, onClose }) {
   const [acctHandled, setAcctHandled] = useState({});
-  const [edits, setEdits] = useState({});
-  function setFreq(i, freq) { setEdits(function(p) { return Object.assign({}, p, { [i]: Object.assign({}, p[i] || {}, { freq: freq }) }); }); }
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [eType, setEType] = useState("expense");
+  const [eName, setEName] = useState("");
+  const [ePayee, setEPayee] = useState("");
+  const [eAmount, setEAmount] = useState("");
+  const [eDate, setEDate] = useState("");
+  const [eFreq, setEFreq] = useState("monthly");
+  const [eCategory, setECategory] = useState("misc");
+  const iStyle = { background: "#F6F7FB", border: "1px solid #E9ECF0" };
+  const isEditing = editingIndex != null;
+  const cats = eType === "income" ? INCOME_CATS : EXPENSE_CATS;
+  const eValid = eName.trim().length > 0 && parseFloat(eAmount) > 0;
   const allDone = results.length > 0 && results.every(function(r, i) { return r.kind === "account" ? !!acctHandled[i] : !!added[i]; });
-  return React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose },
-    React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: function(e) { e.stopPropagation(); } },
-      React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }),
-      React.createElement("h3", { className: "text-[19px] font-bold mb-1" }, "Scan results"),
-      React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, results.length + " item" + (results.length !== 1 ? "s" : "") + " found \u2014 review and add each one."),
-      React.createElement("div", { className: "space-y-3" },
-        results.map(function(r, i) {
-          if (r.kind === "account") {
-            const done = !!acctHandled[i];
-            const bal = typeof r.balance === "number" ? r.balance : parseFloat(r.balance) || 0;
-            const balFmt = (bal < 0 ? "\u2212" : "") + Math.abs(bal).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(Math.abs(bal)) ? 0 : 2 });
-            return React.createElement("div", { key: i, className: "rounded-2xl p-4", style: { background: done ? "#F6FBF9" : "#F6F7FB", border: "1px solid " + (done ? "#BBF7D0" : "#ECEFF4") } },
-              React.createElement("div", { className: "flex items-center justify-between gap-2 mb-2" },
-                React.createElement("div", { className: "flex items-center gap-2" },
-                  React.createElement("span", { className: "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]", style: { background: "#DBEAFE", color: "#2563EB" } }, "Account"),
-                  React.createElement("span", { className: "font-semibold text-[14px]" }, r.name || "Account")
-                ),
-                done && React.createElement("span", { style: { color: "#11875E", fontSize: 13, fontWeight: 600 } }, "\u2713 Updated")
-              ),
-              React.createElement("div", { className: "bx-num text-[24px] font-bold mb-1", style: { color: "#16202B", letterSpacing: "-0.03em" } }, balFmt),
-              r.notes && React.createElement("p", { className: "text-[11px] mb-3", style: { color: "#8A95A3" } }, r.notes),
-              !done && React.createElement("div", null,
-                React.createElement("p", { className: "text-[11px] font-semibold mb-2", style: { color: "#6B7785" } }, "Update which account?"),
-                React.createElement("div", { className: "flex flex-wrap gap-2" },
-                  accounts.map(function(a) {
-                    return React.createElement("button", {
-                      key: a.id,
-                      onClick: function() { onUpdateAccount(Object.assign({}, a, { balance: bal })); setAcctHandled(function(p) { return Object.assign({}, p, { [i]: a.name }); }); },
-                      className: "rounded-full px-3 py-2 text-[13px] font-medium active:scale-95",
-                      style: { background: "#F2F4F7", color: "#16202B", transition: "transform .1s" }
-                    }, a.name);
-                  }),
-                  React.createElement("button", {
-                    onClick: function() { onUpdateAccount({ id: uid(), name: r.name, type: r.accountType || "checking", balance: bal }); setAcctHandled(function(p) { return Object.assign({}, p, { [i]: r.name }); }); },
-                    className: "rounded-full px-3 py-2 text-[13px] font-medium active:scale-95",
-                    style: { background: "#EEF2FF", color: "#4338CA", transition: "transform .1s" }
-                  }, "+ New account")
-                )
-              )
-            );
-          }
-          const itemId = added[i];
-          const done = !!itemId;
-          const isActive = activeIndex === i && !done;
-          const freq = (edits[i] && edits[i].freq) || r.freq;
-          const color = r.type === "income" ? INCOME_COLOR : expCat(r.category).color;
-          const amt = typeof r.amount === "number" ? r.amount : parseFloat(r.amount) || 0;
-          const amtFmt = amt > 0 ? amt.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(amt) ? 0 : 2 }) : "\u2014";
-          return React.createElement("div", { key: i, className: "rounded-2xl p-4", style: { background: done ? "#F6FBF9" : isActive ? "#F0F4FF" : "#F6F7FB", border: "1px solid " + (done ? "#BBF7D0" : isActive ? "#C7D2FE" : "#ECEFF4") } },
-            React.createElement("div", { className: "flex items-start justify-between gap-2 mb-2" },
-              React.createElement("div", { className: "flex items-center gap-2 min-w-0" },
-                React.createElement("span", { className: "shrink-0 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]", style: { background: r.type === "income" ? "#D1FAE5" : "#EEF2FF", color: r.type === "income" ? "#065F46" : "#4338CA" } }, r.type === "income" ? "Income" : "Expense"),
-                React.createElement("span", { className: "font-semibold text-[14px] truncate" }, r.name || "(unnamed)")
-              ),
-              done
-                ? React.createElement("div", { className: "shrink-0 flex items-center gap-2" },
-                    React.createElement("span", { style: { color: "#11875E", fontSize: 13, fontWeight: 600 } }, "\u2713 Added"),
-                    React.createElement("button", { onClick: function() { onUndoItem(i, itemId); }, className: "text-[12px] font-semibold active:opacity-60", style: { color: "#C2410C" } }, "Undo")
-                  )
-                : React.createElement("button", {
-                    onClick: function() { if (!isActive) onAddItem(Object.assign({}, r, edits[i] || {}), i); },
-                    className: "shrink-0 rounded-xl px-3.5 py-2 text-[13px] font-semibold",
-                    style: { background: isActive ? "#EEF2FF" : "#13202E", color: isActive ? "#4338CA" : "#fff", transition: "all .15s" }
-                  }, isActive ? "In editor\u2026" : "Add")
-            ),
-            React.createElement("div", { className: "flex items-baseline gap-2 mb-3" },
-              React.createElement("span", { className: "bx-num text-[20px] font-bold", style: { color: done ? "#A0AAB6" : color, letterSpacing: "-0.02em", textDecoration: done ? "line-through" : "none" } }, (r.type === "income" ? "+" : "") + amtFmt),
-              r.payee && React.createElement("span", { className: "text-[12px] truncate", style: { color: "#8A95A3" } }, r.payee)
-            ),
-            !done && React.createElement("div", { className: "mb-2" },
-              React.createElement("p", { className: "text-[10px] font-semibold mb-1.5 uppercase tracking-[0.12em]", style: { color: "#A0AAB6" } }, "Repeat"),
-              React.createElement("div", { className: "flex flex-wrap gap-1.5" },
-                FREQS.map(function(f) {
-                  return React.createElement("button", {
-                    key: f.id,
-                    onClick: function() { setFreq(i, f.id); },
-                    className: "rounded-full px-2.5 py-1 text-[11px] font-medium active:scale-95",
-                    style: { background: freq === f.id ? "#13202E" : "#F0F2F5", color: freq === f.id ? "#fff" : "#6B7785", transition: "all .1s" }
-                  }, f.label);
-                })
-              )
-            ),
-            React.createElement("div", { className: "flex flex-wrap gap-1.5" },
-              React.createElement("span", { className: "inline-block rounded-full px-2 py-0.5 text-[11px]", style: { background: "#F0F2F5", color: "#6B7785" } }, r.type === "income" ? inCat(r.category).label : expCat(r.category).label),
-              r.date && React.createElement("span", { className: "bx-num inline-block rounded-full px-2 py-0.5 text-[11px]", style: { background: "#F0F2F5", color: "#6B7785" } }, r.date)
+  function startEdit(i) {
+    var r = results[i];
+    setEditingIndex(i);
+    setEType(r.type || "expense");
+    setEName(r.name || "");
+    setEPayee(r.payee || "");
+    setEAmount(r.amount != null && r.amount !== "" ? String(r.amount) : "");
+    setEDate(r.date || toISO(new Date()));
+    setEFreq(r.freq || "monthly");
+    setECategory(r.category || (r.type === "income" ? "wages" : "misc"));
+  }
+  function saveItem() {
+    var amt = parseFloat(eAmount);
+    if (!eValid) return;
+    var validCat = cats.some(function(c) { return c.id === eCategory; }) ? eCategory : (eType === "income" ? "wages" : "misc");
+    var it = { id: uid(), type: eType, name: eName.trim(), payee: ePayee.trim(), amount: Math.round(amt * 100) / 100, date: eDate || toISO(new Date()), freq: eFreq, category: validCat, notes: "", auto: false };
+    onSaveItem(it, editingIndex);
+    setEditingIndex(null);
+  }
+  return React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: isEditing ? null : onClose },
+    React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl", style: { maxWidth: 480, maxHeight: "92vh", display: "flex", flexDirection: "column" }, onClick: function(e) { e.stopPropagation(); } },
+      React.createElement("div", { className: "px-5 pt-4 pb-3 shrink-0", style: { borderBottom: "1px solid #F0F2F5" } },
+        React.createElement("div", { className: "mx-auto mb-3 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }),
+        isEditing
+          ? React.createElement("div", { className: "flex items-center justify-between" },
+              React.createElement("button", { onClick: function() { setEditingIndex(null); }, className: "text-[14px] font-semibold active:opacity-60", style: { color: "#4338CA" } }, "← Back"),
+              React.createElement("span", { className: "text-[15px] font-bold" }, "Review & add"),
+              React.createElement("button", { onClick: saveItem, disabled: !eValid, className: "text-[14px] font-semibold active:opacity-60", style: { color: eValid ? "#13202E" : "#A0AAB6" } }, "Save")
             )
-          );
-        })
+          : React.createElement("div", { className: "flex items-center justify-between" },
+              React.createElement("div", null,
+                React.createElement("h3", { className: "text-[18px] font-bold leading-tight" }, "Scan results"),
+                React.createElement("p", { className: "text-[12px] mt-0.5", style: { color: "#8A95A3" } }, results.length + " item" + (results.length !== 1 ? "s" : "") + " found")
+              ),
+              React.createElement("button", { onClick: onClose, className: "text-[24px] leading-none active:opacity-60", style: { color: "#A0AAB6" } }, "×")
+            )
       ),
-      allDone && React.createElement("p", { className: "text-[14px] text-center py-3 font-medium", style: { color: "#11875E" } }, "\u2713 All items handled"),
-      React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")
+      React.createElement("div", { className: "flex-1 overflow-y-auto p-5" },
+        isEditing
+          ? React.createElement("div", { className: "space-y-4" },
+              React.createElement("div", { className: "flex rounded-xl overflow-hidden", style: { border: "1px solid #E2E6EB" } },
+                ["expense", "income"].map(function(t) {
+                  return React.createElement("button", { key: t, onClick: function() { setEType(t); setECategory(t === "income" ? "wages" : "misc"); }, className: "flex-1 py-2.5 text-[14px] font-semibold", style: { background: eType === t ? "#13202E" : "#fff", color: eType === t ? "#fff" : "#6B7785", transition: "all .12s" } }, t === "income" ? "Income" : "Expense");
+                })
+              ),
+              React.createElement("div", null,
+                React.createElement("label", { className: "block text-[11px] font-semibold mb-1.5 uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Name"),
+                React.createElement("input", { value: eName, onChange: function(e) { setEName(e.target.value); }, placeholder: "e.g. Electric bill", className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none", style: iStyle })
+              ),
+              React.createElement("div", { className: "flex gap-3" },
+                React.createElement("div", { style: { flex: "0 0 120px" } },
+                  React.createElement("label", { className: "block text-[11px] font-semibold mb-1.5 uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Amount"),
+                  React.createElement("input", { value: eAmount, onChange: function(e) { setEAmount(e.target.value.replace(/[^0-9.]/g, "")); }, inputMode: "decimal", placeholder: "0.00", className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none", style: iStyle })
+                ),
+                React.createElement("div", { className: "flex-1 min-w-0" },
+                  React.createElement("label", { className: "block text-[11px] font-semibold mb-1.5 uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "From / To"),
+                  React.createElement("input", { value: ePayee, onChange: function(e) { setEPayee(e.target.value); }, placeholder: "optional", className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none", style: iStyle })
+                )
+              ),
+              React.createElement("div", null,
+                React.createElement("label", { className: "block text-[11px] font-semibold mb-1.5 uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Date"),
+                React.createElement("input", { type: "date", value: eDate, onChange: function(e) { setEDate(e.target.value); }, className: "bx-num w-full rounded-xl px-3.5 py-3 text-[15px] outline-none", style: iStyle })
+              ),
+              React.createElement("div", null,
+                React.createElement("label", { className: "block text-[11px] font-semibold mb-1.5 uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Repeat"),
+                React.createElement("div", { className: "flex flex-wrap gap-1.5" },
+                  FREQS.map(function(f) {
+                    return React.createElement("button", { key: f.id, onClick: function() { setEFreq(f.id); }, className: "rounded-full px-3 py-1.5 text-[12px] font-medium active:scale-95", style: { background: eFreq === f.id ? "#13202E" : "#F0F2F5", color: eFreq === f.id ? "#fff" : "#6B7785", transition: "all .1s" } }, f.label);
+                  })
+                )
+              ),
+              React.createElement("div", null,
+                React.createElement("label", { className: "block text-[11px] font-semibold mb-1.5 uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Category"),
+                React.createElement("div", { className: "relative" },
+                  React.createElement("select", { value: eCategory, onChange: function(e) { setECategory(e.target.value); }, className: "w-full rounded-xl px-3.5 py-3 text-[15px] outline-none appearance-none", style: iStyle },
+                    cats.map(function(c) { return React.createElement("option", { key: c.id, value: c.id }, c.label); })
+                  ),
+                  React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "⌄")
+                )
+              ),
+              React.createElement("button", { onClick: saveItem, disabled: !eValid, className: "w-full rounded-xl py-3.5 text-[15px] font-semibold mt-2", style: { background: eValid ? "#13202E" : "#E2E6EB", color: eValid ? "#fff" : "#A0AAB6", transition: "all .12s" } }, "Add " + (eType === "income" ? "income" : "expense"))
+            )
+          : React.createElement("div", { className: "space-y-3" },
+              results.map(function(r, i) {
+                if (r.kind === "account") {
+                  var done = !!acctHandled[i];
+                  var bal = typeof r.balance === "number" ? r.balance : parseFloat(r.balance) || 0;
+                  var balFmt = (bal < 0 ? "−" : "") + Math.abs(bal).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(Math.abs(bal)) ? 0 : 2 });
+                  return React.createElement("div", { key: i, className: "rounded-2xl p-4", style: { background: done ? "#F6FBF9" : "#F6F7FB", border: "1px solid " + (done ? "#BBF7D0" : "#ECEFF4") } },
+                    React.createElement("div", { className: "flex items-center justify-between gap-2 mb-2" },
+                      React.createElement("div", { className: "flex items-center gap-2" },
+                        React.createElement("span", { className: "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]", style: { background: "#DBEAFE", color: "#2563EB" } }, "Account"),
+                        React.createElement("span", { className: "font-semibold text-[14px]" }, r.name || "Account")
+                      ),
+                      done && React.createElement("span", { style: { color: "#11875E", fontSize: 13, fontWeight: 600 } }, "✓ Updated")
+                    ),
+                    React.createElement("div", { className: "bx-num text-[24px] font-bold mb-1", style: { color: "#16202B", letterSpacing: "-0.03em" } }, balFmt),
+                    r.notes && React.createElement("p", { className: "text-[11px] mb-3", style: { color: "#8A95A3" } }, r.notes),
+                    !done && React.createElement("div", null,
+                      React.createElement("p", { className: "text-[11px] font-semibold mb-2", style: { color: "#6B7785" } }, "Update which account?"),
+                      React.createElement("div", { className: "flex flex-wrap gap-2" },
+                        accounts.map(function(a) {
+                          return React.createElement("button", { key: a.id, onClick: function() { onUpdateAccount(Object.assign({}, a, { balance: bal })); setAcctHandled(function(p) { return Object.assign({}, p, { [i]: a.name }); }); }, className: "rounded-full px-3 py-2 text-[13px] font-medium active:scale-95", style: { background: "#F2F4F7", color: "#16202B" } }, a.name);
+                        }),
+                        React.createElement("button", { onClick: function() { onUpdateAccount({ id: uid(), name: r.name, type: r.accountType || "checking", balance: bal }); setAcctHandled(function(p) { return Object.assign({}, p, { [i]: r.name }); }); }, className: "rounded-full px-3 py-2 text-[13px] font-medium active:scale-95", style: { background: "#EEF2FF", color: "#4338CA" } }, "+ New account")
+                      )
+                    )
+                  );
+                }
+                var itemId = added[i];
+                var done = !!itemId;
+                var color = r.type === "income" ? INCOME_COLOR : expCat(r.category).color;
+                var amt = typeof r.amount === "number" ? r.amount : parseFloat(r.amount) || 0;
+                var amtFmt = amt > 0 ? amt.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(amt) ? 0 : 2 }) : "—";
+                return React.createElement("div", { key: i, className: "rounded-2xl p-4", style: { background: done ? "#F6FBF9" : "#F6F7FB", border: "1px solid " + (done ? "#BBF7D0" : "#ECEFF4") } },
+                  React.createElement("div", { className: "flex items-start justify-between gap-2 mb-2" },
+                    React.createElement("div", { className: "flex items-center gap-2 min-w-0" },
+                      React.createElement("span", { className: "shrink-0 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]", style: { background: r.type === "income" ? "#D1FAE5" : "#EEF2FF", color: r.type === "income" ? "#065F46" : "#4338CA" } }, r.type === "income" ? "Income" : "Expense"),
+                      React.createElement("span", { className: "font-semibold text-[14px] truncate" }, r.name || "(unnamed)")
+                    ),
+                    done
+                      ? React.createElement("div", { className: "shrink-0 flex items-center gap-2" },
+                          React.createElement("span", { style: { color: "#11875E", fontSize: 13, fontWeight: 600 } }, "✓ Added"),
+                          React.createElement("button", { onClick: function() { onUndoItem(i, itemId); }, className: "text-[12px] font-semibold active:opacity-60", style: { color: "#C2410C" } }, "Undo")
+                        )
+                      : React.createElement("button", { onClick: function() { startEdit(i); }, className: "shrink-0 rounded-xl px-3.5 py-2 text-[13px] font-semibold active:scale-95", style: { background: "#13202E", color: "#fff" } }, "Add")
+                  ),
+                  React.createElement("div", { className: "flex items-baseline gap-2 mb-2" },
+                    React.createElement("span", { className: "bx-num text-[20px] font-bold", style: { color: done ? "#A0AAB6" : color, letterSpacing: "-0.02em", textDecoration: done ? "line-through" : "none" } }, (r.type === "income" ? "+" : "") + amtFmt),
+                    r.payee && React.createElement("span", { className: "text-[12px] truncate", style: { color: "#8A95A3" } }, r.payee)
+                  ),
+                  React.createElement("div", { className: "flex flex-wrap gap-1.5" },
+                    React.createElement("span", { className: "inline-block rounded-full px-2 py-0.5 text-[11px]", style: { background: "#F0F2F5", color: "#6B7785" } }, (FREQS.find(function(f) { return f.id === r.freq; }) || FREQS[3]).label),
+                    React.createElement("span", { className: "inline-block rounded-full px-2 py-0.5 text-[11px]", style: { background: "#F0F2F5", color: "#6B7785" } }, r.type === "income" ? inCat(r.category).label : expCat(r.category).label),
+                    r.date && React.createElement("span", { className: "bx-num inline-block rounded-full px-2 py-0.5 text-[11px]", style: { background: "#F0F2F5", color: "#6B7785" } }, r.date)
+                  )
+                );
+              }),
+              allDone && React.createElement("p", { className: "text-[14px] text-center py-3 font-medium", style: { color: "#11875E" } }, "✓ All items handled")
+            )
+      )
     )
   );
 }
