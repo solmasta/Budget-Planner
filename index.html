@@ -407,6 +407,7 @@ const STORAGE_KEY = "budget-planner-v2";
 const SNAP_KEY = "budget-snapshots";
 const CLEARED_KEY = "budget-cleared";
 const SKIPPED_KEY = "budget-skipped";
+const ADVISOR_NOTES_KEY = "budget-advisor-notes";
 const ck = (id, iso) => id + ":" + iso;
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const MO_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -677,6 +678,7 @@ function BudgetPlanner() {
   const [lastBackup, setLastBackup] = useState(null);
   const [cleared, setCleared] = useState({});
   const [skipped, setSkipped] = useState({});
+  const [advisorNotes, setAdvisorNotes] = useState([]);
   const startBalance = useMemo(() => accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0), [accounts]);
   useEffect(() => {
     (async () => {
@@ -708,9 +710,41 @@ function BudgetPlanner() {
         if (s) setSkipped(JSON.parse(s) || {});
       } catch (e) {
       }
+      try {
+        const an = localStorage.getItem(ADVISOR_NOTES_KEY);
+        if (an) setAdvisorNotes(JSON.parse(an) || []);
+      } catch (e) {
+      }
       setLoading(false);
     })();
   }, []);
+  function applyAction(action) {
+    if (!action || !action.type) return;
+    if (action.type === "update" && action.id) {
+      const existing = items.find(function(x) { return x.id === action.id; });
+      if (existing) {
+        const updated = Object.assign({}, existing, action.changes || {});
+        const next = items.map(function(x) { return x.id === updated.id ? updated : x; });
+        setItems(next);
+        persist(next, accounts);
+      }
+    } else if (action.type === "create" && action.item) {
+      const newItem = Object.assign({ notes: "", auto: false }, action.item, { id: uid() });
+      const next = items.concat([newItem]);
+      setItems(next);
+      persist(next, accounts);
+    } else if (action.type === "delete" && action.id) {
+      const next = items.filter(function(x) { return x.id !== action.id; });
+      setItems(next);
+      persist(next, accounts);
+    } else if (action.type === "note" && action.content) {
+      setAdvisorNotes(function(prev) {
+        const next = prev.filter(function(n) { return n !== action.content; }).concat([action.content]).slice(-8);
+        try { localStorage.setItem(ADVISOR_NOTES_KEY, JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+    }
+  }
   function toggleCleared(id, iso) {
     setCleared((prev) => {
       const next = { ...prev };
@@ -914,7 +948,7 @@ function BudgetPlanner() {
   const cells = [];
   for (let i = 0; i < firstDow; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5 truncate", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setSettingsOpen(true), label: "Settings and backup" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2699")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, saveError && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-4 py-3 flex items-center gap-2 text-[13px] font-medium", style: { background: "#FEF2F2", color: "#C2410C", border: "1px solid #FCA5A5" } }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), "Your data couldn't be saved — storage may be full. Export a backup now."), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected total \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, accounts.length, " account", accounts.length === 1 ? "" : "s", " \xB7 now ", money(startBalance))), /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Accounts"), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, "Manage")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, accounts.map((a) => /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "w-full flex items-center gap-3 py-2 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0" }, money(Number(a.balance) || 0)))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 pt-2 border-t", style: { borderColor: "#F0F2F5" } }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#6B7785" } }, "Total now"), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-bold text-[15px]" }, money(startBalance)))), /* @__PURE__ */ React.createElement(Insights, { items, eff, startBalance, cleared, skipped, accounts }), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5 truncate", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setSettingsOpen(true), label: "Settings and backup" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2699")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, saveError && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-4 py-3 flex items-center gap-2 text-[13px] font-medium", style: { background: "#FEF2F2", color: "#C2410C", border: "1px solid #FCA5A5" } }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), "Your data couldn't be saved — storage may be full. Export a backup now."), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected total \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, accounts.length, " account", accounts.length === 1 ? "" : "s", " \xB7 now ", money(startBalance))), /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Accounts"), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, "Manage")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, accounts.map((a) => /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "w-full flex items-center gap-3 py-2 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0" }, money(Number(a.balance) || 0)))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 pt-2 border-t", style: { borderColor: "#F0F2F5" } }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#6B7785" } }, "Total now"), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-bold text-[15px]" }, money(startBalance)))), /* @__PURE__ */ React.createElement(Insights, { items, eff, startBalance, cleared, skipped, advisorNotes, accounts }), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => shiftMonth(-1),
@@ -1011,7 +1045,9 @@ function BudgetPlanner() {
       startBalance,
       cleared,
       skipped,
+      advisorNotes,
       accounts,
+      onApplyAction: applyAction,
       onClose: () => setAdvisor(null)
     }
   ), accountsOpen && /* @__PURE__ */ React.createElement(
@@ -1268,8 +1304,8 @@ function AutoBadge() {
   );
 }
 const SCAN_SYS = "You extract structured financial data from one or more photos. Photos may show bills, invoices, paystubs, bank account summaries, credit card statements, or any financial document. Respond ONLY with a JSON object with a single key \"results\" containing an array. Each element is either a budget item or an account balance update. Never invent amounts \u2014 use 0 if not visible. Use today's date to resolve partial dates.\n\nFor bills, invoices, subscriptions, and paystubs use kind \"item\":\n{\"kind\":\"item\",\"type\":\"expense\" or \"income\",\"name\":\"short label e.g. Electric Bill or Paycheck\",\"payee\":\"who it is paid to or from\",\"amount\":number,\"dueDate\":\"YYYY-MM-DD or empty\",\"freq\":\"once|weekly|biweekly|monthly|quarterly|yearly\",\"category\":\"for expenses: home|daily|transport|health|insurance|obligations|subscriptions|children|education|entertainment|pets|charity|vacation|savings|business|misc; for income: wages|interest|dividends|gifts|refunds|transfer|other-in\",\"notes\":\"account# or useful detail\"}\n\nFor bank accounts, checking/savings summaries, credit card balances use kind \"account\":\n{\"kind\":\"account\",\"name\":\"account name e.g. Chase Checking or Citi Double Cash\",\"accountType\":\"checking|savings|credit|investment|crypto|cash|other\",\"balance\":number (current or available balance as shown; for credit cards use the current balance owed as a negative number),\"notes\":\"last 4 digits or other useful detail\"}\n\nReturn one element per distinct bill or account found. If multiple photos show the same item, consolidate. If a photo shows an account summary with multiple sub-accounts, return one element per account.";
-const INSIGHTS_SYS = "You are a sharp budgeting advisor in a personal budget app, given the user's full projected cash flow with running balances. Surface only the 2-3 things most worth knowing. Each is one short line starting with '- ', concrete with dates and dollar amounts. No preamble, no headers, no bold or markdown, no asterisks. Never invent numbers.";
-function Insights({ items, eff, startBalance, cleared, skipped, accounts }) {
+const INSIGHTS_SYS = "You are a sharp budgeting advisor in a personal budget app with the user's full projected cash flow. If known financial challenges or goals are listed, address them directly with concrete next steps — make the advice specific to what they are dealing with. Surface only the 2-3 most important things. Each is one short line starting with '- ', concrete with dates and dollar amounts from the data. No preamble, no headers, no bold or markdown. Never invent numbers.";
+function Insights({ items, eff, startBalance, cleared, skipped, advisorNotes, accounts }) {
   const sig = useMemo(
     () => JSON.stringify(items.map((i) => [i.type, i.name, i.amount, i.date, i.freq, i.category, i.auto, i.linkedIncomeId])) + "|" + startBalance,
     [items, startBalance]
@@ -1308,9 +1344,10 @@ function Insights({ items, eff, startBalance, cleared, skipped, accounts }) {
       const ctx = buildContext(eff, startBalance, cleared, skipped);
       const autos = items.filter((i) => i.type === "expense" && i.auto);
       const acctLine = accounts && accounts.length ? "Accounts (current balance): " + accounts.map((a) => `${a.name} ${acctType(a.type).label} ${Number(a.balance) || 0}`).join(", ") + ".\n\n" : "";
+      const notesLine = advisorNotes && advisorNotes.length > 0 ? "Known financial challenges and goals (address these specifically):\n" + advisorNotes.map(function(n) { return "- " + n; }).join("\n") + "\n\n" : "";
       const user = `Today is ${ctx.todayISO}.
 
-` + acctLine + `Projected cash flow (date, amount, item, running balance):
+` + acctLine + notesLine + `Projected cash flow (date, amount, item, running balance):
 ${ctx.lines.join("\n")}
 
 ` + (autos.length ? `Automatic transfers pulled from paychecks (fixed, not movable): ${autos.map((a) => a.name + " " + a.amount).join(", ")}.
@@ -1400,7 +1437,10 @@ function buildContext(items, startBalance, cleared, skipped) {
     const paid = e.cleared ? (e.type === "income" ? " [received]" : " [paid]") : "";
     return `${e.iso}  ${e.type === "income" ? "+" : "-"}${e.amount}  ${e.name}${e.payee ? ` (${e.payee})` : ""}${paid}  -> balance ${Math.round(e.balance)}`;
   });
-  return { todayISO: toISO(today), lines };
+  const itemLines = items.map(function(it) {
+    return "[" + it.id + "] " + it.name + (it.payee ? " (" + it.payee + ")" : "") + " | " + it.type + " | " + it.category + " | $" + it.amount + " | " + (FREQS.find(function(f) { return f.id === it.freq; }) || { label: it.freq }).label;
+  });
+  return { todayISO: toISO(today), lines, itemLines };
 }
 const fmtLong = (iso) => {
   const d = parseISO(iso);
@@ -1415,7 +1455,7 @@ function RichText({ text }) {
     return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[14px] leading-relaxed" }, t);
   }));
 }
-function Advisor({ advisor, items, startBalance, cleared, skipped, accounts, onClose }) {
+function Advisor({ advisor, items, startBalance, cleared, skipped, advisorNotes, accounts, onApplyAction, onClose }) {
   const isBill = advisor.mode === "bill";
   const isEntry = advisor.mode === "entry";
   const bill = advisor.bill;
@@ -1427,6 +1467,7 @@ function Advisor({ advisor, items, startBalance, cleared, skipped, accounts, onC
   const [q, setQ] = useState("");
   const [messages, setMessages] = useState([]);
   const [asking, setAsking] = useState(false);
+  const [actionApplied, setActionApplied] = useState({});
   function catLabel() {
     if (isBill) return expCat(bill.category).label;
     if (isEntry) return draft.type === "income" ? inCat(draft.category).label : expCat(draft.category).label;
@@ -1440,7 +1481,7 @@ function Advisor({ advisor, items, startBalance, cleared, skipped, accounts, onC
     }
     return ["Where can I free up cash?", "Which bill should I move to a safer day?", "How much is left uncommitted?", "Can I afford a big purchase this month?"];
   })();
-  const SYS_BASE = "You are a practical budgeting advisor inside a personal budgeting app. You reason about real dates and running cash balances, and you have the user's full budget. Be direct and brief: lead with the answer in 1-2 short sentences, no preamble, no restating the question, no filler. Use a short '- ' list only when listing distinct items. Reference the actual numbers you're given; never invent figures.";
+  const SYS_BASE = "You are a practical budgeting co-pilot with full access to the user's live budget data. You can suggest specific changes that the user applies with one tap — not just advice, but real edits to their budget.\n\nBe direct and concise. Reference actual numbers; never invent figures.\n\nWhen you have specific budget changes to propose (shifting a bill date, adding a savings buffer, changing an amount, removing a duplicate), respond ONLY with valid JSON \u2014 no markdown, no text outside the JSON:\n{\"message\":\"concise explanation of the problem and your fix\",\"actions\":[{\"type\":\"update\",\"id\":\"item_id_from_list\",\"changes\":{\"date\":\"YYYY-MM-DD\",\"amount\":0,\"freq\":\"monthly\"},\"label\":\"Short button label\"},{\"type\":\"create\",\"item\":{\"name\":\"\",\"type\":\"expense\",\"amount\":0,\"date\":\"YYYY-MM-DD\",\"freq\":\"monthly\",\"category\":\"misc\",\"payee\":\"\",\"notes\":\"\",\"auto\":false},\"label\":\"Short button label\"},{\"type\":\"delete\",\"id\":\"item_id_from_list\",\"label\":\"Short button label\"},{\"type\":\"note\",\"content\":\"One-line summary of the financial challenge or goal identified\",\"label\":\"Pin this to Insights\"}]}\n\nThe 'note' action pins a financial challenge or goal so that Insights and future advisor sessions remember it. Include a note action whenever you identify a recurring problem (e.g. bills stacking before payday, a category running high, a stated savings goal) that is worth tracking across sessions. Max 1 note per response.\n\nOnly include action types relevant to the situation. For conversational replies without a concrete budget change, respond with plain text only.\n\nActively look for: bills due before payday, stacked due dates that drain the account, uncommitted cash that could be saved, and duplicate subscriptions.";
   useEffect(() => {
     if (!isBill) return;
     (async () => {
@@ -1495,10 +1536,24 @@ Recommend the single best day to pay this bill within the next 60 days. Payment 
       }
       else if (isEntry) focus = `Right now the user is entering this ${draft.type}: ${draft.name || "(unnamed)"}, amount ${draft.amount || "?"}, category ${catLabel()}, repeats ${freqLabel(draft.freq).toLowerCase()}.
 `;
-      const sys = SYS_BASE + "\n\nThe user's budget as of today (" + ctx.todayISO + "):\n" + acctLine + "Projected upcoming cash flow (date, amount, item, running balance):\n" + ctx.lines.join("\n") + "\n" + focus + "\nAnswer their questions using this data.";
+      const notesBlock = advisorNotes && advisorNotes.length > 0 ? "Pinned challenges from previous sessions:\n" + advisorNotes.map(function(n) { return "- " + n; }).join("\n") + "\n\n" : "";
+      const itemsBlock = ctx.itemLines && ctx.itemLines.length > 0 ? "All budget items (use the IDs in brackets when suggesting changes):\n" + ctx.itemLines.join("\n") + "\n\n" : "";
+      const sys = SYS_BASE + "\n\n" + notesBlock + itemsBlock + "Today is " + ctx.todayISO + ". " + acctLine + "Cash flow (next 80 days):\n" + ctx.lines.join("\n") + "\n" + focus;
       const apiMessages = history.map((mm) => ({ role: mm.role, content: mm.text }));
       const reply = await claudeRequest(apiMessages, sys, MODEL);
-      setMessages((prev) => prev.concat({ role: "assistant", text: reply }));
+      let replyText = reply;
+      let replyActions = [];
+      const trimmed = reply.replace(/```json|```/g, "").trim();
+      if (trimmed.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed && typeof parsed.message === "string") {
+            replyText = parsed.message;
+            replyActions = Array.isArray(parsed.actions) ? parsed.actions.filter(function(a) { return a && a.type && a.label; }) : [];
+          }
+        } catch (e2) {}
+      }
+      setMessages(function(prev) { return prev.concat({ role: "assistant", text: replyText, actions: replyActions }); });
     } catch (e) {
       setError("Couldn't answer right now. Try again in a moment.");
     } finally {
@@ -1533,7 +1588,29 @@ Recommend the single best day to pay this bill within the next 60 days. Payment 
       style: { transition: "transform .1s", background: "#EEF2FF", color: "#4338CA" }
     },
     c
-  )))), messages.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-3 space-y-2" }, messages.map((mm, i) => mm.role === "user" ? /* @__PURE__ */ React.createElement("div", { key: i, className: "flex justify-end" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3.5 py-2 text-[14px] max-w-[85%]", style: { background: "#13202E", color: "#fff" } }, mm.text)) : /* @__PURE__ */ React.createElement("div", { key: i, className: "flex justify-start" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3.5 py-2.5 max-w-[90%]", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(RichText, { text: mm.text })))), asking && /* @__PURE__ */ React.createElement("div", { className: "flex justify-start" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3.5 py-2.5 flex items-center gap-2 text-[13px]", style: { background: "#F6F7FB", border: "1px solid #ECEFF4", color: "#6B7785" } }, /* @__PURE__ */ React.createElement(Spinner, null), " Thinking\u2026"))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement(
+  )))), messages.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-3 space-y-3" }, messages.map(function(mm, i) {
+    var isUser = mm.role === "user";
+    var msgActions = !isUser && Array.isArray(mm.actions) ? mm.actions : [];
+    var unapplied = msgActions.filter(function(_, j) { return !actionApplied[i + ":" + j]; }).length;
+    return React.createElement(React.Fragment, { key: i },
+      isUser
+        ? React.createElement("div", { className: "flex justify-end" }, React.createElement("div", { className: "rounded-2xl px-3.5 py-2 text-[14px] max-w-[85%]", style: { background: "#13202E", color: "#fff" } }, mm.text))
+        : React.createElement("div", { className: "flex justify-start" }, React.createElement("div", { className: "rounded-2xl px-3.5 py-2.5 max-w-[90%]", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, React.createElement(RichText, { text: mm.text }))),
+      msgActions.length > 0 && React.createElement("div", { className: "space-y-2" },
+        msgActions.map(function(action, j) {
+          var ak = i + ":" + j;
+          var isDone = !!actionApplied[ak];
+          return React.createElement("div", { key: j, className: "rounded-xl p-3 flex items-center justify-between gap-3", style: { background: isDone ? "#F6FBF9" : action.type === "note" ? "#FFFBEB" : "#F0F4FF", border: "1px solid " + (isDone ? "#BBF7D0" : action.type === "note" ? "#FCD34D" : "#C7D2FE") } },
+            React.createElement("span", { className: "text-[13px] font-medium flex-1", style: { color: "#16202B" } }, action.type === "note" ? "📌 " : "", action.label),
+            isDone
+              ? React.createElement("span", { className: "shrink-0 text-[12px] font-semibold", style: { color: "#11875E" } }, "\u2713 " + (action.type === "note" ? "Pinned" : "Applied"))
+              : React.createElement("button", { onClick: function() { if (onApplyAction) onApplyAction(action); setActionApplied(function(p) { return Object.assign({}, p, { [ak]: true }); }); }, className: "shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: action.type === "note" ? "#D97706" : "#4338CA", color: "#fff" } }, action.type === "note" ? "Pin" : "Apply")
+          );
+        }),
+        unapplied > 1 && React.createElement("button", { onClick: function() { msgActions.forEach(function(action, j) { var ak = i + ":" + j; if (!actionApplied[ak]) { if (onApplyAction) onApplyAction(action); setActionApplied(function(p) { return Object.assign({}, p, { [ak]: true }); }); } }); }, className: "w-full rounded-xl py-2 text-[13px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, "Apply all " + unapplied + " suggestions")
+      )
+    );
+  })), asking && /* @__PURE__ */ React.createElement("div", { className: "flex justify-start" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3.5 py-2.5 flex items-center gap-2 text-[13px]", style: { background: "#F6F7FB", border: "1px solid #ECEFF4", color: "#6B7785" } }, /* @__PURE__ */ React.createElement(Spinner, null), " Thinking\u2026")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement(
     "input",
     {
       value: q,
