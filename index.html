@@ -498,30 +498,36 @@ function effectiveItems(items) {
     return it;
   });
 }
-function monthTotals(items, y, m, skipped) {
+function monthTotals(items, y, m, skipped, cleared) {
   const sk = skipped || {};
+  const c = cleared || {};
+  const todayISO = toISO(/* @__PURE__ */ new Date());
   let inc = 0, exp = 0;
   for (const it of items) {
     for (const d of occurrences(it, y, m)) {
       const iso = toISO(new Date(y, m, d));
       if (sk[ck(it.id, iso)]) continue;
+      if (c[ck(it.id, iso)] && iso <= todayISO) continue;
       if (it.type === "income") inc += it.amount;
       else exp += it.amount;
     }
   }
   return { inc, exp, net: inc - exp };
 }
-function runningBalance(items, startBalance, y, m, skipped) {
+function runningBalance(items, startBalance, y, m, skipped, cleared) {
   if (items.length === 0) return startBalance;
   const sk = skipped || {};
+  const c = cleared || {};
   const today = /* @__PURE__ */ new Date();
   const ty = today.getFullYear(), tm = today.getMonth();
+  const todayISO = toISO(today);
   let net = 0, cy = ty, cm = tm, guard = 0;
   while ((cy < y || cy === y && cm <= m) && guard < 240) {
     for (const it of items) {
       for (const d of occurrences(it, cy, cm)) {
         const iso = toISO(new Date(cy, cm, d));
         if (sk[ck(it.id, iso)]) continue;
+        if (c[ck(it.id, iso)] && iso <= todayISO) continue;
         net += it.type === "income" ? it.amount : -it.amount;
       }
     }
@@ -534,10 +540,12 @@ function runningBalance(items, startBalance, y, m, skipped) {
   }
   return startBalance + net;
 }
-function generateEvents(items, toISOstr, skipped) {
+function generateEvents(items, toISOstr, skipped, cleared) {
   const sk = skipped || {};
+  const c = cleared || {};
   const to = parseISO(toISOstr);
   const today = /* @__PURE__ */ new Date();
+  const todayISO = toISO(today);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const evs = [];
   for (const it of items) {
@@ -550,7 +558,7 @@ function generateEvents(items, toISOstr, skipped) {
         const d = new Date(cy, cm, day);
         if (d >= a && d >= monthStart && d <= to) {
           const iso = toISO(d);
-          if (!sk[ck(it.id, iso)]) evs.push({ iso, t: d.getTime(), item: it });
+          if (!sk[ck(it.id, iso)] && !(c[ck(it.id, iso)] && iso <= todayISO)) evs.push({ iso, t: d.getTime(), item: it });
         }
       }
       cm++;
@@ -566,7 +574,7 @@ function generateEvents(items, toISOstr, skipped) {
 }
 function ledger(items, startBalance, toISOstr, cleared, skipped) {
   const c = cleared || {};
-  const evs = generateEvents(items, toISOstr, skipped);
+  const evs = generateEvents(items, toISOstr, skipped, c);
   let bal = startBalance;
   return evs.map((e) => {
     bal += e.item.type === "income" ? e.item.amount : -e.item.amount;
@@ -908,8 +916,8 @@ function BudgetPlanner() {
   const firstDow = new Date(y, m, 1).getDay();
   const eff = useMemo(() => effectiveItems(items), [items]);
   const byId = useMemo(() => Object.fromEntries(items.map((x) => [x.id, x])), [items]);
-  const totals = useMemo(() => monthTotals(eff, y, m, skipped), [eff, y, m, skipped]);
-  const endBalance = useMemo(() => runningBalance(eff, startBalance, y, m, skipped), [eff, startBalance, y, m, skipped]);
+  const totals = useMemo(() => monthTotals(eff, y, m, skipped, cleared), [eff, y, m, skipped, cleared]);
+  const endBalance = useMemo(() => runningBalance(eff, startBalance, y, m, skipped, cleared), [eff, startBalance, y, m, skipped, cleared]);
   const dayMap = useMemo(() => {
     const map = {};
     for (const it of eff) {
