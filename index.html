@@ -406,6 +406,7 @@ const freqLabel = (id) => (FREQS.find((f) => f.id === id) || FREQS[3]).label;
 const STORAGE_KEY = "budget-planner-v2";
 const SNAP_KEY = "budget-snapshots";
 const CLEARED_KEY = "budget-cleared";
+const SKIPPED_KEY = "budget-skipped";
 const ck = (id, iso) => id + ":" + iso;
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const MO_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -496,24 +497,30 @@ function effectiveItems(items) {
     return it;
   });
 }
-function monthTotals(items, y, m) {
+function monthTotals(items, y, m, skipped) {
+  const sk = skipped || {};
   let inc = 0, exp = 0;
   for (const it of items) {
-    const t = occurrences(it, y, m).length * it.amount;
-    if (it.type === "income") inc += t;
-    else exp += t;
+    for (const d of occurrences(it, y, m)) {
+      const iso = toISO(new Date(y, m, d));
+      if (sk[ck(it.id, iso)]) continue;
+      if (it.type === "income") inc += it.amount;
+      else exp += it.amount;
+    }
   }
   return { inc, exp, net: inc - exp };
 }
-function runningBalance(items, startBalance, y, m, cleared) {
+function runningBalance(items, startBalance, y, m, skipped) {
   if (items.length === 0) return startBalance;
-  const c = cleared || {};
+  const sk = skipped || {};
   const today = /* @__PURE__ */ new Date();
   const ty = today.getFullYear(), tm = today.getMonth();
   let net = 0, cy = ty, cm = tm, guard = 0;
   while ((cy < y || cy === y && cm <= m) && guard < 240) {
     for (const it of items) {
       for (const d of occurrences(it, cy, cm)) {
+        const iso = toISO(new Date(cy, cm, d));
+        if (sk[ck(it.id, iso)]) continue;
         net += it.type === "income" ? it.amount : -it.amount;
       }
     }
@@ -526,7 +533,8 @@ function runningBalance(items, startBalance, y, m, cleared) {
   }
   return startBalance + net;
 }
-function generateEvents(items, toISOstr) {
+function generateEvents(items, toISOstr, skipped) {
+  const sk = skipped || {};
   const to = parseISO(toISOstr);
   const today = /* @__PURE__ */ new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -539,7 +547,10 @@ function generateEvents(items, toISOstr) {
     while ((cy < to.getFullYear() || cy === to.getFullYear() && cm <= to.getMonth()) && g < 240) {
       for (const day of occurrences(it, cy, cm)) {
         const d = new Date(cy, cm, day);
-        if (d >= a && d >= monthStart && d <= to) evs.push({ iso: toISO(d), t: d.getTime(), item: it });
+        if (d >= a && d >= monthStart && d <= to) {
+          const iso = toISO(d);
+          if (!sk[ck(it.id, iso)]) evs.push({ iso, t: d.getTime(), item: it });
+        }
       }
       cm++;
       if (cm > 11) {
@@ -552,9 +563,9 @@ function generateEvents(items, toISOstr) {
   evs.sort((x, y) => x.t - y.t || (x.item.type === y.item.type ? 0 : x.item.type === "income" ? -1 : 1));
   return evs;
 }
-function ledger(items, startBalance, toISOstr, cleared) {
+function ledger(items, startBalance, toISOstr, cleared, skipped) {
   const c = cleared || {};
-  const evs = generateEvents(items, toISOstr);
+  const evs = generateEvents(items, toISOstr, skipped);
   let bal = startBalance;
   return evs.map((e) => {
     bal += e.item.type === "income" ? e.item.amount : -e.item.amount;
@@ -637,6 +648,19 @@ class AppErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+function findDuplicate(existing, candidate) {
+  if (!candidate.name) return null;
+  const cn = candidate.name.toLowerCase().trim();
+  const ca = Number(candidate.amount) || 0;
+  return existing.find(function(x) {
+    if (x.id === candidate.id) return false;
+    if (x.type !== candidate.type) return false;
+    const xn = (x.name || "").toLowerCase().trim();
+    const nameSim = xn === cn || (cn.length > 3 && (xn.includes(cn) || cn.includes(xn)));
+    const amtSim = ca > 0 && Math.abs(x.amount - ca) <= Math.max(0.01, ca * 0.02);
+    return nameSim && amtSim;
+  }) || null;
+}
 function BudgetPlanner() {
   useTheme();
   const now = /* @__PURE__ */ new Date();
@@ -652,6 +676,7 @@ function BudgetPlanner() {
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [lastBackup, setLastBackup] = useState(null);
   const [cleared, setCleared] = useState({});
+  const [skipped, setSkipped] = useState({});
   const startBalance = useMemo(() => accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0), [accounts]);
   useEffect(() => {
     (async () => {
@@ -678,6 +703,11 @@ function BudgetPlanner() {
         if (c) setCleared(JSON.parse(c) || {});
       } catch (e) {
       }
+      try {
+        const s = localStorage.getItem(SKIPPED_KEY);
+        if (s) setSkipped(JSON.parse(s) || {});
+      } catch (e) {
+      }
       setLoading(false);
     })();
   }, []);
@@ -696,6 +726,15 @@ function BudgetPlanner() {
       localStorage.setItem(CLEARED_KEY, JSON.stringify(cleared));
     } catch (e) {}
   }, [cleared]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(SKIPPED_KEY, JSON.stringify(skipped));
+    } catch (e) {}
+  }, [skipped]);
+  function skipOccurrence(id, iso) {
+    setSkipped(function(prev) { return Object.assign({}, prev, { [ck(id, iso)]: true }); });
+    setEditor(null);
+  }
   useEffect(() => {
     try {
       if (navigator.storage && navigator.storage.persist) {
@@ -729,7 +768,7 @@ function BudgetPlanner() {
   }
   function exportBackup() {
     try {
-      const payload = JSON.stringify({ app: "budget-planner", version: 4, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), items, accounts, cleared }, null, 2);
+      const payload = JSON.stringify({ app: "budget-planner", version: 5, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), items, accounts, cleared, skipped }, null, 2);
       const blob = new Blob([payload], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -749,7 +788,7 @@ function BudgetPlanner() {
       console.error("Export failed:", e);
     }
   }
-  function applyData(nextItems, nextAccounts, nextCleared) {
+  function applyData(nextItems, nextAccounts, nextCleared, nextSkipped) {
     setItems(nextItems);
     const accts = Array.isArray(nextAccounts) && nextAccounts.length ? nextAccounts : accounts;
     setAccounts(accts);
@@ -757,6 +796,13 @@ function BudgetPlanner() {
       setCleared(nextCleared);
       try {
         localStorage.setItem(CLEARED_KEY, JSON.stringify(nextCleared));
+      } catch (e) {
+      }
+    }
+    if (nextSkipped && typeof nextSkipped === "object") {
+      setSkipped(nextSkipped);
+      try {
+        localStorage.setItem(SKIPPED_KEY, JSON.stringify(nextSkipped));
       } catch (e) {
       }
     }
@@ -828,15 +874,18 @@ function BudgetPlanner() {
   const firstDow = new Date(y, m, 1).getDay();
   const eff = useMemo(() => effectiveItems(items), [items]);
   const byId = useMemo(() => Object.fromEntries(items.map((x) => [x.id, x])), [items]);
-  const totals = useMemo(() => monthTotals(eff, y, m), [eff, y, m]);
-  const endBalance = useMemo(() => runningBalance(eff, startBalance, y, m, cleared), [eff, startBalance, y, m, cleared]);
+  const totals = useMemo(() => monthTotals(eff, y, m, skipped), [eff, y, m, skipped]);
+  const endBalance = useMemo(() => runningBalance(eff, startBalance, y, m, skipped), [eff, startBalance, y, m, skipped]);
   const dayMap = useMemo(() => {
     const map = {};
-    for (const it of eff) for (const day of occurrences(it, y, m)) {
-      (map[day] = map[day] || []).push(it);
+    for (const it of eff) {
+      for (const day of occurrences(it, y, m)) {
+        const iso = toISO(new Date(y, m, day));
+        if (!skipped[ck(it.id, iso)]) (map[day] = map[day] || []).push(it);
+      }
     }
     return map;
-  }, [eff, y, m]);
+  }, [eff, y, m, skipped]);
   const selItems = dayMap[selDay] || [];
   const selDate = new Date(y, m, selDay);
   function shiftMonth(delta) {
@@ -865,7 +914,7 @@ function BudgetPlanner() {
   const cells = [];
   for (let i = 0; i < firstDow; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5 truncate", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setSettingsOpen(true), label: "Settings and backup" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2699")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, saveError && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-4 py-3 flex items-center gap-2 text-[13px] font-medium", style: { background: "#FEF2F2", color: "#C2410C", border: "1px solid #FCA5A5" } }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), "Your data couldn't be saved — storage may be full. Export a backup now."), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected total \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, accounts.length, " account", accounts.length === 1 ? "" : "s", " \xB7 now ", money(startBalance))), /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Accounts"), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, "Manage")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, accounts.map((a) => /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "w-full flex items-center gap-3 py-2 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0" }, money(Number(a.balance) || 0)))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 pt-2 border-t", style: { borderColor: "#F0F2F5" } }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#6B7785" } }, "Total now"), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-bold text-[15px]" }, money(startBalance)))), /* @__PURE__ */ React.createElement(Insights, { items, eff, startBalance, cleared, accounts }), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5 truncate", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setSettingsOpen(true), label: "Settings and backup" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2699")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, saveError && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-4 py-3 flex items-center gap-2 text-[13px] font-medium", style: { background: "#FEF2F2", color: "#C2410C", border: "1px solid #FCA5A5" } }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), "Your data couldn't be saved — storage may be full. Export a backup now."), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected total \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, accounts.length, " account", accounts.length === 1 ? "" : "s", " \xB7 now ", money(startBalance))), /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Accounts"), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, "Manage")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, accounts.map((a) => /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "w-full flex items-center gap-3 py-2 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0" }, money(Number(a.balance) || 0)))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 pt-2 border-t", style: { borderColor: "#F0F2F5" } }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#6B7785" } }, "Total now"), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-bold text-[15px]" }, money(startBalance)))), /* @__PURE__ */ React.createElement(Insights, { items, eff, startBalance, cleared, skipped, accounts }), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => shiftMonth(-1),
@@ -932,7 +981,7 @@ function BudgetPlanner() {
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
-        onClick: () => setEditor({ item: byId[it.id] || it, date: it.date }),
+        onClick: () => setEditor({ item: byId[it.id] || it, date: it.date, occurrenceDate: toISO(selDate) }),
         className: "flex-1 min-w-0 flex items-center gap-3 text-left active:opacity-60",
         style: { opacity: paid ? 0.5 : 1 }
       },
@@ -944,6 +993,7 @@ function BudgetPlanner() {
     Editor,
     {
       entry: editor,
+      existingItems: items,
       incomes: items.filter((x) => x.type === "income"),
       accounts,
       onClose: () => setEditor(null),
@@ -958,6 +1008,7 @@ function BudgetPlanner() {
         }
       },
       onDelete: remove,
+      onSkip: skipOccurrence,
       onAdvise: (bill, onApplyDate) => setAdvisor({ mode: "bill", bill, onApplyDate }),
       onAsk: (draft) => setAdvisor({ mode: "entry", draft })
     }
@@ -968,6 +1019,7 @@ function BudgetPlanner() {
       items: eff,
       startBalance,
       cleared,
+      skipped,
       accounts,
       onClose: () => setAdvisor(null)
     }
@@ -1014,7 +1066,7 @@ function NavBtn({ children, onClick, label }) {
 function Stat({ label, value, color }) {
   return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3 py-2.5", style: { background: "rgba(255,255,255,.07)" } }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-medium", style: { color: "#8FA0B3" } }, label), /* @__PURE__ */ React.createElement("div", { className: "bx-num text-[14px] font-semibold mt-0.5", style: { color } }, value));
 }
-function Editor({ entry, incomes = [], accounts = [], onClose, onSave, onDelete, onAdvise, onAsk }) {
+function Editor({ entry, existingItems = [], incomes = [], accounts = [], onClose, onSave, onDelete, onSkip, onAdvise, onAsk }) {
   const item = entry.item;
   const seed = item || entry.prefill || {};
   const [type, setType] = useState(seed.type || "expense");
@@ -1027,6 +1079,8 @@ function Editor({ entry, incomes = [], accounts = [], onClose, onSave, onDelete,
   const [notes, setNotes] = useState(seed.notes || "");
   const [auto, setAuto] = useState(!!seed.auto);
   const [linkedIncomeId, setLinkedIncomeId] = useState(seed.linkedIncomeId || (incomes[0] ? incomes[0].id : ""));
+  const [dupWarn, setDupWarn] = useState(null);
+  const [showDeleteChoice, setShowDeleteChoice] = useState(false);
   const cats = type === "income" ? INCOME_CATS : EXPENSE_CATS;
   const [category, setCategory] = useState(seed.category || (type === "income" ? "wages" : "home"));
   const linked = type === "expense" && auto && !!linkedIncomeId;
@@ -1058,7 +1112,13 @@ function Editor({ entry, incomes = [], accounts = [], onClose, onSave, onDelete,
     };
   }
   function save() {
-    if (valid) onSave(build());
+    if (!valid) return;
+    if (!item) {
+      const dup = findDuplicate(existingItems, build());
+      if (dup && !dupWarn) { setDupWarn(dup); return; }
+    }
+    setDupWarn(null);
+    onSave(build());
   }
   return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 mb-4 p-1 rounded-2xl", style: { background: "#F2F4F7" } }, ["expense", "income"].map((t) => /* @__PURE__ */ React.createElement(
     "button",
@@ -1192,7 +1252,7 @@ function Editor({ entry, incomes = [], accounts = [], onClose, onSave, onDelete,
     },
     /* @__PURE__ */ React.createElement("span", null, "\u2728"),
     " Ask about this"
-  ), /* @__PURE__ */ React.createElement(
+  ), dupWarn ? /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-2 mt-2", style: { background: "#FFFBEB", border: "1px solid #FCD34D" } }, /* @__PURE__ */ React.createElement("p", { className: "text-[13px] font-semibold mb-1", style: { color: "#92400E" } }, "Possible duplicate"), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-3", style: { color: "#78350F" } }, dupWarn.name, " (", money(dupWarn.amount), " \xB7 ", freqLabel(dupWarn.freq), ") is already in your budget."), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: () => { setDupWarn(null); onSave(build()); }, className: "flex-1 rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, "Add anyway"), /* @__PURE__ */ React.createElement("button", { onClick: () => setDupWarn(null), className: "flex-1 rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.99]", style: { background: "#F2F4F7", color: "#16202B" } }, "Cancel"))) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: save,
@@ -1201,7 +1261,7 @@ function Editor({ entry, incomes = [], accounts = [], onClose, onSave, onDelete,
       style: { transition: "all .12s", background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" }
     },
     item ? "Save changes" : `Add ${type === "income" ? "income" : "expense"}`
-  ), item ? /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(item.id), className: "w-full py-3 mt-1 text-[14px] font-semibold", style: { color: "#C2410C" } }, "Delete") : /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-1 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Cancel")));
+  ), item ? (showDeleteChoice ? /* @__PURE__ */ React.createElement("div", { className: "mt-3 rounded-2xl p-4", style: { background: "#FEF2F2", border: "1px solid #FECACA" } }, /* @__PURE__ */ React.createElement("p", { className: "text-[14px] font-semibold mb-1" }, "Remove this how?"), /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-3", style: { color: "#6B7785" } }, item.name, " repeats ", freqLabel(item.freq).toLowerCase(), "."), /* @__PURE__ */ React.createElement("button", { onClick: () => onSkip(item.id, entry.occurrenceDate), className: "w-full rounded-xl py-3 text-[14px] font-semibold mb-2 active:scale-[.99]", style: { background: "#F2F4F7", color: "#C2410C" } }, "Skip ", fmtLong(entry.occurrenceDate), " only"), /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(item.id), className: "w-full rounded-xl py-3 text-[14px] font-semibold mb-2 active:scale-[.99]", style: { background: "#C2410C", color: "#fff" } }, "Delete \u201c", item.name, "\u201d from all months"), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowDeleteChoice(false), className: "w-full py-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Cancel")) : /* @__PURE__ */ React.createElement("button", { onClick: () => entry.occurrenceDate && item.freq !== "once" ? setShowDeleteChoice(true) : onDelete(item.id), className: "w-full py-3 mt-1 text-[14px] font-semibold", style: { color: "#C2410C" } }, "Delete")) : /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-1 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Cancel"))));
 }
 function Field({ label, children }) {
   return /* @__PURE__ */ React.createElement("div", { className: "mb-4" }, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, label), children);
@@ -1218,7 +1278,7 @@ function AutoBadge() {
 }
 const SCAN_SYS = "You extract structured financial data from one or more photos. Photos may show bills, invoices, paystubs, bank account summaries, credit card statements, or any financial document. Respond ONLY with a JSON object with a single key \"results\" containing an array. Each element is either a budget item or an account balance update. Never invent amounts \u2014 use 0 if not visible. Use today's date to resolve partial dates.\n\nFor bills, invoices, subscriptions, and paystubs use kind \"item\":\n{\"kind\":\"item\",\"type\":\"expense\" or \"income\",\"name\":\"short label e.g. Electric Bill or Paycheck\",\"payee\":\"who it is paid to or from\",\"amount\":number,\"dueDate\":\"YYYY-MM-DD or empty\",\"freq\":\"once|weekly|biweekly|monthly|quarterly|yearly\",\"category\":\"for expenses: home|daily|transport|health|insurance|obligations|subscriptions|children|education|entertainment|pets|charity|vacation|savings|business|misc; for income: wages|interest|dividends|gifts|refunds|transfer|other-in\",\"notes\":\"account# or useful detail\"}\n\nFor bank accounts, checking/savings summaries, credit card balances use kind \"account\":\n{\"kind\":\"account\",\"name\":\"account name e.g. Chase Checking or Citi Double Cash\",\"accountType\":\"checking|savings|credit|investment|crypto|cash|other\",\"balance\":number (current or available balance as shown; for credit cards use the current balance owed as a negative number),\"notes\":\"last 4 digits or other useful detail\"}\n\nReturn one element per distinct bill or account found. If multiple photos show the same item, consolidate. If a photo shows an account summary with multiple sub-accounts, return one element per account.";
 const INSIGHTS_SYS = "You are a sharp budgeting advisor in a personal budget app, given the user's full projected cash flow with running balances. Surface only the 2-3 things most worth knowing. Each is one short line starting with '- ', concrete with dates and dollar amounts. No preamble, no headers, no bold or markdown, no asterisks. Never invent numbers.";
-function Insights({ items, eff, startBalance, cleared, accounts }) {
+function Insights({ items, eff, startBalance, cleared, skipped, accounts }) {
   const sig = useMemo(
     () => JSON.stringify(items.map((i) => [i.type, i.name, i.amount, i.date, i.freq, i.category, i.auto, i.linkedIncomeId])) + "|" + startBalance,
     [items, startBalance]
@@ -1254,7 +1314,7 @@ function Insights({ items, eff, startBalance, cleared, accounts }) {
     setLoading(true);
     setError("");
     try {
-      const ctx = buildContext(eff, startBalance, cleared);
+      const ctx = buildContext(eff, startBalance, cleared, skipped);
       const autos = items.filter((i) => i.type === "expense" && i.auto);
       const acctLine = accounts && accounts.length ? "Accounts (current balance): " + accounts.map((a) => `${a.name} ${acctType(a.type).label} ${Number(a.balance) || 0}`).join(", ") + ".\n\n" : "";
       const user = `Today is ${ctx.todayISO}.
@@ -1339,11 +1399,11 @@ function nextDue(bill, from) {
   }
   return parseISO(bill.date);
 }
-function buildContext(items, startBalance, cleared) {
+function buildContext(items, startBalance, cleared, skipped) {
   const c = cleared || {};
   const today = /* @__PURE__ */ new Date();
   const horizon = toISO(addDays(today, 80));
-  const led = ledger(items, startBalance, horizon, c);
+  const led = ledger(items, startBalance, horizon, c, skipped);
   const fromISO = toISO(addDays(today, -3));
   const lines = led.filter((e) => e.iso >= fromISO).map((e) => {
     const paid = e.cleared ? (e.type === "income" ? " [received]" : " [paid]") : "";
@@ -1364,7 +1424,7 @@ function RichText({ text }) {
     return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[14px] leading-relaxed" }, t);
   }));
 }
-function Advisor({ advisor, items, startBalance, cleared, accounts, onClose }) {
+function Advisor({ advisor, items, startBalance, cleared, skipped, accounts, onClose }) {
   const isBill = advisor.mode === "bill";
   const isEntry = advisor.mode === "entry";
   const bill = advisor.bill;
@@ -1394,7 +1454,7 @@ function Advisor({ advisor, items, startBalance, cleared, accounts, onClose }) {
     if (!isBill) return;
     (async () => {
       try {
-        const ctx = buildContext(items, startBalance, cleared);
+        const ctx = buildContext(items, startBalance, cleared, skipped);
         const due = nextDue(bill, /* @__PURE__ */ new Date());
         const dueISO = toISO(due);
         const graceEnd = bill.grace != null ? toISO(addDays(due, bill.grace)) : null;
@@ -1431,7 +1491,7 @@ Recommend the single best day to pay this bill within the next 60 days. Payment 
     setAsking(true);
     setError("");
     try {
-      const ctx = buildContext(items, startBalance, cleared);
+      const ctx = buildContext(items, startBalance, cleared, skipped);
       const acctLine = accounts && accounts.length ? "Accounts (current balance): " + accounts.map((a) => `${a.name} ${acctType(a.type).label} ${Number(a.balance) || 0}`).join(", ") + ".\n" : "";
       let focus = "";
       if (isBill) {
@@ -1544,7 +1604,7 @@ function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, onClos
         if (itemCount > 0 && !window.confirm("Replace your current budget with this backup?")) return;
         const accts = Array.isArray(d.accounts) ? d.accounts : d.startBalance != null ? [{ id: uid(), name: "Checking", type: "checking", balance: Number(d.startBalance) || 0 }] : null;
         const cl = d.cleared && typeof d.cleared === "object" ? d.cleared : null;
-        onImport(d.items, accts, cl);
+        onImport(d.items, accts, cl, d.skipped && typeof d.skipped === "object" ? d.skipped : null);
         setMsg("Restored " + d.items.length + " items" + (accts ? " and " + accts.length + " accounts" : "") + " from backup.");
       } catch (err) {
         setMsg("That file isn't a valid budget backup.");
@@ -1556,7 +1616,7 @@ function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, onClos
   function restore(s) {
     if (!window.confirm("Roll back to this saved version? Your current entries will be replaced.")) return;
     const accts = Array.isArray(s.accounts) ? s.accounts : s.startBalance != null ? [{ id: uid(), name: "Checking", type: "checking", balance: Number(s.startBalance) || 0 }] : null;
-    onRestore(s.items, accts, s.cleared && typeof s.cleared === "object" ? s.cleared : null);
+    onRestore(s.items, accts, s.cleared && typeof s.cleared === "object" ? s.cleared : null, s.skipped && typeof s.skipped === "object" ? s.skipped : null);
     setMsg("Rolled back to " + new Date(s.at).toLocaleString() + ".");
   }
   const stale = !lastBackup || Date.now() - new Date(lastBackup).getTime() > 7 * 864e5;
