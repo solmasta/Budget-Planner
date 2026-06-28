@@ -408,6 +408,34 @@ const SNAP_KEY = "budget-snapshots";
 const CLEARED_KEY = "budget-cleared";
 const SKIPPED_KEY = "budget-skipped";
 const ADVISOR_NOTES_KEY = "budget-advisor-notes";
+const KB_DB = "budget-kb-v1";
+const KB_STORE = "entries";
+function kbOpen() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open(KB_DB, 1);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains(KB_STORE)) db.createObjectStore(KB_STORE, { keyPath: "id" });
+    };
+    req.onsuccess = function(e) { resolve(e.target.result); };
+    req.onerror = function(e) { reject(e.target.error); };
+  });
+}
+function kbPut(entry) {
+  return kbOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(KB_STORE, "readwrite"); tx.objectStore(KB_STORE).put(entry); tx.oncomplete = resolve; tx.onerror = function(e) { reject(e.target.error); }; }); });
+}
+function kbGetAll() {
+  return kbOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(KB_STORE, "readonly"); var req = tx.objectStore(KB_STORE).getAll(); req.onsuccess = function(e) { resolve(e.target.result || []); }; req.onerror = function(e) { reject(e.target.error); }; }); });
+}
+function kbDel(id) {
+  return kbOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(KB_STORE, "readwrite"); tx.objectStore(KB_STORE).delete(id); tx.oncomplete = resolve; tx.onerror = function(e) { reject(e.target.error); }; }); });
+}
+function kbClear() {
+  return kbOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(KB_STORE, "readwrite"); tx.objectStore(KB_STORE).clear(); tx.oncomplete = resolve; tx.onerror = function(e) { reject(e.target.error); }; }); });
+}
+function kbBulkPut(entries) {
+  return kbOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(KB_STORE, "readwrite"); var store = tx.objectStore(KB_STORE); entries.forEach(function(e) { store.put(e); }); tx.oncomplete = resolve; tx.onerror = function(e) { reject(e.target.error); }; }); });
+}
 const ck = (id, iso) => id + ":" + iso;
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const MO_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -687,6 +715,8 @@ function BudgetPlanner() {
   const [cleared, setCleared] = useState({});
   const [skipped, setSkipped] = useState({});
   const [advisorNotes, setAdvisorNotes] = useState([]);
+  const [kbEntries, setKbEntries] = useState([]);
+  const [kbOpen2, setKbOpen2] = useState(false);
   const startBalance = useMemo(() => accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0), [accounts]);
   useEffect(() => {
     (async () => {
@@ -723,6 +753,7 @@ function BudgetPlanner() {
         if (an) setAdvisorNotes(JSON.parse(an) || []);
       } catch (e) {
       }
+      kbGetAll().then(function(entries) { setKbEntries(entries || []); }).catch(function() {});
       setLoading(false);
     })();
   }, []);
@@ -817,9 +848,11 @@ function BudgetPlanner() {
     setAccounts(next);
     persist(items, next);
   }
-  function exportBackup() {
+  async function exportBackup() {
     try {
-      const payload = JSON.stringify({ app: "budget-planner", version: 5, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), items, accounts, cleared, skipped }, null, 2);
+      var kbData = [];
+      try { kbData = await kbGetAll(); } catch (e) {}
+      const payload = JSON.stringify({ app: "budget-planner", version: 6, exportedAt: (/* @__PURE__ */ new Date()).toISOString(), items, accounts, cleared, skipped, advisorNotes, knowledgeBase: kbData }, null, 2);
       const blob = new Blob([payload], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -830,32 +863,30 @@ function BudgetPlanner() {
       a.remove();
       URL.revokeObjectURL(url);
       const stamp = (/* @__PURE__ */ new Date()).toISOString();
-      try {
-        localStorage.setItem("budget-last-backup", stamp);
-      } catch (e) {
-      }
+      try { localStorage.setItem("budget-last-backup", stamp); } catch (e) {}
       setLastBackup(stamp);
     } catch (e) {
       console.error("Export failed:", e);
     }
   }
-  function applyData(nextItems, nextAccounts, nextCleared, nextSkipped) {
+  function applyData(nextItems, nextAccounts, nextCleared, nextSkipped, extra) {
     setItems(nextItems);
     const accts = Array.isArray(nextAccounts) && nextAccounts.length ? nextAccounts : accounts;
     setAccounts(accts);
     if (nextCleared && typeof nextCleared === "object") {
       setCleared(nextCleared);
-      try {
-        localStorage.setItem(CLEARED_KEY, JSON.stringify(nextCleared));
-      } catch (e) {
-      }
+      try { localStorage.setItem(CLEARED_KEY, JSON.stringify(nextCleared)); } catch (e) {}
     }
     if (nextSkipped && typeof nextSkipped === "object") {
       setSkipped(nextSkipped);
-      try {
-        localStorage.setItem(SKIPPED_KEY, JSON.stringify(nextSkipped));
-      } catch (e) {
-      }
+      try { localStorage.setItem(SKIPPED_KEY, JSON.stringify(nextSkipped)); } catch (e) {}
+    }
+    if (extra && Array.isArray(extra.knowledgeBase) && extra.knowledgeBase.length > 0) {
+      kbClear().then(function() { return kbBulkPut(extra.knowledgeBase); }).then(function() { setKbEntries(extra.knowledgeBase); }).catch(function() {});
+    }
+    if (extra && Array.isArray(extra.advisorNotes)) {
+      setAdvisorNotes(extra.advisorNotes);
+      try { localStorage.setItem(ADVISOR_NOTES_KEY, JSON.stringify(extra.advisorNotes)); } catch (e) {}
     }
     persist(nextItems, accts);
   }
@@ -920,6 +951,25 @@ function BudgetPlanner() {
         return;
       }
       setScan({ results, added: {} });
+      // Auto-ingest into knowledge base — every scan is permanently stored
+      (async function() {
+        try {
+          var newEntries = [];
+          for (var ri = 0; ri < results.length; ri++) {
+            var r = results[ri];
+            var entry = null;
+            if (r.kind === "document") {
+              entry = { id: uid(), type: "document", title: r.title || "Document", raw: r.summary + " " + r.action, summary: r.summary + (r.action ? " Action: " + r.action : "") + (r.deadline ? " Deadline: " + r.deadline : ""), tags: ["document", r.urgency || "notice"], createdAt: Date.now() };
+            } else if (r.kind === "account") {
+              entry = { id: uid(), type: "account", title: (r.name || "Account") + " balance", raw: JSON.stringify(r), summary: (r.name || "Account") + " (" + (r.accountType || "bank") + ") balance: $" + (r.balance || 0) + " as of " + new Date().toLocaleDateString() + ".", tags: ["account", r.accountType || "bank"], createdAt: Date.now() };
+            } else if (r.kind === "item" && r.amount) {
+              entry = { id: uid(), type: r.type === "income" ? "income" : "receipt", title: r.name || "Transaction", raw: JSON.stringify(r), summary: (r.type === "income" ? "Income: " : "Expense: ") + (r.name || "item") + " $" + r.amount + (r.payee ? " paid to " + r.payee : "") + " (" + (r.freq || "once") + ")" + (r.date ? " on " + r.date : "") + ".", tags: [r.type === "income" ? "income" : "expense", "receipt", r.category || "misc"], createdAt: Date.now() };
+            }
+            if (entry) { newEntries.push(entry); await kbPut(entry); }
+          }
+          if (newEntries.length > 0) setKbEntries(function(prev) { return newEntries.concat(prev); });
+        } catch (e) { /* silent */ }
+      })();
     } catch (err) {
       setScan({ error: "Couldn't read those photos. Try clearer shots or add manually." });
     }
@@ -981,7 +1031,7 @@ function BudgetPlanner() {
   const cells = [];
   for (let i = 0; i < firstDow; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5 truncate", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setSettingsOpen(true), label: "Settings and backup" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2699")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, saveError && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-4 py-3 flex items-center gap-2 text-[13px] font-medium", style: { background: "#FEF2F2", color: "#C2410C", border: "1px solid #FCA5A5" } }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), "Your data couldn't be saved — storage may be full. Export a backup now."), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected total \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, accounts.length, " account", accounts.length === 1 ? "" : "s", " \xB7 now ", money(startBalance))), /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Accounts"), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, "Manage")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, accounts.map((a) => /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "w-full flex items-center gap-3 py-2 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0" }, money(Number(a.balance) || 0)))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 pt-2 border-t", style: { borderColor: "#F0F2F5" } }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#6B7785" } }, "Total now"), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-bold text-[15px]" }, money(startBalance)))), /* @__PURE__ */ React.createElement(Insights, { items, eff, startBalance, cleared, skipped, advisorNotes, onRemoveNote: removeAdvisorNote, accounts }), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "bx-body min-h-screen w-full", style: { background: "#F2F4F7", color: "#16202B" } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto w-full", style: { maxWidth: 480, paddingBottom: 96 } }, /* @__PURE__ */ React.createElement("header", { className: "px-5 pt-7 pb-3 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "bx-num text-[11px] font-semibold uppercase tracking-[0.18em]", style: { color: "#8A95A3" } }, "Budget planner"), /* @__PURE__ */ React.createElement("h1", { className: "text-[24px] font-bold leading-tight mt-0.5 truncate", style: { letterSpacing: "-0.02em" } }, MONTHS[m], " ", y)), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setSettingsOpen(true), label: "Settings and backup" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2699")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setKbOpen2(true), label: "Knowledge base" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\uD83E\uDDE0")), /* @__PURE__ */ React.createElement(NavBtn, { onClick: () => setAdvisor({ mode: "general" }), label: "Budget advisor" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u2728")))), loading ? /* @__PURE__ */ React.createElement("div", { className: "px-5 py-20 text-center", style: { color: "#8A95A3" } }, "Loading\u2026") : /* @__PURE__ */ React.createElement("main", { className: "px-4 space-y-4" }, saveError && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-4 py-3 flex items-center gap-2 text-[13px] font-medium", style: { background: "#FEF2F2", color: "#C2410C", border: "1px solid #FCA5A5" } }, /* @__PURE__ */ React.createElement("span", null, "\u26A0\uFE0F"), "Your data couldn't be saved — storage may be full. Export a backup now."), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl p-6", style: { background: "#13202E", color: "#fff", boxShadow: "0 18px 40px -20px rgba(19,32,46,.6)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-medium", style: { color: "#8FA0B3" } }, "Projected total \xB7 end of ", MO_SHORT[m]), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[11px] font-semibold", style: { color: "#5EEAD4" } }, accounts.length, " account", accounts.length === 1 ? "" : "s", " \xB7 now ", money(startBalance))), /* @__PURE__ */ React.createElement("div", { className: "bx-num font-bold mt-1", style: { fontSize: 42, lineHeight: 1.05, color: endBalance >= 0 ? "#34D399" : "#FB7185", letterSpacing: "-0.03em" } }, signed(Math.round(endBalance))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-3 gap-2 mt-5" }, /* @__PURE__ */ React.createElement(Stat, { label: "Income", value: money(Math.round(totals.inc)), color: "#5EEAD4" }), /* @__PURE__ */ React.createElement(Stat, { label: "Expenses", value: money(Math.round(totals.exp)), color: "#FCA5A5" }), /* @__PURE__ */ React.createElement(Stat, { label: "Net", value: signed(Math.round(totals.net)), color: totals.net >= 0 ? "#fff" : "#FB7185" }))), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-5", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement("h2", { className: "text-[13px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Accounts"), /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "text-[12px] font-semibold active:scale-95", style: { color: "#4338CA" } }, "Manage")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, accounts.map((a) => /* @__PURE__ */ React.createElement("li", { key: a.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setAccountsOpen(true), className: "w-full flex items-center gap-3 py-2 text-left active:opacity-60" }, /* @__PURE__ */ React.createElement("span", { className: "inline-block h-7 w-1 rounded-full shrink-0", style: { background: acctType(a.type).color } }), /* @__PURE__ */ React.createElement("span", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[14px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, acctType(a.type).label)), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-semibold text-[14px] shrink-0" }, money(Number(a.balance) || 0)))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-2 pt-2 border-t", style: { borderColor: "#F0F2F5" } }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#6B7785" } }, "Total now"), /* @__PURE__ */ React.createElement("span", { className: "bx-num font-bold text-[15px]" }, money(startBalance)))), /* @__PURE__ */ React.createElement(Insights, { items, eff, startBalance, cleared, skipped, advisorNotes, kbEntries, onRemoveNote: removeAdvisorNote, accounts }), /* @__PURE__ */ React.createElement("section", { className: "rounded-3xl bg-white p-4", style: { boxShadow: "0 1px 2px rgba(16,24,40,.06)" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => shiftMonth(-1),
@@ -1079,6 +1129,7 @@ function BudgetPlanner() {
       cleared,
       skipped,
       advisorNotes,
+      kbEntries,
       accounts,
       onApplyAction: applyAction,
       onClose: () => setAdvisor(null)
@@ -1103,7 +1154,7 @@ function BudgetPlanner() {
       onRemoveNote: removeAdvisorNote,
       onClose: () => setSettingsOpen(false)
     }
-  ), /* @__PURE__ */ React.createElement("input", { ref: scanRef, type: "file", accept: "image/*", multiple: true, onChange: onScanFile, style: { display: "none" } }), scan && (scan.results ? /* @__PURE__ */ React.createElement(ScanResultsSheet, { results: scan.results, added: scan.added || {}, accounts, onSaveItem: function(it, i) { const next = [].concat(items, [it]); setItems(next); persist(next, accounts); setScan(function(prev) { if (!prev || !prev.results) return prev; return Object.assign({}, prev, { added: Object.assign({}, prev.added || {}, { [i]: it.id }) }); }); }, onUndoItem: function(i, itemId) { const next = items.filter(function(x) { return x.id !== itemId; }); setItems(next); persist(next, accounts); setScan(function(prev) { if (!prev) return prev; const a = Object.assign({}, prev.added || {}); delete a[i]; return Object.assign({}, prev, { added: a }); }); }, onUpdateAccount: upsertAccount, onClose: function() { setScan(null); } }) : /* @__PURE__ */ React.createElement(
+  ), kbOpen2 && /* @__PURE__ */ React.createElement(KnowledgeBase, { kbEntries, setKbEntries, onClose: () => setKbOpen2(false) }), /* @__PURE__ */ React.createElement("input", { ref: scanRef, type: "file", accept: "image/*", multiple: true, onChange: onScanFile, style: { display: "none" } }), scan && (scan.results ? /* @__PURE__ */ React.createElement(ScanResultsSheet, { results: scan.results, added: scan.added || {}, accounts, onSaveItem: function(it, i) { const next = [].concat(items, [it]); setItems(next); persist(next, accounts); setScan(function(prev) { if (!prev || !prev.results) return prev; return Object.assign({}, prev, { added: Object.assign({}, prev.added || {}, { [i]: it.id }) }); }); }, onUndoItem: function(i, itemId) { const next = items.filter(function(x) { return x.id !== itemId; }); setItems(next); persist(next, accounts); setScan(function(prev) { if (!prev) return prev; const a = Object.assign({}, prev.added || {}); delete a[i]; return Object.assign({}, prev, { added: a }); }); }, onUpdateAccount: upsertAccount, onClose: function() { setScan(null); } }) : /* @__PURE__ */ React.createElement(
     "div",
     {
       className: "fixed inset-0 z-50 flex items-center justify-center bx-fade px-8",
@@ -1340,7 +1391,15 @@ function AutoBadge() {
 }
 const SCAN_SYS = "You extract structured financial data from one or more photos or documents. These may be bills, invoices, paystubs, bank statements, credit card statements, OR any financial document — forbearance letters, mortgage statements, loan modification agreements, payment plan notices, utility shutoff warnings, insurance letters, medical bills, court financial orders, student loan correspondence, or any letter with money or deadline implications.\n\nRespond ONLY with a JSON object with a single key \"results\" containing an array. Never invent amounts. Use today's date to resolve partial dates.\n\nFor bills, invoices, subscriptions, paystubs use kind \"item\":\n{\"kind\":\"item\",\"type\":\"expense\" or \"income\",\"name\":\"short label\",\"payee\":\"who it is paid to or from\",\"amount\":number,\"dueDate\":\"YYYY-MM-DD or empty\",\"freq\":\"once|weekly|biweekly|monthly|quarterly|yearly\",\"category\":\"home|daily|transport|health|insurance|obligations|subscriptions|children|education|entertainment|pets|charity|vacation|savings|business|misc for expenses; wages|interest|dividends|gifts|refunds|transfer|other-in for income\",\"notes\":\"account# or useful detail\"}\n\nFor bank/account balance screenshots use kind \"account\":\n{\"kind\":\"account\",\"name\":\"account name\",\"accountType\":\"checking|savings|credit|investment|crypto|cash|other\",\"balance\":number,\"notes\":\"last 4 digits or detail\"}\n\nFor financial documents — letters, notices, statements with deadlines or decisions use kind \"document\":\n{\"kind\":\"document\",\"title\":\"Short document name e.g. Chase Forbearance Notice\",\"urgency\":\"high|medium|low\",\"deadline\":\"YYYY-MM-DD or empty — the most important action deadline\",\"summary\":\"2-3 sentences in plain English: what this document means for the person's budget and financial situation, what happens if they do nothing, and what their options are\",\"action\":\"The single most important thing to do next, specific and actionable e.g. Call Chase at 800-xxx before Aug 1 to request deferral to end of loan\",\"pin\":\"One concise line capturing this situation for ongoing AI tracking e.g. Chase forbearance ends Aug 1 — $8,500 arrears, decide lump sum vs deferral before July 25\",\"items\":[array of budget items this document creates or modifies, using item schema above — e.g. resumed mortgage payment, lump sum payment, payment plan installment]}\n\nReturn one element per distinct bill, account, or document. If a document creates multiple payment obligations, list each as a separate item inside the document's items array.";
 const INSIGHTS_SYS = "You are a personal financial strategist reviewing someone's live budget. You know their exact balances, every bill, and any pinned challenges they are dealing with. If pinned challenges exist, address them first and directly — give a concrete next step, not a generic observation. Then cover the 1-2 most urgent cash flow issues. Every point must be one short line starting with '- ', cite actual dollar amounts and dates from the data. No preamble, no headers, no markdown, no bold. Never invent numbers. If the situation is tight, say so plainly and say what to do about it.";
-function Insights({ items, eff, startBalance, cleared, skipped, advisorNotes, onRemoveNote, accounts }) {
+const KB_EXTRACT_SYS = "You extract structured financial knowledge for a personal AI knowledge base. Given any text — a receipt, bill, document, note, article, statement, personal information, or strategy — extract what is financially meaningful and useful to remember for ongoing budgeting advice. Return ONLY valid JSON with no markdown: {\"title\": \"Short descriptive title max 8 words\", \"summary\": \"2-4 sentences capturing the key financial facts, amounts, dates, terms, deadlines, personal details, or strategies that would help a personal budgeting AI give better advice. Be specific and include numbers where present.\", \"tags\": [\"relevant tags chosen from: receipt expense income mortgage loan insurance debt savings strategy personal account medical utility vehicle subscription legal deadline notice forbearance\"]}";
+function buildKBContext(entries) {
+  if (!entries || entries.length === 0) return "";
+  var sorted = entries.slice().sort(function(a, b) { return b.createdAt - a.createdAt; });
+  var lines = sorted.map(function(e) { return "[" + e.title + "] " + e.summary; }).join("\n");
+  if (lines.length > 4000) lines = lines.slice(0, 4000) + "...(additional entries)";
+  return "Personal knowledge base — facts, documents, and context that must inform all advice (" + entries.length + " entries):\n" + lines + "\n\n";
+}
+function Insights({ items, eff, startBalance, cleared, skipped, advisorNotes, kbEntries, onRemoveNote, accounts }) {
   const sig = useMemo(
     () => JSON.stringify(items.map((i) => [i.type, i.name, i.amount, i.date, i.freq, i.category, i.auto, i.linkedIncomeId])) + "|" + startBalance,
     [items, startBalance]
@@ -1380,9 +1439,10 @@ function Insights({ items, eff, startBalance, cleared, skipped, advisorNotes, on
       const autos = items.filter((i) => i.type === "expense" && i.auto);
       const acctLine = accounts && accounts.length ? "Accounts (current balance): " + accounts.map((a) => `${a.name} ${acctType(a.type).label} ${Number(a.balance) || 0}`).join(", ") + ".\n\n" : "";
       const notesLine = advisorNotes && advisorNotes.length > 0 ? "Known financial challenges and goals (address these specifically):\n" + advisorNotes.map(function(n) { return "- " + n; }).join("\n") + "\n\n" : "";
+      const kbLine = buildKBContext(kbEntries);
       const user = `Today is ${ctx.todayISO}.
 
-` + acctLine + notesLine + `Projected cash flow (date, amount, item, running balance):
+` + acctLine + kbLine + notesLine + `Projected cash flow (date, amount, item, running balance):
 ${ctx.lines.join("\n")}
 
 ` + (autos.length ? `Automatic transfers pulled from paychecks (fixed, not movable): ${autos.map((a) => a.name + " " + a.amount).join(", ")}.
@@ -1490,7 +1550,7 @@ function RichText({ text }) {
     return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[14px] leading-relaxed" }, t);
   }));
 }
-function Advisor({ advisor, items, startBalance, cleared, skipped, advisorNotes, accounts, onApplyAction, onClose }) {
+function Advisor({ advisor, items, startBalance, cleared, skipped, advisorNotes, kbEntries, accounts, onApplyAction, onClose }) {
   const isBill = advisor.mode === "bill";
   const isEntry = advisor.mode === "entry";
   const bill = advisor.bill;
@@ -1590,9 +1650,10 @@ Recommend the single best day to pay this bill within the next 60 days. Payment 
       }
       else if (isEntry) focus = `Right now the user is entering this ${draft.type}: ${draft.name || "(unnamed)"}, amount ${draft.amount || "?"}, category ${catLabel()}, repeats ${freqLabel(draft.freq).toLowerCase()}.
 `;
+      const kbBlock = buildKBContext(kbEntries);
       const notesBlock = advisorNotes && advisorNotes.length > 0 ? "Pinned challenges from previous sessions:\n" + advisorNotes.map(function(n) { return "- " + n; }).join("\n") + "\n\n" : "";
       const itemsBlock = ctx.itemLines && ctx.itemLines.length > 0 ? "All budget items (use the IDs in brackets when suggesting changes):\n" + ctx.itemLines.join("\n") + "\n\n" : "";
-      const sys = SYS_BASE + "\n\n" + notesBlock + itemsBlock + "Today is " + ctx.todayISO + ". " + acctLine + "Cash flow (next 80 days):\n" + ctx.lines.join("\n") + "\n" + focus;
+      const sys = SYS_BASE + "\n\n" + kbBlock + notesBlock + itemsBlock + "Today is " + ctx.todayISO + ". " + acctLine + "Cash flow (next 80 days):\n" + ctx.lines.join("\n") + "\n" + focus;
       const apiMessages = history.map((mm) => ({ role: mm.role, content: mm.text }));
       const reply = await claudeRequest(apiMessages, sys, MODEL);
       let replyText = reply;
@@ -1707,6 +1768,33 @@ function relTime(iso) {
   if (days < 30) return days + " days ago";
   return d.toLocaleDateString();
 }
+function KnowledgeBase({ kbEntries, setKbEntries, onClose }) {
+  const [view, setView] = useState("list");
+  const [pasteText, setPasteText] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [pasteError, setPasteError] = useState("");
+  const typeIcon = function(t) { return t === "document" ? "\uD83D\uDCC4" : t === "account" ? "\uD83C\uDFE6" : t === "income" ? "\uD83D\uDCB0" : t === "receipt" ? "\uD83E\uDDFE" : "\uD83D\uDCDD"; };
+  async function addPaste() {
+    if (!pasteText.trim() || processing) return;
+    setProcessing(true); setPasteError("");
+    try {
+      const reply = await callClaude(KB_EXTRACT_SYS, "Type: note\n\nContent:\n" + pasteText.slice(0, 6000));
+      const clean = reply.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      const entry = { id: uid(), type: "note", title: parsed.title || "Note", raw: pasteText, summary: parsed.summary || pasteText.slice(0, 300), tags: Array.isArray(parsed.tags) ? parsed.tags : [], createdAt: Date.now() };
+      await kbPut(entry);
+      setKbEntries(function(prev) { return [entry].concat(prev); });
+      setPasteText(""); setView("list");
+    } catch (e) { setPasteError("Couldn't process. Check your connection."); }
+    finally { setProcessing(false); }
+  }
+  async function handleDelete(id) {
+    await kbDel(id);
+    setKbEntries(function(prev) { return prev.filter(function(e) { return e.id !== id; }); });
+  }
+  const sorted = kbEntries.slice().sort(function(a, b) { return b.createdAt - a.createdAt; });
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: function(e) { e.stopPropagation(); } }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "\uD83E\uDDE0"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, "Knowledge Base")), kbEntries.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold rounded-full px-2.5 py-0.5", style: { background: "#EEF2FF", color: "#4338CA" } }, kbEntries.length, " entries")), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Everything here is permanently included in every AI conversation. Scan documents or paste text — the AI learns from it all."), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 mb-4" }, /* @__PURE__ */ React.createElement("button", { onClick: function() { setView("list"); }, className: "flex-1 rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.99]", style: { background: view === "list" ? "#13202E" : "#F2F4F7", color: view === "list" ? "#fff" : "#6B7785" } }, "Entries"), /* @__PURE__ */ React.createElement("button", { onClick: function() { setView("paste"); }, className: "flex-1 rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.99]", style: { background: view === "paste" ? "#13202E" : "#F2F4F7", color: view === "paste" ? "#fff" : "#6B7785" } }, "+ Add text")), view === "paste" ? /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-2", style: { color: "#6B7785" } }, "Paste any text — article, strategy, personal notes, financial terms, or any information you want the AI to know permanently."), /* @__PURE__ */ React.createElement("textarea", { value: pasteText, onChange: function(e) { setPasteText(e.target.value); }, placeholder: "Paste text here...", className: "w-full rounded-xl px-3.5 py-3 text-[14px] outline-none resize-none mb-3", style: { background: "#F2F4F7", border: "1px solid transparent", minHeight: 140 }, onFocus: function(e) { e.target.style.border = "1px solid #13202E"; }, onBlur: function(e) { e.target.style.border = "1px solid transparent"; } }), pasteError && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-2", style: { color: "#C2410C" } }, pasteError), /* @__PURE__ */ React.createElement("button", { onClick: addPaste, disabled: !pasteText.trim() || processing, className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99]", style: { background: pasteText.trim() && !processing ? "#13202E" : "#E2E6EB", color: pasteText.trim() && !processing ? "#fff" : "#A0AAB6" } }, processing ? "Processing\u2026" : "Save to Knowledge Base")) : sorted.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "text-center py-12" }, /* @__PURE__ */ React.createElement("p", { className: "text-[24px] mb-2" }, "\uD83E\uDDE0"), /* @__PURE__ */ React.createElement("p", { className: "text-[14px] font-semibold mb-1" }, "Nothing here yet"), /* @__PURE__ */ React.createElement("p", { className: "text-[13px]", style: { color: "#8A95A3" } }, "Scan a document or tap + Add text. Everything you add shapes how the AI understands your situation.")) : /* @__PURE__ */ React.createElement("ul", { className: "space-y-2" }, sorted.map(function(e) { return /* @__PURE__ */ React.createElement("li", { key: e.id, className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 min-w-0" }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, typeIcon(e.type)), /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[13px] truncate" }, e.title)), /* @__PURE__ */ React.createElement("button", { onClick: function() { handleDelete(e.id); }, className: "shrink-0 text-[16px] leading-none active:opacity-60", style: { color: "#C0C8D2" } }, "\xD7")), /* @__PURE__ */ React.createElement("p", { className: "text-[12px] leading-relaxed", style: { color: "#6B7785" } }, e.summary), e.tags && e.tags.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1 mt-1.5" }, e.tags.slice(0, 4).map(function(t, ti) { return /* @__PURE__ */ React.createElement("span", { key: ti, className: "text-[10px] rounded-full px-2 py-0.5", style: { background: "#EEF2FF", color: "#4338CA" } }, t); })), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] mt-1", style: { color: "#C0C8D2" } }, new Date(e.createdAt).toLocaleDateString())); })), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-3 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
+}
 function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, advisorNotes, onRemoveNote, onClose }) {
   const fileRef = useRef(null);
   const [msg, setMsg] = useState("");
@@ -1726,7 +1814,7 @@ function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, adviso
         if (itemCount > 0 && !window.confirm("Replace your current budget with this backup?")) return;
         const accts = Array.isArray(d.accounts) ? d.accounts : d.startBalance != null ? [{ id: uid(), name: "Checking", type: "checking", balance: Number(d.startBalance) || 0 }] : null;
         const cl = d.cleared && typeof d.cleared === "object" ? d.cleared : null;
-        onImport(d.items, accts, cl, d.skipped && typeof d.skipped === "object" ? d.skipped : null);
+        onImport(d.items, accts, cl, d.skipped && typeof d.skipped === "object" ? d.skipped : null, d);
         setMsg("Restored " + d.items.length + " items" + (accts ? " and " + accts.length + " accounts" : "") + " from backup.");
       } catch (err) {
         setMsg("That file isn't a valid budget backup.");
@@ -1738,7 +1826,7 @@ function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, adviso
   function restore(s) {
     if (!window.confirm("Roll back to this saved version? Your current entries will be replaced.")) return;
     const accts = Array.isArray(s.accounts) ? s.accounts : s.startBalance != null ? [{ id: uid(), name: "Checking", type: "checking", balance: Number(s.startBalance) || 0 }] : null;
-    onRestore(s.items, accts, s.cleared && typeof s.cleared === "object" ? s.cleared : null, s.skipped && typeof s.skipped === "object" ? s.skipped : null);
+    onRestore(s.items, accts, s.cleared && typeof s.cleared === "object" ? s.cleared : null, s.skipped && typeof s.skipped === "object" ? s.skipped : null, s);
     setMsg("Rolled back to " + new Date(s.at).toLocaleString() + ".");
   }
   const [editingPin, setEditingPin] = useState(null);
