@@ -703,13 +703,26 @@ function findDuplicate(existing, candidate) {
   if (!candidate.name) return null;
   const cn = candidate.name.toLowerCase().trim();
   const ca = Number(candidate.amount) || 0;
+  if (ca <= 0) return null;
+  const stop = new Set(["the", "and", "for", "from", "sent", "paid", "fee", "inc", "llc", "app", "purchase", "payment", "transaction", "transfer", "bill"]);
+  const cWords = cn.split(/[\s\/\-\*\#\.\,]+/).filter(function(w) { return w.length >= 3 && !stop.has(w); });
   return existing.find(function(x) {
     if (x.id === candidate.id) return false;
     if (x.type !== candidate.type) return false;
     const xn = (x.name || "").toLowerCase().trim();
-    const nameSim = xn === cn || (cn.length > 3 && (xn.includes(cn) || cn.includes(xn)));
-    const amtSim = ca > 0 && Math.abs(x.amount - ca) <= Math.max(0.01, ca * 0.02);
-    return nameSim && amtSim;
+    const xa = Number(x.amount) || 0;
+    const exactAmt = Math.abs(xa - ca) < 0.02;
+    const amtClose = Math.abs(xa - ca) <= Math.max(0.01, ca * 0.02);
+    const exactName = xn === cn;
+    const containsName = cn.length > 4 && (xn.includes(cn) || cn.includes(xn));
+    const xWords = xn.split(/[\s\/\-\*\#\.\,]+/).filter(function(w) { return w.length >= 3; });
+    const wordMatch = cWords.some(function(w) { return xWords.some(function(xw) { return xw === w || (w.length >= 5 && (xw.includes(w) || w.includes(xw))); }); });
+    const nameSim = exactName || containsName || wordMatch;
+    if (nameSim && amtClose) return true;
+    const specificAmt = ca % 1 !== 0 || ca >= 250;
+    if (exactAmt && specificAmt) return true;
+    if (exactAmt && wordMatch) return true;
+    return false;
   }) || null;
 }
 function BudgetPlanner() {
