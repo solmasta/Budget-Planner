@@ -1940,7 +1940,7 @@ function ScanResultsSheet({ results, added, accounts, onSaveItem, onUndoItem, on
     setEditingIndex(null);
   }
   return React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: isEditing ? null : onClose },
-    React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl", style: { maxWidth: 480, maxHeight: "92vh", display: "flex", flexDirection: "column" }, onClick: function(e) { e.stopPropagation(); } },
+    React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl", style: { maxWidth: 480, height: "92vh", display: "flex", flexDirection: "column", overflow: "hidden" }, onClick: function(e) { e.stopPropagation(); } },
       React.createElement("div", { className: "px-5 pt-4 pb-3 shrink-0", style: { borderBottom: "1px solid #F0F2F5" } },
         React.createElement("div", { className: "mx-auto mb-3 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }),
         isEditing
@@ -1957,7 +1957,7 @@ function ScanResultsSheet({ results, added, accounts, onSaveItem, onUndoItem, on
               React.createElement("button", { onClick: onClose, className: "text-[24px] leading-none active:opacity-60", style: { color: "#A0AAB6" } }, "×")
             )
       ),
-      React.createElement("div", { className: "flex-1 overflow-y-auto p-5", style: { minHeight: 0, WebkitOverflowScrolling: "touch" } },
+      React.createElement("div", { className: "flex-1 p-5", style: { minHeight: 0, overflowY: "scroll", WebkitOverflowScrolling: "touch", touchAction: "pan-y" } },
         isEditing
           ? React.createElement("div", { className: "space-y-4" },
               React.createElement("div", { className: "flex rounded-xl overflow-hidden", style: { border: "1px solid #E2E6EB" } },
