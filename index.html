@@ -1957,7 +1957,7 @@ function ScanResultsSheet({ results, added, accounts, onSaveItem, onUndoItem, on
               React.createElement("button", { onClick: onClose, className: "text-[24px] leading-none active:opacity-60", style: { color: "#A0AAB6" } }, "×")
             )
       ),
-      React.createElement("div", { className: "flex-1 overflow-y-auto p-5" },
+      React.createElement("div", { className: "flex-1 overflow-y-auto p-5", style: { minHeight: 0, WebkitOverflowScrolling: "touch" } },
         isEditing
           ? React.createElement("div", { className: "space-y-4" },
               React.createElement("div", { className: "flex rounded-xl overflow-hidden", style: { border: "1px solid #E2E6EB" } },
