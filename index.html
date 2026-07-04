@@ -31,7 +31,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "20";
+  window.__APP_VERSION = "21";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -1067,7 +1067,7 @@ function BudgetPlanner() {
           category: isIncome ? (INCOME_CATS.some(function(c) { return c.id === d.category; }) ? d.category : "wages") : (EXPENSE_CATS.some(function(c) { return c.id === d.category; }) ? d.category : "misc"),
           notes: d.notes || ""
         };
-      }).filter(function(d) { return d.name || d.kind === "account"; });
+      }).filter(function(d) { return d.name || d.kind === "account" || d.kind === "document"; });
       if (results.length === 0) {
         setScan({ error: "Nothing useful found in those photos. Try a clearer shot or add manually." });
         return;
@@ -1325,7 +1325,7 @@ function BudgetPlanner() {
       style: { background: "rgba(19,32,46,.55)" },
       onClick: () => scan.error && setScan(null)
     },
-    /* @__PURE__ */ React.createElement("div", { className: "w-full bg-white rounded-3xl p-6 text-center", style: { maxWidth: 320 }, onClick: (e) => e.stopPropagation() }, scan.loading ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "flex justify-center mb-3" }, /* @__PURE__ */ React.createElement(Spinner, null)), /* @__PURE__ */ React.createElement("div", { className: "text-[15px] font-semibold" }, "Reading your photos\u2026"), /* @__PURE__ */ React.createElement("div", { className: "text-[13px] mt-1", style: { color: "#8A95A3" } }, "Extracting bills, balances and amounts.")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-[15px] font-semibold", style: { color: "#C2410C" } }, "Couldn't read it"), /* @__PURE__ */ React.createElement("div", { className: "text-[13px] mt-1 mb-4", style: { color: "#6B7785" } }, scan.error), /* @__PURE__ */ React.createElement("button", { onClick: () => setScan(null), className: "w-full rounded-xl py-2.5 text-[14px] font-semibold", style: { background: "#13202E", color: "#fff" } }, "OK")))
+    /* @__PURE__ */ React.createElement("div", { className: "w-full bg-white rounded-3xl p-6 text-center", style: { maxWidth: 320 }, onClick: (e) => e.stopPropagation() }, scan.loading ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "flex justify-center mb-3" }, /* @__PURE__ */ React.createElement(Spinner, null)), /* @__PURE__ */ React.createElement("div", { className: "text-[15px] font-semibold" }, "Reading your photos\u2026"), /* @__PURE__ */ React.createElement("div", { className: "text-[13px] mt-1", style: { color: "#8A95A3" } }, "Extracting bills, balances and amounts.")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "text-[15px] font-semibold", style: { color: "#C2410C" } }, "Couldn't read it"), /* @__PURE__ */ React.createElement("div", { className: "text-[13px] mt-1 mb-4", style: { color: "#6B7785" } }, scan.error), /* @__PURE__ */ React.createElement("button", { onClick: () => { setScan(null); setEditor({ item: null, date: toISO(selDate) }); }, className: "w-full rounded-xl py-2.5 text-[14px] font-semibold mb-2", style: { background: "#13202E", color: "#fff" } }, "Add manually"), /* @__PURE__ */ React.createElement("button", { onClick: () => setScan(null), className: "w-full py-2 text-[13px] font-medium", style: { color: "#8A95A3" } }, "Close")))
   )));
 }
 function NavBtn({ children, onClick, label }) {
