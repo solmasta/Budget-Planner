@@ -1,0 +1,3 @@
+name = "budget-planner-ai"
+main = "worker/index.js"
+compatibility_date = "2026-07-26"
