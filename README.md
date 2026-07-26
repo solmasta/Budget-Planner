@@ -41,14 +41,12 @@ When you deploy changes to `index.html`, bump `window.__APP_VERSION` (near the t
 
 ## Optional: AI features (insights, advisor chat, receipt scanning)
 
-AI features call a small proxy Worker (`WORKER_URL` near the top of the app script in `index.html`) instead of calling Claude directly from the browser, so an API key is never exposed client-side. To enable these features on your own deployment:
+AI features call a small proxy Worker (`WORKER_URL` near the top of the app script in `index.html`) instead of calling Claude directly from the browser, so an API key is never exposed client-side. The Worker's source lives in this repo at `worker/index.js`, with `wrangler.toml` at the repo root — see [`worker/README.md`](worker/README.md) for full deployment steps, including deploying straight from this repo via Cloudflare's Git integration.
 
-1. Deploy a Cloudflare Worker (or any small server) that accepts a POST request shaped like:
-   ```json
-   { "model": "...", "max_tokens": 1500, "system": "...", "messages": [...] }
-   ```
-   forwards it to the [Anthropic Messages API](https://docs.claude.com/en/api/messages) with your `ANTHROPIC_API_KEY` stored as a Worker secret, and returns the Anthropic response JSON (or a `{ "text": "..." }` shape) with permissive CORS for your Pages origin.
-2. Store your Anthropic API key as a Cloudflare Worker secret (`wrangler secret put ANTHROPIC_API_KEY`) — never commit it to this repo.
+Quick version:
+
+1. Connect this repo to a Cloudflare Worker (Cloudflare dashboard → Workers & Pages → Create → Import a repository), or paste `worker/index.js` into a manually created Worker.
+2. Store your Anthropic API key as a Worker secret named `ANTHROPIC_API_KEY` — never commit it to this repo.
 3. Update `WORKER_URL` in `index.html` to point at your Worker's URL.
 
 If you don't set this up, the app still works fully for manual budgeting — the AI panels will just fail to load when used.
