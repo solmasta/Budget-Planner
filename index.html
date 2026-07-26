@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "32";
+  window.__APP_VERSION = "33";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -933,10 +933,6 @@ function BudgetPlanner() {
       setDriveStatus("error"); setDriveMsg("Restore failed: " + e.message);
     }
   }
-  useEffect(function() {
-    if (!driveConnected || loading) return;
-    requestDriveToken(false).then(function(token) { driveTokenRef.current = token; }).catch(function() {});
-  }, [driveConnected, loading]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [lastBackup, setLastBackup] = useState(null);
