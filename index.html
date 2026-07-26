@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "30";
+  window.__APP_VERSION = "31";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -1824,7 +1824,7 @@ function Insights({ items, eff, startBalance, cleared, skipped, overrides, advis
       } catch (e) {
       }
     } catch (e) {
-      setError("Couldn't refresh insights \u2014 tap to retry.");
+      setError("Couldn't refresh insights \u2014 tap to retry. (" + (e && e.message ? e.message : "unknown error") + ")");
     } finally {
       setLoading(false);
     }
