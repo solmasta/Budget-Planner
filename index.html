@@ -553,8 +553,17 @@ function addSnapshot(items, accounts, force) {
     } else {
       snaps.unshift(entry);
     }
-    localStorage.setItem(SNAP_KEY, JSON.stringify(snaps.slice(0, 20)));
+    localStorage.setItem(SNAP_KEY, JSON.stringify(snaps.slice(0, 10)));
   } catch (e) {
+  }
+}
+function trimStorageForSpace() {
+  try { localStorage.removeItem("budget-insights"); } catch (e) {}
+  try {
+    const snaps = loadSnapshots();
+    if (snaps.length > 3) localStorage.setItem(SNAP_KEY, JSON.stringify(snaps.slice(0, 3)));
+  } catch (e) {
+    try { localStorage.removeItem(SNAP_KEY); } catch (e2) {}
   }
 }
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
@@ -1065,7 +1074,7 @@ function BudgetPlanner() {
     } else if (action.type === "note" && action.content) {
       setAdvisorNotes(function(prev) {
         const next = prev.filter(function(n) { return n !== action.content; }).concat([action.content]).slice(-8);
-        try { localStorage.setItem(ADVISOR_NOTES_KEY, JSON.stringify(next)); setLastSaved(Date.now()); } catch (e) {}
+        if (safeSet(ADVISOR_NOTES_KEY, JSON.stringify(next))) setLastSaved(Date.now());
         return next;
       });
     } else if (action.type === "note_remove" && action.index != null) {
@@ -1088,17 +1097,26 @@ function BudgetPlanner() {
     const t = setTimeout(function() { driveBackupNow(); }, 4000);
     return function() { clearTimeout(t); };
   }, [lastSaved, driveConnected]);
-  useEffect(() => {
+  function safeSet(key, value) {
     try {
-      localStorage.setItem(CLEARED_KEY, JSON.stringify(cleared));
-      setLastSaved(Date.now());
-    } catch (e) {}
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      trimStorageForSpace();
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch (e2) {
+        console.error("Could not save:", e2);
+        return false;
+      }
+    }
+  }
+  useEffect(() => {
+    if (safeSet(CLEARED_KEY, JSON.stringify(cleared))) setLastSaved(Date.now());
   }, [cleared]);
   useEffect(() => {
-    try {
-      localStorage.setItem(SKIPPED_KEY, JSON.stringify(skipped));
-      setLastSaved(Date.now());
-    } catch (e) {}
+    if (safeSet(SKIPPED_KEY, JSON.stringify(skipped))) setLastSaved(Date.now());
   }, [skipped]);
   function skipOccurrence(id, iso) {
     setSkipped(function(prev) { return Object.assign({}, prev, { [ck(id, iso)]: true }); });
@@ -1107,13 +1125,13 @@ function BudgetPlanner() {
   function setOccurrenceOverride(id, iso, amount) {
     const next = Object.assign({}, overrides, { [ck(id, iso)]: Number(amount) });
     setOverrides(next);
-    try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(next)); setLastSaved(Date.now()); } catch (e) {}
+    if (safeSet(OVERRIDES_KEY, JSON.stringify(next))) setLastSaved(Date.now());
     setEditor(null);
   }
   function removeAdvisorNote(index) {
     setAdvisorNotes(function(prev) {
       const next = prev.filter(function(_, i) { return i !== index; });
-      try { localStorage.setItem(ADVISOR_NOTES_KEY, JSON.stringify(next)); setLastSaved(Date.now()); } catch (e) {}
+      if (safeSet(ADVISOR_NOTES_KEY, JSON.stringify(next))) setLastSaved(Date.now());
       return next;
     });
   }
@@ -1130,14 +1148,22 @@ function BudgetPlanner() {
   }, []);
   async function persist(nextItems, nextAccounts) {
     latestRef.current = { items: nextItems, accounts: nextAccounts };
+    const payload = JSON.stringify({ items: nextItems, accounts: nextAccounts });
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: nextItems, accounts: nextAccounts }));
+      localStorage.setItem(STORAGE_KEY, payload);
       addSnapshot(nextItems, nextAccounts);
       setSaveError(false);
       setLastSaved(Date.now());
     } catch (e) {
-      console.error("Could not save:", e);
-      setSaveError(true);
+      trimStorageForSpace();
+      try {
+        localStorage.setItem(STORAGE_KEY, payload);
+        setSaveError(false);
+        setLastSaved(Date.now());
+      } catch (e2) {
+        console.error("Could not save:", e2);
+        setSaveError(true);
+      }
     }
   }
   function upsertAccount(acct) {
@@ -1194,22 +1220,22 @@ function BudgetPlanner() {
     setAccounts(accts);
     if (nextCleared && typeof nextCleared === "object") {
       setCleared(nextCleared);
-      try { localStorage.setItem(CLEARED_KEY, JSON.stringify(nextCleared)); } catch (e) {}
+      safeSet(CLEARED_KEY, JSON.stringify(nextCleared));
     }
     if (nextSkipped && typeof nextSkipped === "object") {
       setSkipped(nextSkipped);
-      try { localStorage.setItem(SKIPPED_KEY, JSON.stringify(nextSkipped)); } catch (e) {}
+      safeSet(SKIPPED_KEY, JSON.stringify(nextSkipped));
     }
     if (extra && extra.overrides && typeof extra.overrides === "object") {
       setOverrides(extra.overrides);
-      try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(extra.overrides)); } catch (e) {}
+      safeSet(OVERRIDES_KEY, JSON.stringify(extra.overrides));
     }
     if (extra && Array.isArray(extra.knowledgeBase) && extra.knowledgeBase.length > 0) {
       kbClear().then(function() { return kbBulkPut(extra.knowledgeBase); }).then(function() { setKbEntries(extra.knowledgeBase); }).catch(function() {});
     }
     if (extra && Array.isArray(extra.advisorNotes)) {
       setAdvisorNotes(extra.advisorNotes);
-      try { localStorage.setItem(ADVISOR_NOTES_KEY, JSON.stringify(extra.advisorNotes)); } catch (e) {}
+      safeSet(ADVISOR_NOTES_KEY, JSON.stringify(extra.advisorNotes));
     }
     persist(nextItems, accts);
   }
@@ -1541,7 +1567,7 @@ function BudgetPlanner() {
     }
     if (it.kind === "mark_paid") {
       const iso = it.date || toISO(/* @__PURE__ */new Date());
-      setCleared(function(prev) { const next = Object.assign({}, prev, { [ck(it.existingId, iso)]: true }); try { localStorage.setItem(CLEARED_KEY, JSON.stringify(next)); } catch (e) {} return next; });
+      setCleared(function(prev) { const next = Object.assign({}, prev, { [ck(it.existingId, iso)]: true }); safeSet(CLEARED_KEY, JSON.stringify(next)); return next; });
       setScan(function(prev) { if (!prev || !prev.results) return prev; return Object.assign({}, prev, { added: Object.assign({}, prev.added || {}, { [i]: it.existingId }) }); });
       return;
     }
