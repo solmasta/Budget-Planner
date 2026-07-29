@@ -41,7 +41,7 @@ When you deploy changes to `index.html`, bump `window.__APP_VERSION` (near the t
 
 ## Optional: AI features (insights, advisor chat, receipt scanning)
 
-AI features call a small proxy Worker (`WORKER_URL` near the top of the app script in `index.html`) instead of calling Claude directly from the browser, so an API key is never exposed client-side. The Worker's source lives in this repo at `worker/index.js`, with `wrangler.toml` at the repo root — see [`worker/README.md`](worker/README.md) for full deployment steps, including deploying straight from this repo via Cloudflare's Git integration.
+AI features call a small proxy Worker (`WORKER_URL` near the top of the app script in `index.html`) instead of calling Claude directly from the browser, so an API key is never exposed client-side. The Worker's source lives in this repo at `worker/index.js`, with `wrangler.jsonc` at the repo root — see [`worker/README.md`](worker/README.md) for full deployment steps, including deploying straight from this repo via Cloudflare's Git integration.
 
 Quick version:
 
