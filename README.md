@@ -27,7 +27,7 @@ python3 -m http.server 8080
 npx serve .
 ```
 
-Then open `http://localhost:8080`. Your data is saved to the browser's `localStorage`, so it's local to that browser/device unless you use the Google Drive backup feature.
+Then open `http://localhost:8080`. Your data is saved to the browser's `IndexedDB`, so it's local to that browser/device unless you use the Google Drive backup feature.
 
 ## Deployment (GitHub Pages)
 
@@ -61,4 +61,4 @@ Backup/restore uses Google Identity Services with the narrow `drive.file` scope 
 
 ## Data & privacy
 
-All budget data (accounts, bills, snapshots, notes) is stored only in the browser's `localStorage` on the device you're using. Nothing is sent anywhere except: (a) the optional Google Drive backup file, and (b) the minimal context sent to your AI proxy Worker when you use an AI feature.
+All budget data (accounts, bills, snapshots, notes) is stored only in the browser's `IndexedDB` on the device you're using — this gets a much larger storage quota than `localStorage` on most browsers, so the app is less likely to run into "storage full" errors. (Existing installs are migrated automatically from `localStorage` the first time they load an updated version.) A few small flags (last backup timestamp, Google Drive connection state) still live in `localStorage`. Nothing is sent anywhere except: (a) the optional Google Drive backup file, and (b) the minimal context sent to your AI proxy Worker when you use an AI feature.
