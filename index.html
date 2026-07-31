@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "36";
+  window.__APP_VERSION = "37";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -523,29 +523,83 @@ function kbClear() {
 function kbBulkPut(entries) {
   return kbOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(KB_STORE, "readwrite"); var store = tx.objectStore(KB_STORE); entries.forEach(function(e) { store.put(e); }); tx.oncomplete = resolve; tx.onerror = function(e) { reject(e.target.error); }; }); });
 }
+const STORE_DB = "budget-store-v1";
+const STORE_NAME = "kv";
+function storeOpen() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open(STORE_DB, 1);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: "key" });
+    };
+    req.onsuccess = function(e) { resolve(e.target.result); };
+    req.onerror = function(e) { reject(e.target.error); };
+  });
+}
+function idbGetRaw(key) {
+  return storeOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(STORE_NAME, "readonly"); var req = tx.objectStore(STORE_NAME).get(key); req.onsuccess = function(e) { resolve(e.target.result ? e.target.result.value : void 0); }; req.onerror = function(e) { reject(e.target.error); }; }); });
+}
+function idbSetRaw(key, value) {
+  return storeOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(STORE_NAME, "readwrite"); tx.objectStore(STORE_NAME).put({ key, value }); tx.oncomplete = resolve; tx.onerror = function(e) { reject(e.target.error); }; }); });
+}
+function idbDelRaw(key) {
+  return storeOpen().then(function(db) { return new Promise(function(resolve, reject) { var tx = db.transaction(STORE_NAME, "readwrite"); tx.objectStore(STORE_NAME).delete(key); tx.oncomplete = resolve; tx.onerror = function(e) { reject(e.target.error); }; }); });
+}
+async function idbGet(key, defaultVal) {
+  try {
+    const v = await idbGetRaw(key);
+    if (v !== void 0) return v;
+  } catch (e) {
+  }
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw != null) {
+      const parsed = JSON.parse(raw);
+      idbSetRaw(key, parsed).then(function() { try { localStorage.removeItem(key); } catch (e2) {} }).catch(function() {});
+      return parsed;
+    }
+  } catch (e) {
+  }
+  return defaultVal;
+}
+async function idbSet(key, value) {
+  await idbSetRaw(key, value);
+}
+async function idbSafeSet(key, value) {
+  try {
+    await idbSetRaw(key, value);
+    return true;
+  } catch (e) {
+    await trimStorageForSpace();
+    try {
+      await idbSetRaw(key, value);
+      return true;
+    } catch (e2) {
+      console.error("Could not save:", e2);
+      return false;
+    }
+  }
+}
 const ck = (id, iso) => id + ":" + iso;
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const MO_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-function loadSnapshots() {
+const SNAPSHOT_CAP = 6;
+async function loadSnapshots() {
   try {
-    const a = JSON.parse(localStorage.getItem(SNAP_KEY) || "[]");
+    const a = await idbGet(SNAP_KEY, []);
     return Array.isArray(a) ? a : [];
   } catch (e) {
     return [];
   }
 }
-function addSnapshot(items, accounts, force) {
+async function addSnapshot(items, accounts, force) {
   try {
-    var cleared = {};
-    var skipped = {};
-    var overrides = {};
-    var advisorNotes = [];
-    try { cleared = JSON.parse(localStorage.getItem(CLEARED_KEY) || "{}") || {}; } catch (e) {}
-    try { skipped = JSON.parse(localStorage.getItem(SKIPPED_KEY) || "{}") || {}; } catch (e) {}
-    try { overrides = JSON.parse(localStorage.getItem(OVERRIDES_KEY) || "{}") || {}; } catch (e) {}
-    try { advisorNotes = JSON.parse(localStorage.getItem(ADVISOR_NOTES_KEY) || "[]") || []; } catch (e) {}
-    const snaps = loadSnapshots();
+    const cleared = await idbGet(CLEARED_KEY, {});
+    const skipped = await idbGet(SKIPPED_KEY, {});
+    const overrides = await idbGet(OVERRIDES_KEY, {});
+    const advisorNotes = await idbGet(ADVISOR_NOTES_KEY, []);
+    const snaps = await loadSnapshots();
     const entry = { at: (/* @__PURE__ */ new Date()).toISOString(), items, accounts, cleared, skipped, overrides, advisorNotes };
     const last = snaps[0];
     if (!force && last && Date.now() - new Date(last.at).getTime() < 5 * 60 * 1e3) {
@@ -553,17 +607,42 @@ function addSnapshot(items, accounts, force) {
     } else {
       snaps.unshift(entry);
     }
-    localStorage.setItem(SNAP_KEY, JSON.stringify(snaps.slice(0, 10)));
+    await idbSet(SNAP_KEY, snaps.slice(0, SNAPSHOT_CAP));
   } catch (e) {
   }
 }
-function trimStorageForSpace() {
-  try { localStorage.removeItem("budget-insights"); } catch (e) {}
+function pruneOldTracking(obj, monthsBack) {
   try {
-    const snaps = loadSnapshots();
-    if (snaps.length > 3) localStorage.setItem(SNAP_KEY, JSON.stringify(snaps.slice(0, 3)));
+    const cutoff = /* @__PURE__ */ new Date();
+    cutoff.setMonth(cutoff.getMonth() - monthsBack);
+    const cutoffIso = toISO(cutoff);
+    const next = {};
+    let changed = false;
+    Object.keys(obj || {}).forEach(function(k) {
+      const m = k.match(/(\d{4}-\d{2}-\d{2})$/);
+      if (m && m[1] < cutoffIso) { changed = true; return; }
+      next[k] = obj[k];
+    });
+    return changed ? next : obj;
   } catch (e) {
-    try { localStorage.removeItem(SNAP_KEY); } catch (e2) {}
+    return obj;
+  }
+}
+async function trimStorageForSpace() {
+  try { localStorage.removeItem("budget-insights"); } catch (e) {}
+  try { await idbDelRaw("budget-insights"); } catch (e) {}
+  try {
+    const snaps = await loadSnapshots();
+    if (snaps.length > 2) await idbSet(SNAP_KEY, snaps.slice(0, 2));
+  } catch (e) {
+    try { await idbDelRaw(SNAP_KEY); } catch (e2) {}
+  }
+  try {
+    const cleared = await idbGet(CLEARED_KEY, {});
+    await idbSet(CLEARED_KEY, pruneOldTracking(cleared, 6));
+    const skipped = await idbGet(SKIPPED_KEY, {});
+    await idbSet(SKIPPED_KEY, pruneOldTracking(skipped, 6));
+  } catch (e) {
   }
 }
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
@@ -972,9 +1051,8 @@ function BudgetPlanner() {
   useEffect(() => {
     (async () => {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const d = JSON.parse(raw);
+        const d = await idbGet(STORAGE_KEY, null);
+        if (d) {
           setItems(Array.isArray(d.items) ? d.items : []);
           if (Array.isArray(d.accounts) && d.accounts.length) setAccounts(d.accounts);
           else setAccounts([{ id: uid(), name: "Checking", type: "checking", balance: Number(d.startBalance) || 0 }]);
@@ -990,23 +1068,19 @@ function BudgetPlanner() {
       } catch (e) {
       }
       try {
-        const c = localStorage.getItem(CLEARED_KEY);
-        if (c) setCleared(JSON.parse(c) || {});
+        setCleared(pruneOldTracking(await idbGet(CLEARED_KEY, {}), 12));
       } catch (e) {
       }
       try {
-        const s = localStorage.getItem(SKIPPED_KEY);
-        if (s) setSkipped(JSON.parse(s) || {});
+        setSkipped(pruneOldTracking(await idbGet(SKIPPED_KEY, {}), 12));
       } catch (e) {
       }
       try {
-        const ov = localStorage.getItem(OVERRIDES_KEY);
-        if (ov) setOverrides(JSON.parse(ov) || {});
+        setOverrides(await idbGet(OVERRIDES_KEY, {}));
       } catch (e) {
       }
       try {
-        const an = localStorage.getItem(ADVISOR_NOTES_KEY);
-        if (an) setAdvisorNotes(JSON.parse(an) || []);
+        setAdvisorNotes(await idbGet(ADVISOR_NOTES_KEY, []));
       } catch (e) {
       }
       kbGetAll().then(function(entries) { setKbEntries(entries || []); }).catch(function() {});
@@ -1048,11 +1122,9 @@ function BudgetPlanner() {
       setItems(next);
       persist(next, accounts);
     } else if (action.type === "note" && action.content) {
-      setAdvisorNotes(function(prev) {
-        const next = prev.filter(function(n) { return n !== action.content; }).concat([action.content]).slice(-8);
-        if (safeSet(ADVISOR_NOTES_KEY, JSON.stringify(next))) setLastSaved(Date.now());
-        return next;
-      });
+      const nextNotes = advisorNotes.filter(function(n) { return n !== action.content; }).concat([action.content]).slice(-8);
+      setAdvisorNotes(nextNotes);
+      idbSafeSet(ADVISOR_NOTES_KEY, nextNotes).then(function(ok) { if (ok) setLastSaved(Date.now()); });
     } else if (action.type === "note_remove" && action.index != null) {
       removeAdvisorNote(action.index);
     }
@@ -1073,27 +1145,14 @@ function BudgetPlanner() {
     const t = setTimeout(function() { driveBackupNow(); }, 4000);
     return function() { clearTimeout(t); };
   }, [lastSaved, driveConnected]);
-  function safeSet(key, value) {
-    try {
-      localStorage.setItem(key, value);
-      return true;
-    } catch (e) {
-      trimStorageForSpace();
-      try {
-        localStorage.setItem(key, value);
-        return true;
-      } catch (e2) {
-        console.error("Could not save:", e2);
-        return false;
-      }
-    }
-  }
   useEffect(() => {
-    if (safeSet(CLEARED_KEY, JSON.stringify(cleared))) setLastSaved(Date.now());
-  }, [cleared]);
+    if (loading) return;
+    idbSafeSet(CLEARED_KEY, cleared).then(function(ok) { if (ok) setLastSaved(Date.now()); });
+  }, [cleared, loading]);
   useEffect(() => {
-    if (safeSet(SKIPPED_KEY, JSON.stringify(skipped))) setLastSaved(Date.now());
-  }, [skipped]);
+    if (loading) return;
+    idbSafeSet(SKIPPED_KEY, skipped).then(function(ok) { if (ok) setLastSaved(Date.now()); });
+  }, [skipped, loading]);
   function skipOccurrence(id, iso) {
     setSkipped(function(prev) { return Object.assign({}, prev, { [ck(id, iso)]: true }); });
     setEditor(null);
@@ -1101,15 +1160,13 @@ function BudgetPlanner() {
   function setOccurrenceOverride(id, iso, amount) {
     const next = Object.assign({}, overrides, { [ck(id, iso)]: Number(amount) });
     setOverrides(next);
-    if (safeSet(OVERRIDES_KEY, JSON.stringify(next))) setLastSaved(Date.now());
+    idbSafeSet(OVERRIDES_KEY, next).then(function(ok) { if (ok) setLastSaved(Date.now()); });
     setEditor(null);
   }
   function removeAdvisorNote(index) {
-    setAdvisorNotes(function(prev) {
-      const next = prev.filter(function(_, i) { return i !== index; });
-      if (safeSet(ADVISOR_NOTES_KEY, JSON.stringify(next))) setLastSaved(Date.now());
-      return next;
-    });
+    const next = advisorNotes.filter(function(_, i) { return i !== index; });
+    setAdvisorNotes(next);
+    idbSafeSet(ADVISOR_NOTES_KEY, next).then(function(ok) { if (ok) setLastSaved(Date.now()); });
   }
   useEffect(() => {
     try {
@@ -1124,16 +1181,16 @@ function BudgetPlanner() {
   }, []);
   async function persist(nextItems, nextAccounts) {
     latestRef.current = { items: nextItems, accounts: nextAccounts };
-    const payload = JSON.stringify({ items: nextItems, accounts: nextAccounts });
+    const payload = { items: nextItems, accounts: nextAccounts };
     try {
-      localStorage.setItem(STORAGE_KEY, payload);
+      await idbSetRaw(STORAGE_KEY, payload);
       addSnapshot(nextItems, nextAccounts);
       setSaveError(false);
       setLastSaved(Date.now());
     } catch (e) {
-      trimStorageForSpace();
+      await trimStorageForSpace();
       try {
-        localStorage.setItem(STORAGE_KEY, payload);
+        await idbSetRaw(STORAGE_KEY, payload);
         setSaveError(false);
         setLastSaved(Date.now());
       } catch (e2) {
@@ -1196,22 +1253,22 @@ function BudgetPlanner() {
     setAccounts(accts);
     if (nextCleared && typeof nextCleared === "object") {
       setCleared(nextCleared);
-      safeSet(CLEARED_KEY, JSON.stringify(nextCleared));
+      idbSafeSet(CLEARED_KEY, nextCleared);
     }
     if (nextSkipped && typeof nextSkipped === "object") {
       setSkipped(nextSkipped);
-      safeSet(SKIPPED_KEY, JSON.stringify(nextSkipped));
+      idbSafeSet(SKIPPED_KEY, nextSkipped);
     }
     if (extra && extra.overrides && typeof extra.overrides === "object") {
       setOverrides(extra.overrides);
-      safeSet(OVERRIDES_KEY, JSON.stringify(extra.overrides));
+      idbSafeSet(OVERRIDES_KEY, extra.overrides);
     }
     if (extra && Array.isArray(extra.knowledgeBase) && extra.knowledgeBase.length > 0) {
       kbClear().then(function() { return kbBulkPut(extra.knowledgeBase); }).then(function() { setKbEntries(extra.knowledgeBase); }).catch(function() {});
     }
     if (extra && Array.isArray(extra.advisorNotes)) {
       setAdvisorNotes(extra.advisorNotes);
-      safeSet(ADVISOR_NOTES_KEY, JSON.stringify(extra.advisorNotes));
+      idbSafeSet(ADVISOR_NOTES_KEY, extra.advisorNotes);
     }
     persist(nextItems, accts);
   }
@@ -1543,7 +1600,7 @@ function BudgetPlanner() {
     }
     if (it.kind === "mark_paid") {
       const iso = it.date || toISO(/* @__PURE__ */new Date());
-      setCleared(function(prev) { const next = Object.assign({}, prev, { [ck(it.existingId, iso)]: true }); safeSet(CLEARED_KEY, JSON.stringify(next)); return next; });
+      setCleared(function(prev) { return Object.assign({}, prev, { [ck(it.existingId, iso)]: true }); });
       setScan(function(prev) { if (!prev || !prev.results) return prev; return Object.assign({}, prev, { added: Object.assign({}, prev.added || {}, { [i]: it.existingId }) }); });
       return;
     }
@@ -2224,7 +2281,8 @@ function KnowledgeBase({ kbEntries, setKbEntries, onClose }) {
 function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, advisorNotes, onRemoveNote, driveConnected, driveStatus, driveMsg, driveLastSync, driveLastError, driveFolderId, onDriveConnect, onDriveDisconnect, onDriveBackup, onDriveRestore, onClose }) {
   const fileRef = useRef(null);
   const [msg, setMsg] = useState("");
-  const [snaps] = useState(() => loadSnapshots());
+  const [snaps, setSnaps] = useState([]);
+  useEffect(function() { loadSnapshots().then(setSnaps); }, []);
   const [storagePersisted, setStoragePersisted] = useState(null);
   useEffect(function() {
     try {
