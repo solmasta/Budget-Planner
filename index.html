@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "38";
+  window.__APP_VERSION = "39";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -714,15 +714,12 @@ function effectiveItems(items) {
 }
 function monthTotals(items, y, m, skipped, cleared, overrides) {
   const sk = skipped || {};
-  const c = cleared || {};
   const ov = overrides || {};
-  const todayISO = toISO(/* @__PURE__ */ new Date());
   let inc = 0, exp = 0;
   for (const it of items) {
     for (const d of occurrences(it, y, m)) {
       const iso = toISO(new Date(y, m, d));
       if (sk[ck(it.id, iso)]) continue;
-      if (c[ck(it.id, iso)] && iso <= todayISO) continue;
       const amt = ov[ck(it.id, iso)] != null ? ov[ck(it.id, iso)] : it.amount;
       if (it.type === "income") inc += amt;
       else exp += amt;
@@ -738,7 +735,28 @@ function runningBalance(items, startBalance, y, m, skipped, cleared, overrides) 
   const today = /* @__PURE__ */ new Date();
   const ty = today.getFullYear(), tm = today.getMonth();
   const todayISO = toISO(today);
-  let net = 0, cy = ty, cm = tm, guard = 0;
+  const isPast = y < ty || y === ty && m < tm;
+  let net = 0, guard = 0;
+  if (isPast) {
+    let cy = y, cm = m + 1;
+    if (cm > 11) { cm = 0; cy++; }
+    while ((cy < ty || cy === ty && cm <= tm) && guard < 240) {
+      for (const it of items) {
+        for (const d of occurrences(it, cy, cm)) {
+          const iso = toISO(new Date(cy, cm, d));
+          if (sk[ck(it.id, iso)]) continue;
+          if (!(c[ck(it.id, iso)] && iso <= todayISO)) continue;
+          const amt = ov[ck(it.id, iso)] != null ? ov[ck(it.id, iso)] : it.amount;
+          net += it.type === "income" ? amt : -amt;
+        }
+      }
+      cm++;
+      if (cm > 11) { cm = 0; cy++; }
+      guard++;
+    }
+    return startBalance - net;
+  }
+  let cy = ty, cm = tm;
   while ((cy < y || cy === y && cm <= m) && guard < 240) {
     for (const it of items) {
       for (const d of occurrences(it, cy, cm)) {
