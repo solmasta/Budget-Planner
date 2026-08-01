@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "40";
+  window.__APP_VERSION = "41";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -1977,7 +1977,14 @@ async function claudeRequest(messages, system, model) {
       signal: controller.signal
     });
     clearTimeout(timeout);
-    if (!res.ok) throw new Error("Request failed (" + res.status + ")");
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const errBody = await res.json();
+        detail = (errBody && errBody.error && errBody.error.message) || (errBody && errBody.message) || "";
+      } catch (parseErr) {}
+      throw new Error("Request failed (" + res.status + ")" + (detail ? ": " + detail : ""));
+    }
     const data = await res.json();
     if (data && Array.isArray(data.content)) return data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
     if (data && typeof data.text === "string") return data.text.trim();
@@ -2129,7 +2136,7 @@ Recommend the single best day to pay this bill within the next 60 days. Payment 
         const clean = text.replace(/```json|```/g, "").trim();
         setResult(JSON.parse(clean));
       } catch (e) {
-        setError("Couldn't get advice right now. Check your connection and try again.");
+        setError("Couldn't get advice right now. (" + (e && e.message ? e.message : "unknown error") + ")");
       } finally {
         setLoading(false);
       }
@@ -2180,7 +2187,7 @@ Recommend the single best day to pay this bill within the next 60 days. Payment 
       }
       setMessages(function(prev) { return prev.concat({ role: "assistant", text: replyText, actions: replyActions }); });
     } catch (e) {
-      setError("Couldn't answer right now. Try again in a moment.");
+      setError("Couldn't answer right now. (" + (e && e.message ? e.message : "unknown error") + ")");
     } finally {
       setAsking(false);
     }
