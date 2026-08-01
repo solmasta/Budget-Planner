@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "39";
+  window.__APP_VERSION = "40";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -669,6 +669,7 @@ const money = (n) => {
 const signed = (n) => (n < 0 ? "\u2212" : "") + money(n);
 function occurrences(item, y, m) {
   const a = parseISO(item.date);
+  if (isNaN(a.getTime())) return [];
   const ms = new Date(y, m, 1);
   const me = new Date(y, m + 1, 0);
   const res = [];
@@ -740,7 +741,7 @@ function runningBalance(items, startBalance, y, m, skipped, cleared, overrides) 
   if (isPast) {
     let cy = y, cm = m + 1;
     if (cm > 11) { cm = 0; cy++; }
-    while ((cy < ty || cy === ty && cm <= tm) && guard < 240) {
+    while ((cy < ty || cy === ty && cm <= tm) && guard < 1200) {
       for (const it of items) {
         for (const d of occurrences(it, cy, cm)) {
           const iso = toISO(new Date(cy, cm, d));
@@ -757,7 +758,7 @@ function runningBalance(items, startBalance, y, m, skipped, cleared, overrides) 
     return startBalance - net;
   }
   let cy = ty, cm = tm;
-  while ((cy < y || cy === y && cm <= m) && guard < 240) {
+  while ((cy < y || cy === y && cm <= m) && guard < 1200) {
     for (const it of items) {
       for (const d of occurrences(it, cy, cm)) {
         const iso = toISO(new Date(cy, cm, d));
@@ -790,7 +791,7 @@ function generateEvents(items, toISOstr, skipped, cleared, overrides) {
     if (a > to) continue;
     const start = a < monthStart ? monthStart : a;
     let cy = start.getFullYear(), cm = start.getMonth(), g = 0;
-    while ((cy < to.getFullYear() || cy === to.getFullYear() && cm <= to.getMonth()) && g < 240) {
+    while ((cy < to.getFullYear() || cy === to.getFullYear() && cm <= to.getMonth()) && g < 1200) {
       for (const day of occurrences(it, cy, cm)) {
         const d = new Date(cy, cm, day);
         if (d >= a && d >= monthStart && d <= to) {
