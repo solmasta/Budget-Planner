@@ -639,9 +639,14 @@ async function trimStorageForSpace() {
   }
   try {
     const cleared = await idbGet(CLEARED_KEY, {});
-    await idbSet(CLEARED_KEY, pruneOldTracking(cleared, 6));
+    const prunedCleared = pruneOldTracking(cleared, 6);
+    await idbSet(CLEARED_KEY, prunedCleared);
     const skipped = await idbGet(SKIPPED_KEY, {});
-    await idbSet(SKIPPED_KEY, pruneOldTracking(skipped, 6));
+    const prunedSkipped = pruneOldTracking(skipped, 6);
+    await idbSet(SKIPPED_KEY, prunedSkipped);
+    if (prunedCleared !== cleared || prunedSkipped !== skipped) {
+      try { window.dispatchEvent(new CustomEvent("budget-storage-trimmed", { detail: { cleared: prunedCleared, skipped: prunedSkipped } })); } catch (e2) {}
+    }
   } catch (e) {
   }
 }
@@ -1153,6 +1158,14 @@ function BudgetPlanner() {
     if (loading) return;
     idbSafeSet(SKIPPED_KEY, skipped).then(function(ok) { if (ok) setLastSaved(Date.now()); });
   }, [skipped, loading]);
+  useEffect(function() {
+    function onTrimmed(e) {
+      if (e.detail && e.detail.cleared) setCleared(e.detail.cleared);
+      if (e.detail && e.detail.skipped) setSkipped(e.detail.skipped);
+    }
+    window.addEventListener("budget-storage-trimmed", onTrimmed);
+    return function() { window.removeEventListener("budget-storage-trimmed", onTrimmed); };
+  }, []);
   function skipOccurrence(id, iso) {
     setSkipped(function(prev) { return Object.assign({}, prev, { [ck(id, iso)]: true }); });
     setEditor(null);
