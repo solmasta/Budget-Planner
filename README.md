@@ -1,4 +1,4 @@
-# Budget Planner
+# Budget Planner 
 
 A single-page, installable budget planner: track accounts, recurring bills and income, see projected cash flow, and get AI-generated insights and receipt scanning. Everything runs in the browser — there's no backend for your budget data, and no build step for the app itself.
 
