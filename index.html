@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "42";
+  window.__APP_VERSION = "43";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -699,9 +699,16 @@ function occurrences(item, y, m) {
   }
   if (item.freq === "weekly" || item.freq === "biweekly") {
     const step = item.freq === "weekly" ? 7 : 14;
-    let d = new Date(a);
-    if (d > me) return res;
-    while (d < ms) d = addDays(d, step);
+    if (a > me) return res;
+    let d = a;
+    if (d < ms) {
+      // Jump straight to the first occurrence on/after the month start instead of walking
+      // forward one `step` at a time from the item's anchor date — that walk gets slower the
+      // older (and more overdue) a weekly/biweekly item is, since it's redone on every call.
+      const diffDays = Math.round((Date.UTC(ms.getFullYear(), ms.getMonth(), ms.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5);
+      const periods = Math.ceil(diffDays / step);
+      d = addDays(a, periods * step);
+    }
     while (d <= me) {
       res.push(d.getDate());
       d = addDays(d, step);
@@ -830,6 +837,25 @@ function generateEvents(items, toISOstr, skipped, cleared, overrides) {
   }
   evs.sort((x, y) => x.t - y.t || (x.item.type === y.item.type ? 0 : x.item.type === "income" ? -1 : 1));
   return evs;
+}
+function recentClearedTransactions(items, cleared, overrides, fromISO, toISOstr) {
+  const c = cleared || {};
+  const ov = overrides || {};
+  const byId = {};
+  for (const it of items) byId[it.id] = it;
+  const out = [];
+  for (const key in c) {
+    if (!c[key]) continue;
+    const iso = key.slice(-10);
+    const id = key.slice(0, key.length - 11);
+    if (iso < fromISO || iso > toISOstr) continue;
+    const it = byId[id];
+    if (!it) continue;
+    const amt = ov[key] != null ? ov[key] : it.amount;
+    out.push({ iso, item: Object.assign({}, it, { amount: amt }) });
+  }
+  out.sort((a, b) => a.iso.localeCompare(b.iso));
+  return out;
 }
 function ledger(items, startBalance, toISOstr, cleared, skipped, overrides) {
   const c = cleared || {};
@@ -1163,23 +1189,29 @@ function BudgetPlanner() {
       window.removeEventListener("pagehide", saveOnClose);
     };
   }, []);
+  function findItemByIdOrSuffix(id) {
+    if (!id) return void 0;
+    return items.find(function(x) { return x.id === id; })
+      || (id.length < 12 ? items.find(function(x) { return x.id.slice(-id.length) === id; }) : void 0);
+  }
   function applyAction(action) {
-    if (!action || !action.type) return;
+    if (!action || !action.type) return false;
     if (action.type === "update" && action.id) {
-      const existing = items.find(function(x) { return x.id === action.id; });
-      if (existing) {
-        const updated = Object.assign({}, existing, action.changes || {});
-        const next = items.map(function(x) { return x.id === updated.id ? updated : x; });
-        setItems(next);
-        persist(next, accounts);
-      }
+      const existing = findItemByIdOrSuffix(action.id);
+      if (!existing) return false;
+      const updated = Object.assign({}, existing, action.changes || {});
+      const next = items.map(function(x) { return x.id === existing.id ? updated : x; });
+      setItems(next);
+      persist(next, accounts);
     } else if (action.type === "create" && action.item) {
       const newItem = Object.assign({ notes: "", auto: false }, action.item, { id: uid() });
       const next = items.concat([newItem]);
       setItems(next);
       persist(next, accounts);
     } else if (action.type === "delete" && action.id) {
-      const next = items.filter(function(x) { return x.id !== action.id; });
+      const existing = findItemByIdOrSuffix(action.id);
+      if (!existing) return false;
+      const next = items.filter(function(x) { return x.id !== existing.id; });
       setItems(next);
       persist(next, accounts);
     } else if (action.type === "note" && action.content) {
@@ -1188,7 +1220,10 @@ function BudgetPlanner() {
       idbSafeSet(ADVISOR_NOTES_KEY, nextNotes).then(function(ok) { if (ok) setLastSaved(Date.now()); });
     } else if (action.type === "note_remove" && action.index != null) {
       removeAdvisorNote(action.index);
+    } else {
+      return false;
     }
+    return true;
   }
   function toggleCleared(id, iso) {
     setCleared((prev) => {
@@ -2073,7 +2108,7 @@ function buildContext(items, startBalance, cleared, skipped, overrides) {
     const paid = e.cleared ? (e.type === "income" ? " [received]" : " [paid]") : "";
     return `${e.iso}  ${e.type === "income" ? "+" : "-"}${e.amount}  ${e.name}${e.payee ? ` (${e.payee})` : ""}${paid}  -> balance ${Math.round(e.balance)}`;
   });
-  const clearedLines = led.filter((e) => e.cleared && e.iso >= fromISO && e.iso <= todayISO).map((e) => `${e.iso}  ${e.type === "income" ? "RECEIVED" : "PAID"}  ${e.type === "income" ? "+" : "-"}$${e.amount}  ${e.name}${e.payee ? ` (${e.payee})` : ""}`);
+  const clearedLines = recentClearedTransactions(items, c, ov, fromISO, todayISO).map((e) => `${e.iso}  ${e.item.type === "income" ? "RECEIVED" : "PAID"}  ${e.item.type === "income" ? "+" : "-"}$${e.item.amount}  ${e.item.name}${e.item.payee ? ` (${e.item.payee})` : ""}`);
   const projectedLines = led.filter((e) => !e.cleared && e.iso > todayISO).map((e) => `${e.iso}  ${e.type === "income" ? "+" : "-"}$${e.amount}  ${e.name}${e.payee ? ` (${e.payee})` : ""}  -> balance $${Math.round(e.balance)}`);
   const itemLines = items.map(function(it) {
     return "[" + it.id.slice(-6) + "] " + (it.type === "income" ? "INCOME" : "BILL") + " | " + it.name + (it.payee ? " (" + it.payee + ")" : "") + " | $" + it.amount + " | " + (FREQS.find(function(f) { return f.id === it.freq; }) || { label: it.freq }).label + (it.notes ? " | note: " + it.notes : "");
@@ -2107,6 +2142,15 @@ function Advisor({ advisor, items, startBalance, cleared, skipped, overrides, ad
   const [messages, setMessages] = useState([]);
   const [asking, setAsking] = useState(false);
   const [actionApplied, setActionApplied] = useState({});
+  const [actionFailed, setActionFailed] = useState({});
+  function runAction(ak, action) {
+    const ok = onApplyAction ? onApplyAction(action) : true;
+    if (ok === false) {
+      setActionFailed(function(p) { return Object.assign({}, p, { [ak]: true }); });
+    } else {
+      setActionApplied(function(p) { return Object.assign({}, p, { [ak]: true }); });
+    }
+  }
   const [extracting, setExtracting] = useState(false);
   const [proposedPins, setProposedPins] = useState([]);
   const [confirmedPins, setConfirmedPins] = useState({});
@@ -2263,14 +2307,15 @@ Recommend the single best day to pay this bill within the next 60 days. Payment 
         msgActions.map(function(action, j) {
           var ak = i + ":" + j;
           var isDone = !!actionApplied[ak];
+          var isFailed = !!actionFailed[ak];
           return React.createElement("div", { key: j, className: "rounded-xl p-3 flex items-center justify-between gap-3", style: { background: isDone ? "#F6FBF9" : action.type === "note" ? "#FFFBEB" : "#F0F4FF", border: "1px solid " + (isDone ? "#BBF7D0" : action.type === "note" ? "#FCD34D" : "#C7D2FE") } },
-            React.createElement("span", { className: "text-[13px] font-medium flex-1", style: { color: "#16202B" } }, action.type === "note" ? "📌 " : "", action.label),
+            React.createElement("span", { className: "text-[13px] font-medium flex-1", style: { color: "#16202B" } }, action.type === "note" ? "📌 " : "", action.label, isFailed ? React.createElement("span", { className: "block text-[11px] font-normal", style: { color: "#C2410C" } }, "Couldn\u2019t find that item \u2014 it may have changed.") : null),
             isDone
               ? React.createElement("span", { className: "shrink-0 text-[12px] font-semibold", style: { color: "#11875E" } }, "\u2713 " + (action.type === "note" ? "Pinned" : "Applied"))
-              : React.createElement("button", { onClick: function() { if (onApplyAction) onApplyAction(action); setActionApplied(function(p) { return Object.assign({}, p, { [ak]: true }); }); }, className: "shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: action.type === "note" ? "#D97706" : "#4338CA", color: "#fff" } }, action.type === "note" ? "Pin" : "Apply")
+              : React.createElement("button", { onClick: function() { runAction(ak, action); }, className: "shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: action.type === "note" ? "#D97706" : "#4338CA", color: "#fff" } }, action.type === "note" ? "Pin" : isFailed ? "Retry" : "Apply")
           );
         }),
-        unapplied > 1 && React.createElement("button", { onClick: function() { msgActions.forEach(function(action, j) { var ak = i + ":" + j; if (!actionApplied[ak]) { if (onApplyAction) onApplyAction(action); setActionApplied(function(p) { return Object.assign({}, p, { [ak]: true }); }); } }); }, className: "w-full rounded-xl py-2 text-[13px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, "Apply all " + unapplied + " suggestions")
+        unapplied > 1 && React.createElement("button", { onClick: function() { msgActions.forEach(function(action, j) { var ak = i + ":" + j; if (!actionApplied[ak]) runAction(ak, action); }); }, className: "w-full rounded-xl py-2 text-[13px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, "Apply all " + unapplied + " suggestions")
       )
     );
   })), asking && /* @__PURE__ */ React.createElement("div", { className: "flex justify-start" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3.5 py-2.5 flex items-center gap-2 text-[13px]", style: { background: "#F6F7FB", border: "1px solid #ECEFF4", color: "#6B7785" } }, /* @__PURE__ */ React.createElement(Spinner, null), " Thinking\u2026")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement(
@@ -2610,7 +2655,7 @@ function ScanResultsSheet({ results, added, items, accounts, onSaveItem, onUndoI
                               React.createElement("span", { className: "block text-[13px] font-semibold truncate" }, item.name || "(item)"),
                               React.createElement("span", { className: "text-[11px]", style: { color: "#8A95A3" } }, amt > 0 ? "$" + amt + " \xB7 " : "", freqLabel(item.freq))
                             ),
-                            itemDone ? React.createElement("span", { style: { color: "#11875E", fontSize: 12, fontWeight: 600 } }, "\u2713 Added") : React.createElement("button", { onClick: function() { startEdit(results.indexOf(item) >= 0 ? results.indexOf(item) : i); setAcctHandled(function(p) { return Object.assign({}, p, { ["item" + i + "_" + ii]: true }); }); onSaveItem(item, i); }, className: "shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: "#13202E", color: "#fff" } }, "Add")
+                            itemDone ? React.createElement("span", { style: { color: "#11875E", fontSize: 12, fontWeight: 600 } }, "\u2713 Added") : React.createElement("button", { onClick: function() { setAcctHandled(function(p) { return Object.assign({}, p, { ["item" + i + "_" + ii]: true }); }); onSaveItem(item, i); }, className: "shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: "#13202E", color: "#fff" } }, "Add")
                           );
                         })
                       ),

@@ -26,6 +26,11 @@ self.addEventListener('activate', function(e) {
 // Cache is only a fallback for offline use.
 self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
+  // Only intercept same-origin requests (the app shell). Cross-origin GETs — Google Drive API
+  // calls (which can return the user's full financial backup), fonts, the Google client script —
+  // must never be cached here or silently served stale from cache on a network failure, so let
+  // the browser handle them directly without going through this cache at all.
+  if (new URL(e.request.url).origin !== self.location.origin) return;
   e.respondWith(
     fetch(e.request).then(function(res) {
       if (res && res.status === 200) {

@@ -6,6 +6,33 @@ const ALLOWED_MODELS = new Set(["claude-sonnet-4-6", "claude-haiku-4-5"]);
 const MAX_TOKENS_CEILING = 1500;
 const MAX_BODY_BYTES = 8 * 1024 * 1024; // generous headroom for base64 receipt photos
 
+// Content-Length is client-supplied and can be omitted or lied about (chunked transfer, a
+// non-browser caller with no header at all), so it can't be trusted as the size cap on its own.
+// Read the stream ourselves and bail out as soon as it exceeds the limit, before ever handing
+// the (potentially huge) body to JSON.parse or forwarding it to Anthropic.
+async function readBodyCapped(request, maxBytes) {
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const buf = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    buf.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(buf);
+}
+
 export default {
   async fetch(request, env) {
     const headers = {
@@ -36,8 +63,8 @@ export default {
       });
     }
 
-    const contentLength = Number(request.headers.get("Content-Length") || 0);
-    if (contentLength > MAX_BODY_BYTES) {
+    const raw = await readBodyCapped(request, MAX_BODY_BYTES);
+    if (raw === null) {
       return new Response(JSON.stringify({ error: "Payload too large" }), {
         status: 413,
         headers: { ...headers, "Content-Type": "application/json" },
@@ -46,7 +73,7 @@ export default {
 
     let body;
     try {
-      body = await request.json();
+      body = JSON.parse(raw);
     } catch (e) {
       return new Response(JSON.stringify({ error: "Invalid JSON" }), {
         status: 400,
