@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "43";
+  window.__APP_VERSION = "44";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -2161,7 +2161,8 @@ function Advisor({ advisor, items, startBalance, cleared, skipped, overrides, ad
       const ctx = buildContext(items, startBalance, cleared, skipped, overrides || {});
       const conversation = messages.map(function(m) { return (m.role === "user" ? "User: " : "Advisor: ") + m.text; }).join("\n\n");
       const extractSys = "You are extracting key financial insights from a budgeting conversation to pin for ongoing tracking. Return ONLY a valid JSON array of 1-3 strings. Each string is a concise, specific, actionable insight worth remembering across sessions — a risk, deadline, strategy, or situation. Be concrete: include amounts and dates where relevant. Example: [\"Chase forbearance ends Aug 1 — call before July 25 to request deferral\",\"Xfinity $360 hits July 2, one day after payday — consider splitting or deferring\"]";
-      const extractUser = "Budget context:\n" + (advisorNotes && advisorNotes.length > 0 ? "Existing pins:\n" + advisorNotes.map(function(n) { return "- " + n; }).join("\n") + "\n\n" : "") + "Accounts: " + (accounts || []).map(function(a) { return a.name + " $" + a.balance; }).join(", ") + "\n\nConversation:\n" + conversation + "\n\nExtract 1-3 key points worth pinning. Do not duplicate existing pins. Return only a JSON array of strings.";
+      const upcomingBlock = ctx.projectedLines && ctx.projectedLines.length > 0 ? "Upcoming projected (not yet paid):\n" + ctx.projectedLines.join("\n") + "\n\n" : "";
+      const extractUser = "Budget context:\n" + (advisorNotes && advisorNotes.length > 0 ? "Existing pins:\n" + advisorNotes.map(function(n) { return "- " + n; }).join("\n") + "\n\n" : "") + "Accounts: " + (accounts || []).map(function(a) { return a.name + " $" + a.balance; }).join(", ") + "\n\n" + upcomingBlock + "Today is " + ctx.todayISO + ".\n\nConversation:\n" + conversation + "\n\nExtract 1-3 key points worth pinning. Do not duplicate existing pins. Return only a JSON array of strings.";
       const reply = await callClaude(extractSys, extractUser);
       const clean = reply.replace(/```json|```/g, "").trim();
       const pins = JSON.parse(clean);
