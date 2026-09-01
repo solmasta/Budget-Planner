@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "44";
+  window.__APP_VERSION = "45";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -671,6 +671,11 @@ async function trimStorageForSpace() {
   }
 }
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+// Backup files, Drive restores, and stored/scanned data are untrusted input: an array passing
+// Array.isArray() can still contain null, a string, or another array, and every read site here
+// (item.type, item.date, ...) assumes a plain object and throws on those, crashing the whole app
+// into the error boundary. Drop anything that isn't a plain object before it reaches state.
+const sanitizeItemsArray = (arr) => Array.isArray(arr) ? arr.filter((it) => it && typeof it === "object" && !Array.isArray(it)) : [];
 const parseISO = (s) => {
   if (!s || typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(NaN);
   const [y, m, d] = s.split("-").map(Number);
@@ -1111,7 +1116,7 @@ function BudgetPlanner() {
       const d = JSON.parse(text);
       if (!Array.isArray(d.items)) throw new Error("bad file");
       const accts = Array.isArray(d.accounts) ? d.accounts : null;
-      applyData(d.items, accts, d.cleared || null, d.skipped || null, d);
+      applyData(sanitizeItemsArray(d.items), accts, d.cleared || null, d.skipped || null, d);
       setDriveStatus("idle");
       setDriveMsg("Restored from Drive.");
     } catch (e) {
@@ -1140,7 +1145,7 @@ function BudgetPlanner() {
       try {
         const d = await idbGet(STORAGE_KEY, null);
         if (d) {
-          setItems(Array.isArray(d.items) ? d.items : []);
+          setItems(sanitizeItemsArray(d.items));
           if (Array.isArray(d.accounts) && d.accounts.length) setAccounts(d.accounts);
           else setAccounts([{ id: uid(), name: "Checking", type: "checking", balance: Number(d.startBalance) || 0 }]);
         } else {
@@ -1389,7 +1394,7 @@ function BudgetPlanner() {
         if (!Array.isArray(d.items)) throw new Error("bad");
         const accts = Array.isArray(d.accounts) ? d.accounts : d.startBalance != null ? [{ id: uid(), name: "Checking", type: "checking", balance: Number(d.startBalance) || 0 }] : null;
         const cl = d.cleared && typeof d.cleared === "object" ? d.cleared : null;
-        applyData(d.items, accts, cl, d.skipped && typeof d.skipped === "object" ? d.skipped : null, d);
+        applyData(sanitizeItemsArray(d.items), accts, cl, d.skipped && typeof d.skipped === "object" ? d.skipped : null, d);
       } catch (err) {
         alert("That file isn't a valid budget backup.");
       }
@@ -1410,7 +1415,7 @@ function BudgetPlanner() {
       const images = await Promise.all(files.map(function(f) { return downscaleImage(f, 1100); }));
       const out = await callClaudeVision(SCAN_SYS, "Extract all items from these " + images.length + " photo" + (images.length > 1 ? "s" : "") + ". Today is " + toISO(new Date()) + ".", images);
       const parsed = JSON.parse(out.replace(/```json|```/g, "").trim());
-      const rawResults = Array.isArray(parsed.results) ? parsed.results : [parsed];
+      const rawResults = sanitizeItemsArray(Array.isArray(parsed.results) ? parsed.results : [parsed]);
       const results = rawResults.map(function(d) {
         if (d.kind === "document") {
           return {
@@ -1421,11 +1426,11 @@ function BudgetPlanner() {
             summary: d.summary || "",
             action: d.action || "",
             pin: d.pin || "",
-            items: Array.isArray(d.items) ? d.items.map(function(it) {
+            items: sanitizeItemsArray(d.items).map(function(it) {
               const isIncome = it.type === "income";
               const amt = typeof it.amount === "number" ? it.amount : parseFloat(it.amount);
               return { kind: "item", type: isIncome ? "income" : "expense", name: it.name || "", payee: it.payee || "", amount: amt > 0 ? Math.round(amt * 100) / 100 : "", date: /^\d{4}-\d{2}-\d{2}$/.test(it.dueDate || "") ? it.dueDate : toISO(new Date()), freq: ["once", "weekly", "biweekly", "monthly", "quarterly", "yearly"].includes(it.freq) ? it.freq : "monthly", category: isIncome ? (INCOME_CATS.some(function(c) { return c.id === it.category; }) ? it.category : "wages") : (EXPENSE_CATS.some(function(c) { return c.id === it.category; }) ? it.category : "misc"), notes: it.notes || "" };
-            }) : []
+            })
           };
         }
         if (d.kind === "account") {
@@ -1936,7 +1941,9 @@ function Editor({ entry, existingItems = [], incomes = [], accounts = [], onClos
   ), item ? (showDeleteChoice ? /* @__PURE__ */ React.createElement("div", { className: "mt-3 rounded-2xl p-4", style: { background: "#FEF2F2", border: "1px solid #FECACA" } }, /* @__PURE__ */ React.createElement("p", { className: "text-[14px] font-semibold mb-1" }, "Remove this how?"), /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-3", style: { color: "#6B7785" } }, item.name, " repeats ", freqLabel(item.freq).toLowerCase(), "."), /* @__PURE__ */ React.createElement("button", { onClick: () => onSkip(item.id, entry.occurrenceDate), className: "w-full rounded-xl py-3 text-[14px] font-semibold mb-2 active:scale-[.99]", style: { background: "#F2F4F7", color: "#C2410C" } }, "Skip ", fmtLong(entry.occurrenceDate), " only"), /* @__PURE__ */ React.createElement("button", { onClick: () => onDelete(item.id), className: "w-full rounded-xl py-3 text-[14px] font-semibold mb-2 active:scale-[.99]", style: { background: "#C2410C", color: "#fff" } }, "Delete \u201c", item.name, "\u201d from all months"), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowDeleteChoice(false), className: "w-full py-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Cancel")) : /* @__PURE__ */ React.createElement("div", null, entry.occurrenceDate && item.freq !== "once" && /* @__PURE__ */ React.createElement("div", { className: "mt-3 rounded-2xl p-4", style: { background: "#F0F4FF", border: "1px dashed #C7D2FE" } }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-semibold mb-2", style: { color: "#4338CA" } }, "\u26A1 Change just ", fmtLong(entry.occurrenceDate), "\u2019s amount"), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 items-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-[15px] font-semibold", style: { color: "#6B7785" } }, "$"), /* @__PURE__ */ React.createElement("input", { type: "number", inputMode: "decimal", value: oneTimeAmt, onChange: function(e) { setOneTimeAmt(e.target.value); }, placeholder: String(item.amount), className: "flex-1 rounded-xl px-3 py-2.5 text-[15px] outline-none", style: { background: "#fff", border: "1px solid #C7D2FE" } }), /* @__PURE__ */ React.createElement("button", { onClick: function() { var n = parseFloat(oneTimeAmt); if (!isNaN(n) && n >= 0 && onOverride) onOverride(item.id, entry.occurrenceDate, n); }, disabled: !oneTimeAmt || isNaN(parseFloat(oneTimeAmt)), className: "shrink-0 rounded-xl px-4 py-2.5 text-[13px] font-semibold active:scale-95", style: { background: oneTimeAmt && !isNaN(parseFloat(oneTimeAmt)) ? "#4338CA" : "#E2E6EB", color: oneTimeAmt && !isNaN(parseFloat(oneTimeAmt)) ? "#fff" : "#A0AAB6" } }, "Save for this date"))), /* @__PURE__ */ React.createElement("button", { onClick: () => entry.occurrenceDate && item.freq !== "once" ? setShowDeleteChoice(true) : onDelete(item.id), className: "w-full py-3 mt-1 text-[14px] font-semibold", style: { color: "#C2410C" } }, "Delete"))) : /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-1 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Cancel"))));
 }
 function Field({ label, children }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "mb-4" }, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, label), children);
+  // The label wraps its control (rather than pairing via htmlFor/id) so this works no matter
+  // what children is — a bare input, or a wrapper div with the real control nested inside.
+  return /* @__PURE__ */ React.createElement("label", { className: "block mb-4" }, /* @__PURE__ */ React.createElement("span", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, label), children);
 }
 function AutoBadge() {
   return /* @__PURE__ */ React.createElement(
@@ -2436,8 +2443,9 @@ function Settings({ itemCount, lastBackup, onExport, onImport, onRestore, adviso
         if (itemCount > 0 && !window.confirm("Replace your current budget with this backup?")) return;
         const accts = Array.isArray(d.accounts) ? d.accounts : d.startBalance != null ? [{ id: uid(), name: "Checking", type: "checking", balance: Number(d.startBalance) || 0 }] : null;
         const cl = d.cleared && typeof d.cleared === "object" ? d.cleared : null;
-        onImport(d.items, accts, cl, d.skipped && typeof d.skipped === "object" ? d.skipped : null, d);
-        setMsg("Restored " + d.items.length + " items" + (accts ? " and " + accts.length + " accounts" : "") + " from backup.");
+        const cleanItems = sanitizeItemsArray(d.items);
+        onImport(cleanItems, accts, cl, d.skipped && typeof d.skipped === "object" ? d.skipped : null, d);
+        setMsg("Restored " + cleanItems.length + " items" + (accts ? " and " + accts.length + " accounts" : "") + " from backup.");
       } catch (err) {
         setMsg("That file isn't a valid budget backup.");
       }
