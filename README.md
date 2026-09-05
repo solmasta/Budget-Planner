@@ -7,6 +7,8 @@ A single-page, installable budget planner: track accounts, recurring bills and i
 - Accounts, recurring bills/income (weekly/biweekly/monthly/quarterly/yearly), and projected running balance
 - Snapshots, cleared/skipped transaction tracking, and manual overrides
 - Credit health tracker: log your credit score over time, monitor credit card utilization, track disputes and generate FCRA dispute letters, and work through a credit-improvement checklist
+  - Scan a credit report screenshot or PDF (Credit Karma, myFICO, a bureau site, annualcreditreport.com) to auto-extract score, accounts, inquiries, and flagged items — you approve what gets saved
+  - A dedicated "Credit counselor" AI chat scoped to your credit data, which can log scores, draft disputes, set card limits, and check off improvement steps for you (again, only with your approval on each action)
 - AI insights, an AI "advisor" chat, and photo-based receipt/bill scanning (via Claude)
 - Optional backup/restore to Google Drive
 - Installable PWA with offline support via a service worker

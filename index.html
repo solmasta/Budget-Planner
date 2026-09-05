@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "46";
+  window.__APP_VERSION = "47";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -437,7 +437,7 @@ const DRIVE_FILENAME = "budget-planner-backup.json";
 const DRIVE_FOLDER_NAME = "Budget Planner Backups";
 const DRIVE_STALE_MS = 3 * 24 * 60 * 60 * 1e3;
 const CREDIT_KEY = "budget-credit-v1";
-const CREDIT_EMPTY = { scores: [], disputes: [], limits: {}, checklist: {} };
+const CREDIT_EMPTY = { scores: [], disputes: [], limits: {}, checklist: {}, notes: [] };
 const CREDIT_BUREAUS = ["Experian", "Equifax", "TransUnion", "VantageScore", "Other"];
 function creditBand(score) {
   const n = Number(score);
@@ -513,6 +513,29 @@ function buildDisputeLetter(d) {
     "[Your Date of Birth]"
   );
   return lines.join("\n");
+}
+const CREDIT_SCAN_SYS = "You extract structured data from photos or PDFs of credit reports or credit-monitoring screenshots (annualcreditreport.com, myFICO, Experian/Equifax/TransUnion sites and apps, Credit Karma, a bank's \"free FICO score\" screen, etc).\n\nRespond ONLY with a JSON object, no markdown:\n{\"reportDate\":\"YYYY-MM-DD or empty if not shown\",\"bureau\":\"Experian, Equifax, TransUnion, VantageScore, or empty if unclear\",\"score\":number or null,\"tradelines\":[{\"creditor\":\"name as shown\",\"last4\":\"last 4 digits or empty\",\"balance\":number or null,\"limit\":number or null (credit limit, or original loan amount for installment loans),\"status\":\"open, closed, collection, or charge-off\",\"flag\":\"a short specific reason this line is worth the person double-checking, or empty string if it looks fine\"}],\"inquiries\":[{\"creditor\":\"name\",\"date\":\"YYYY-MM-DD or empty\"}],\"negativeItems\":[{\"creditor\":\"name\",\"kind\":\"late payment, collection, charge-off, bankruptcy, repossession, or other\",\"date\":\"YYYY-MM-DD or empty\",\"amount\":number or null,\"suggestedDisputeReason\":\"the closest match from: Not mine / identity theft, Paid in full / zero balance, Duplicate account, Incorrect late payment, Incorrect balance or limit, Account too old (obsolete), Incorrect account status, Other inaccuracy — or empty string if this looks accurate and shouldn't be disputed\"}]}\n\nOnly report what is actually visible in the image(s)/document — never invent a number, date, or account. Use null/empty for anything not shown. Be conservative about suggestedDisputeReason: only suggest a dispute when something is genuinely questionable (very old items past or near the ~7-year reporting window, a balance that looks stale next to a 'paid' status, duplicate-looking tradelines, obvious inconsistencies) — routine accurate accounts and on-time payments should have an empty flag/suggestedDisputeReason.";
+const CREDIT_ADVISOR_SYS = "You are an expert, ethical credit counselor and credit-repair strategist. You know the real mechanics: how FICO and VantageScore weight payment history (~35%), utilization (~30%), length of history (~15%), new credit (~10%), and credit mix (~10%); how the FCRA dispute process actually works (bureaus generally must investigate within 30 days per Section 611, and forward the dispute to the furnisher); when a goodwill letter (for an isolated late payment on an otherwise clean account) is a better tool than a formal dispute; when debt validation under the FDCPA applies to a third-party collector; how utilization reported to the bureaus is normally driven by the STATEMENT closing balance, not the due date, so paying down before the statement cuts what gets reported; how authorized-user status and secured cards/credit-builder loans actually move a score and over what timeframe; what 'pay for delete' is and how realistic it is; how the ~7-year credit-report reporting clock (7.5 for some Chapter 13 cases) differs from a state's statute of limitations on debt collection lawsuits; and how a lender's 'rapid rescore' process works when someone needs a quick bump before a mortgage closing.\n\nYou have this person's real credit tracker below — their logged score history, per-card utilization (with real limits when set), open disputes and status, and improvement-checklist progress. Reason from those actual numbers, not generic advice. Be direct and specific.\n\nBe honest about limits: you cannot legally get accurate negative information removed just by disputing it repeatedly — that is illegal 'credit repair' fraud (15 U.S.C. § 1679 territory) if done knowingly. Disputes are for information that is actually inaccurate, unverifiable, or outdated. Never suggest anything illegal or predatory: no synthetic identity / CPN schemes, no disputing accurate debt just to stall collections, no 'rent an authorized user slot' brokering, no advising someone to lie to a bureau or furnisher.\n\nWhen you want to take a concrete action in their tracker, respond ONLY with valid JSON, no markdown, no text outside the JSON:\n{\"message\":\"plain-English explanation of the recommendation\",\"actions\":[{\"type\":\"add_score\",\"score\":712,\"bureau\":\"Experian\",\"date\":\"YYYY-MM-DD\",\"label\":\"Short button label\"},{\"type\":\"add_dispute\",\"creditor\":\"\",\"bureau\":\"Experian, Equifax, or TransUnion\",\"item\":\"\",\"reason\":\"one of: Not mine / identity theft, Paid in full / zero balance, Duplicate account, Incorrect late payment, Incorrect balance or limit, Account too old (obsolete), Incorrect account status, Other inaccuracy\",\"notes\":\"\",\"label\":\"Short button label\"},{\"type\":\"set_limit\",\"accountName\":\"must match part of one of the account names given below\",\"limit\":5000,\"label\":\"Short button label\"},{\"type\":\"toggle_checklist\",\"id\":\"one of the checklist ids given below, exactly\",\"label\":\"Short button label\"},{\"type\":\"note\",\"content\":\"one concise line worth remembering long-term\",\"label\":\"Short button label\"}]}\n\nFor a normal conversational reply with no tracker edit, respond with plain text only — no JSON. The user confirms every action with a button before anything is saved — never claim you've already done it.";
+function buildCreditContext(credit, accounts) {
+  const c = Object.assign({}, CREDIT_EMPTY, credit);
+  const scores = (c.scores || []).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const scoreLines = scores.slice(0, 12).map((s) => s.date + "  " + s.score + "  " + s.bureau);
+  const creditAccounts = (accounts || []).filter((a) => a.type === "credit");
+  const limits = c.limits || {};
+  const utilLines = creditAccounts.map((a) => {
+    const debt = Math.abs(Number(a.balance) || 0);
+    const limit = Number(limits[a.id]) || 0;
+    return a.name + ": balance $" + debt + (limit > 0 ? ", limit $" + limit + ", utilization " + Math.round(debt / limit * 100) + "%" : ", limit not set");
+  });
+  const disputeLines = (c.disputes || []).map((d) => "[" + d.id.slice(-6) + "] " + d.creditor + (d.item ? " (" + d.item + ")" : "") + " — " + d.bureau + " — reason: " + d.reason + " — status: " + disputeStatus(d.status).label + " — filed " + d.dateFiled);
+  const checklistLines = CREDIT_IMPROVE_ITEMS.map((it) => it.id + ": " + (c.checklist && c.checklist[it.id] ? "done" : "not done") + " — " + it.text);
+  return {
+    scoreBlock: scoreLines.length ? "Score history (newest first):\n" + scoreLines.join("\n") + "\n\n" : "No scores logged yet.\n\n",
+    utilBlock: utilLines.length ? "Credit card utilization:\n" + utilLines.join("\n") + "\n\n" : "No credit card accounts tracked yet.\n\n",
+    disputeBlock: disputeLines.length ? "Disputes on file:\n" + disputeLines.join("\n") + "\n\n" : "No disputes logged yet.\n\n",
+    checklistBlock: "Improvement checklist (id: status — text):\n" + checklistLines.join("\n") + "\n\n",
+    notesBlock: c.notes && c.notes.length ? "Pinned notes from previous sessions:\n" + c.notes.map((n) => "- " + n).join("\n") + "\n\n" : ""
+  };
 }
 function driveTokenClient(callback) {
   if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) return null;
@@ -2168,14 +2191,27 @@ async function callClaude(system, userContent) {
   return claudeRequest([{ role: "user", content: userContent }], system);
 }
 async function callClaudeVision(system, text, images) {
-  const imgBlocks = images.map(function(img) {
-    return { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } };
+  const mediaBlocks = images.map(function(img) {
+    return img.kind === "document"
+      ? { type: "document", source: { type: "base64", media_type: img.mediaType, data: img.data } }
+      : { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } };
   });
   return claudeRequest(
-    [{ role: "user", content: [...imgBlocks, { type: "text", text }] }],
+    [{ role: "user", content: [...mediaBlocks, { type: "text", text }] }],
     system,
     SCAN_MODEL
   );
+}
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const dataUrl = r.result;
+      resolve({ data: dataUrl.slice(dataUrl.indexOf(",") + 1), mediaType: file.type || "application/pdf", kind: "document" });
+    };
+    r.onerror = () => reject(new Error("file read failed"));
+    r.readAsDataURL(file);
+  });
 }
 function nextDue(bill, from) {
   if (bill.freq === "once") {
@@ -2678,7 +2714,7 @@ function CreditUtilizationTab({ credit, accounts, onChange, onOpenAccounts }) {
     return { a, debt, limit, pct, color };
   });
   const overallPct = totalLimit > 0 ? Math.round(totalDebt / totalLimit * 100) : null;
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, overallPct != null && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold uppercase tracking-[0.1em]", style: { color: "#6B7785" } }, "Overall utilization"), /* @__PURE__ */ React.createElement("span", { className: "bx-num text-[18px] font-bold", style: { color: overallPct <= 10 ? "#11875E" : overallPct <= 30 ? "#D97706" : "#DC2626" } }, overallPct, "%")), /* @__PURE__ */ React.createElement("p", { className: "text-[12px]", style: { color: "#8A95A3" } }, "Keeping this under 30% (ideally under 10%) helps your score — it's about 30% of your FICO.")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-3" }, rows.map(({ a, debt, limit, pct, color }) => /* @__PURE__ */ React.createElement("li", { key: a.id, className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[13px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "bx-num text-[13px] font-semibold shrink-0" }, money(debt), limit > 0 && /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, " / ", money(limit)))), limit > 0 && /* @__PURE__ */ React.createElement("div", { className: "h-1.5 rounded-full mb-2", style: { background: "#E2E6EB" } }, /* @__PURE__ */ React.createElement("div", { className: "h-1.5 rounded-full", style: { width: Math.min(100, pct) + "%", background: color } })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] shrink-0", style: { color: "#8A95A3" } }, "Credit limit"), /* @__PURE__ */ React.createElement("input", { value: limits[a.id] || "", onChange: (e) => setLimit(a.id, e.target.value.replace(/[^0-9.]/g, "")), inputMode: "decimal", placeholder: "0", className: "bx-num flex-1 min-w-0 rounded-lg px-2.5 py-1.5 text-[13px] outline-none", style: { background: "#fff", border: "1px solid #E2E6EB" } }), pct != null && /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold shrink-0", style: { color } }, pct, "%"))))));
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, overallPct != null && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-baseline justify-between mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, "Overall utilization"), /* @__PURE__ */ React.createElement("span", { className: "bx-num text-[18px] font-bold", style: { color: overallPct <= 10 ? "#11875E" : overallPct <= 30 ? "#D97706" : "#DC2626" } }, overallPct, "%")), /* @__PURE__ */ React.createElement("p", { className: "text-[12px]", style: { color: "#8A95A3" } }, "Keeping this under 30% (ideally under 10%) helps your score — it's about 30% of your FICO.")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-3" }, rows.map(({ a, debt, limit, pct, color }) => /* @__PURE__ */ React.createElement("li", { key: a.id, className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[13px] truncate" }, a.name), /* @__PURE__ */ React.createElement("span", { className: "bx-num text-[13px] font-semibold shrink-0" }, money(debt), limit > 0 && /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, " / ", money(limit)))), limit > 0 && /* @__PURE__ */ React.createElement("div", { className: "h-1.5 rounded-full mb-2", style: { background: "#E2E6EB" } }, /* @__PURE__ */ React.createElement("div", { className: "h-1.5 rounded-full", style: { width: Math.min(100, pct) + "%", background: color } })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] shrink-0", style: { color: "#8A95A3" } }, "Credit limit"), /* @__PURE__ */ React.createElement("input", { value: limits[a.id] || "", onChange: (e) => setLimit(a.id, e.target.value.replace(/[^0-9.]/g, "")), inputMode: "decimal", placeholder: "0", className: "bx-num flex-1 min-w-0 rounded-lg px-2.5 py-1.5 text-[13px] outline-none", style: { background: "#fff", border: "1px solid #E2E6EB" } }), pct != null && /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold shrink-0", style: { color } }, pct, "%"))))));
 }
 function DisputeForm({ onAdd }) {
   const [creditor, setCreditor] = useState("");
@@ -2742,16 +2778,192 @@ function CreditImproveTab({ credit, onChange }) {
   const done = CREDIT_IMPROVE_ITEMS.filter((it) => checklist[it.id]).length;
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#EEF2FF", border: "1px solid #C7D2FE" } }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-semibold mb-1", style: { color: "#3730A3" } }, "What makes up a FICO score"), /* @__PURE__ */ React.createElement("p", { className: "text-[12px]", style: { color: "#4338CA" } }, "Payment history 35% · Utilization 30% · Length of history 15% · New credit 10% · Credit mix 10%.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2 px-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[13px] font-semibold", style: { color: "#6B7785" } }, "Improvement checklist"), /* @__PURE__ */ React.createElement("span", { className: "text-[12px]", style: { color: "#A0AAB6" } }, done, "/", CREDIT_IMPROVE_ITEMS.length)), /* @__PURE__ */ React.createElement("ul", { className: "space-y-2" }, CREDIT_IMPROVE_ITEMS.map((it) => { const checked = !!checklist[it.id]; return /* @__PURE__ */ React.createElement("li", { key: it.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => toggle(it.id), className: "w-full flex items-start gap-2.5 text-left rounded-2xl p-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("span", { className: "shrink-0 h-5 w-5 rounded-full flex items-center justify-center mt-0.5", style: { border: checked ? "none" : "2px solid #D5DBE2", background: checked ? "#11875E" : "transparent" } }, checked && /* @__PURE__ */ React.createElement("span", { style: { color: "#fff", fontSize: 11, lineHeight: 1 } }, "✓")), /* @__PURE__ */ React.createElement("span", { className: "text-[13px] leading-snug", style: { color: checked ? "#8A95A3" : "#16202B", textDecoration: checked ? "line-through" : "none" } }, it.text))); })));
 }
+function applyCreditAction(credit, accounts, onChange, action) {
+  const c = Object.assign({}, CREDIT_EMPTY, credit);
+  if (!action || !action.type) return false;
+  if (action.type === "add_score") {
+    const n = parseInt(action.score, 10);
+    if (!(n >= 300 && n <= 850)) return false;
+    const entry = { id: uid(), date: /^\d{4}-\d{2}-\d{2}$/.test(action.date || "") ? action.date : toISO(/* @__PURE__ */ new Date()), score: n, bureau: CREDIT_BUREAUS.includes(action.bureau) ? action.bureau : CREDIT_BUREAUS[0] };
+    onChange(Object.assign({}, c, { scores: [entry].concat(c.scores || []) }));
+    return true;
+  }
+  if (action.type === "add_dispute") {
+    if (!action.creditor) return false;
+    const entry = { id: uid(), creditor: String(action.creditor), bureau: CREDIT_BUREAUS.slice(0, 3).includes(action.bureau) ? action.bureau : CREDIT_BUREAUS[0], item: action.item || "", reason: DISPUTE_REASONS.includes(action.reason) ? action.reason : DISPUTE_REASONS[DISPUTE_REASONS.length - 1], notes: action.notes || "", dateFiled: toISO(/* @__PURE__ */ new Date()), status: "preparing", updatedAt: Date.now() };
+    onChange(Object.assign({}, c, { disputes: [entry].concat(c.disputes || []) }));
+    return true;
+  }
+  if (action.type === "set_limit") {
+    if (!action.accountName || action.limit == null) return false;
+    const needle = String(action.accountName).toLowerCase();
+    const match = (accounts || []).find((a) => a.type === "credit" && a.name.toLowerCase().includes(needle));
+    if (!match) return false;
+    onChange(Object.assign({}, c, { limits: Object.assign({}, c.limits || {}, { [match.id]: String(action.limit) }) }));
+    return true;
+  }
+  if (action.type === "toggle_checklist") {
+    if (!CREDIT_IMPROVE_ITEMS.some((it) => it.id === action.id)) return false;
+    onChange(Object.assign({}, c, { checklist: Object.assign({}, c.checklist || {}, { [action.id]: true }) }));
+    return true;
+  }
+  if (action.type === "note" && action.content) {
+    const notes = (c.notes || []).filter((n) => n !== action.content).concat([action.content]).slice(-8);
+    onChange(Object.assign({}, c, { notes }));
+    return true;
+  }
+  if (action.type === "note_remove" && action.index != null) {
+    onChange(Object.assign({}, c, { notes: (c.notes || []).filter((_, i) => i !== action.index) }));
+    return true;
+  }
+  return false;
+}
+function CreditAdvisor({ credit, accounts, onChange, onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [q, setQ] = useState("");
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState("");
+  const [actionApplied, setActionApplied] = useState({});
+  const [actionFailed, setActionFailed] = useState({});
+  function runAction(ak, action) {
+    const ok = applyCreditAction(credit, accounts, onChange, action);
+    setActionApplied((p) => Object.assign({}, p, { [ak]: !!ok }));
+    if (!ok) setActionFailed((p) => Object.assign({}, p, { [ak]: true }));
+  }
+  const chips = ["What's dragging my score down right now?", "Should I dispute anything I've logged?", "How do I get utilization under 10%?", "Is a goodwill letter worth trying here?"];
+  async function ask(textOverride) {
+    const question = (textOverride != null ? textOverride : q).trim();
+    if (!question || asking) return;
+    setQ("");
+    const history = messages.concat({ role: "user", text: question });
+    setMessages(history);
+    setAsking(true);
+    setError("");
+    try {
+      const ctx = buildCreditContext(credit, accounts);
+      const sys = CREDIT_ADVISOR_SYS + "\n\n" + ctx.scoreBlock + ctx.utilBlock + ctx.disputeBlock + ctx.checklistBlock + ctx.notesBlock + "Today is " + toISO(/* @__PURE__ */ new Date()) + ".";
+      const apiMessages = history.map((mm) => ({ role: mm.role, content: mm.text }));
+      const reply = await claudeRequest(apiMessages, sys, MODEL);
+      let replyText = reply, replyActions = [];
+      const trimmed = reply.replace(/```json|```/g, "").trim();
+      if (trimmed.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed && typeof parsed.message === "string") {
+            replyText = parsed.message;
+            replyActions = Array.isArray(parsed.actions) ? parsed.actions.filter((a) => a && a.type && a.label) : [];
+          }
+        } catch (e2) {}
+      }
+      setMessages((prev) => prev.concat({ role: "assistant", text: replyText, actions: replyActions }));
+    } catch (e) {
+      setError("Couldn't answer right now. (" + (e && e.message ? e.message : "unknown error") + ")");
+    } finally {
+      setAsking(false);
+    }
+  }
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)", zIndex: 60 }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "🤝"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, "Credit counselor")), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Knows your logged score, utilization, and disputes. Can log scores, draft disputes, set limits, and check off improvement steps for you — you approve every action."), messages.length === 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, "Try asking"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2 mb-3" }, chips.map((cq, i) => /* @__PURE__ */ React.createElement("button", { key: i, onClick: () => ask(cq), disabled: asking, className: "rounded-full px-3 py-2 text-[13px] font-medium text-left active:scale-95", style: { background: "#EEF2FF", color: "#4338CA" } }, cq)))), messages.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-3 space-y-3" }, messages.map(function(mm, i) {
+    const isUser = mm.role === "user";
+    const msgActions = !isUser && Array.isArray(mm.actions) ? mm.actions : [];
+    return /* @__PURE__ */ React.createElement(React.Fragment, { key: i },
+      isUser
+        ? /* @__PURE__ */ React.createElement("div", { className: "flex justify-end" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3.5 py-2 text-[14px] max-w-[85%]", style: { background: "#13202E", color: "#fff" } }, mm.text))
+        : /* @__PURE__ */ React.createElement("div", { className: "flex justify-start" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3.5 py-2.5 max-w-[90%]", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(RichText, { text: mm.text }))),
+      msgActions.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "space-y-2 mt-2" }, msgActions.map(function(action, j) {
+        const ak = i + ":" + j;
+        const isDone = !!actionApplied[ak];
+        const isFailed = !!actionFailed[ak];
+        return /* @__PURE__ */ React.createElement("div", { key: j, className: "rounded-xl p-3 flex items-center justify-between gap-3", style: { background: isDone ? "#F6FBF9" : action.type === "note" ? "#FFFBEB" : "#F0F4FF", border: "1px solid " + (isDone ? "#BBF7D0" : action.type === "note" ? "#FCD34D" : "#C7D2FE") } },
+          /* @__PURE__ */ React.createElement("span", { className: "text-[13px] font-medium flex-1", style: { color: "#16202B" } }, action.type === "note" ? "📌 " : "", action.label, isFailed && /* @__PURE__ */ React.createElement("span", { className: "block text-[11px] font-normal", style: { color: "#C2410C" } }, "Couldn't apply that — check the details and try from the tab directly.")),
+          isDone
+            ? /* @__PURE__ */ React.createElement("span", { className: "shrink-0 text-[12px] font-semibold", style: { color: "#11875E" } }, "✓ Applied")
+            : /* @__PURE__ */ React.createElement("button", { onClick: () => runAction(ak, action), className: "shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: action.type === "note" ? "#D97706" : "#4338CA", color: "#fff" } }, isFailed ? "Retry" : "Apply")
+        );
+      }))
+    );
+  })), asking && /* @__PURE__ */ React.createElement("div", { className: "flex justify-start" }, /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl px-3.5 py-2.5 flex items-center gap-2 text-[13px]", style: { background: "#F6F7FB", border: "1px solid #ECEFF4", color: "#6B7785" } }, /* @__PURE__ */ React.createElement(Spinner, null), " Thinking…")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("input", { value: q, onChange: (e) => setQ(e.target.value), onKeyDown: (e) => { if (e.key === "Enter") ask(); }, placeholder: messages.length ? "Ask a follow-up…" : "Ask anything about your credit…", className: "flex-1 rounded-xl px-3.5 py-3 text-[15px] outline-none", style: { background: "#F2F4F7", border: "1px solid transparent" }, onFocus: (e) => e.target.style.border = "1px solid #13202E", onBlur: (e) => e.target.style.border = "1px solid transparent" }), /* @__PURE__ */ React.createElement("button", { onClick: () => ask(), disabled: !q.trim() || asking, className: "rounded-xl px-4 text-[14px] font-semibold active:scale-95", style: { background: q.trim() && !asking ? "#13202E" : "#E2E6EB", color: q.trim() && !asking ? "#fff" : "#A0AAB6" } }, asking ? /* @__PURE__ */ React.createElement(Spinner, { light: true }) : "Ask")), error && /* @__PURE__ */ React.createElement("p", { className: "mt-3 text-[13px]", style: { color: "#C2410C" } }, error), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] leading-relaxed mt-4", style: { color: "#A0AAB6" } }, "General guidance from AI, not legal or financial advice. It can't remove accurate negative information — only inaccurate items are disputable."), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-2 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
+}
+function matchCreditAccount(accounts, name) {
+  if (!name) return null;
+  const needle = String(name).toLowerCase();
+  return (accounts || []).find((a) => a.type === "credit" && (a.name.toLowerCase().includes(needle) || needle.includes(a.name.toLowerCase()))) || null;
+}
+function CreditScanTab({ credit, accounts, onChange }) {
+  const fileRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+  const [savedScore, setSavedScore] = useState(false);
+  const [savedTradeline, setSavedTradeline] = useState({});
+  const [draftedDispute, setDraftedDispute] = useState({});
+  function pick() {
+    if (fileRef.current) fileRef.current.click();
+  }
+  async function onFiles(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    setLoading(true); setError(""); setResult(null); setSavedScore(false); setSavedTradeline({}); setDraftedDispute({});
+    try {
+      const media = await Promise.all(files.map((f) => f.type.startsWith("image/") ? downscaleImage(f, 1400) : fileToBase64(f)));
+      const out = await callClaudeVision(CREDIT_SCAN_SYS, "Extract every tradeline, recent inquiry, and negative item from this credit report / screenshot. Today is " + toISO(/* @__PURE__ */ new Date()) + ".", media);
+      const parsed = JSON.parse(out.replace(/```json|```/g, "").trim());
+      const clean = {
+        reportDate: /^\d{4}-\d{2}-\d{2}$/.test(parsed.reportDate || "") ? parsed.reportDate : "",
+        bureau: CREDIT_BUREAUS.includes(parsed.bureau) ? parsed.bureau : "",
+        score: typeof parsed.score === "number" && parsed.score >= 300 && parsed.score <= 850 ? Math.round(parsed.score) : null,
+        tradelines: Array.isArray(parsed.tradelines) ? parsed.tradelines.filter((t) => t && t.creditor).map((t) => ({ creditor: String(t.creditor), last4: t.last4 || "", balance: typeof t.balance === "number" ? t.balance : null, limit: typeof t.limit === "number" ? t.limit : null, status: t.status || "", flag: t.flag || "" })) : [],
+        inquiries: Array.isArray(parsed.inquiries) ? parsed.inquiries.filter((q) => q && q.creditor).map((q) => ({ creditor: String(q.creditor), date: /^\d{4}-\d{2}-\d{2}$/.test(q.date || "") ? q.date : "" })) : [],
+        negativeItems: Array.isArray(parsed.negativeItems) ? parsed.negativeItems.filter((n) => n && n.creditor).map((n) => ({ creditor: String(n.creditor), kind: n.kind || "other", date: /^\d{4}-\d{2}-\d{2}$/.test(n.date || "") ? n.date : "", amount: typeof n.amount === "number" ? n.amount : null, suggestedDisputeReason: DISPUTE_REASONS.includes(n.suggestedDisputeReason) ? n.suggestedDisputeReason : "" })) : []
+      };
+      if (!clean.score && clean.tradelines.length === 0 && clean.negativeItems.length === 0) {
+        setError("Couldn't find anything readable in that — try a clearer screenshot, or add it manually.");
+      } else {
+        setResult(clean);
+      }
+    } catch (e) {
+      setError("Couldn't read that file. (" + (e && e.message ? e.message : "unknown error") + ")");
+    } finally {
+      setLoading(false);
+    }
+  }
+  function saveScore() {
+    if (!result || !result.score) return;
+    const entry = { id: uid(), date: result.reportDate || toISO(/* @__PURE__ */ new Date()), score: result.score, bureau: result.bureau || CREDIT_BUREAUS[0] };
+    onChange(Object.assign({}, credit, { scores: [entry].concat(credit.scores || []) }));
+    setSavedScore(true);
+  }
+  function saveLimit(idx, tl, acct) {
+    onChange(Object.assign({}, credit, { limits: Object.assign({}, credit.limits || {}, { [acct.id]: String(tl.limit) }) }));
+    setSavedTradeline((p) => Object.assign({}, p, { [idx]: true }));
+  }
+  function draftDisputeFromTradeline(idx, tl) {
+    const entry = { id: uid(), creditor: tl.creditor, bureau: result.bureau && CREDIT_BUREAUS.slice(0, 3).includes(result.bureau) ? result.bureau : CREDIT_BUREAUS[0], item: tl.last4 ? "Account ending " + tl.last4 : "", reason: "Other inaccuracy", notes: "Flagged during report scan: " + tl.flag, dateFiled: toISO(/* @__PURE__ */ new Date()), status: "preparing", updatedAt: Date.now() };
+    onChange(Object.assign({}, credit, { disputes: [entry].concat(credit.disputes || []) }));
+    setDraftedDispute((p) => Object.assign({}, p, { ["t" + idx]: true }));
+  }
+  function draftDisputeFromNegative(idx, n) {
+    const entry = { id: uid(), creditor: n.creditor, bureau: result.bureau && CREDIT_BUREAUS.slice(0, 3).includes(result.bureau) ? result.bureau : CREDIT_BUREAUS[0], item: n.kind, reason: n.suggestedDisputeReason || "Other inaccuracy", notes: "Reported " + (n.date || "unknown date") + (n.amount ? ", $" + n.amount : "") + " — flagged during report scan for review.", dateFiled: toISO(/* @__PURE__ */ new Date()), status: "preparing", updatedAt: Date.now() };
+    onChange(Object.assign({}, credit, { disputes: [entry].concat(credit.disputes || []) }));
+    setDraftedDispute((p) => Object.assign({}, p, { ["n" + idx]: true }));
+  }
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-3", style: { color: "#8A95A3" } }, "Upload screenshots (Credit Karma, myFICO, a bureau site) or a credit report PDF. The AI reads it and lets you save what's useful — nothing is added automatically."), /* @__PURE__ */ React.createElement("input", { ref: fileRef, type: "file", accept: "image/*,application/pdf", multiple: true, onChange: onFiles, style: { display: "none" } }), /* @__PURE__ */ React.createElement("button", { onClick: pick, disabled: loading, className: "w-full rounded-xl py-3 text-[14px] font-semibold active:scale-[.99] mb-3", style: { background: "#13202E", color: "#fff" } }, loading ? /* @__PURE__ */ React.createElement("span", { className: "flex items-center justify-center gap-2" }, /* @__PURE__ */ React.createElement(Spinner, { light: true }), " Reading…") : "📄 Upload screenshots or a PDF"), error && /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-3", style: { color: "#C2410C" } }, error), result && /* @__PURE__ */ React.createElement(React.Fragment, null, (result.score || result.bureau || result.reportDate) && /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, result.score && /* @__PURE__ */ React.createElement("span", { className: "bx-num text-[24px] font-bold" }, result.score), /* @__PURE__ */ React.createElement("div", { className: "text-[12px]", style: { color: "#8A95A3" } }, result.bureau || "Bureau not detected", result.reportDate && " · " + fmtLong(result.reportDate))), result.score && (savedScore ? /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#11875E" } }, "✓ Logged") : /* @__PURE__ */ React.createElement("button", { onClick: saveScore, className: "rounded-lg px-3 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: "#4338CA", color: "#fff" } }, "Log this score")))), result.tradelines.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-3" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-semibold uppercase tracking-[0.12em] mb-2 px-1", style: { color: "#6B7785" } }, "Accounts found"), /* @__PURE__ */ React.createElement("ul", { className: "space-y-2" }, result.tradelines.map((tl, idx) => {
+    const acct = tl.limit ? matchCreditAccount(accounts, tl.creditor) : null;
+    return /* @__PURE__ */ React.createElement("li", { key: idx, className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[13px] truncate" }, tl.creditor, tl.last4 && " ···" + tl.last4), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] shrink-0", style: { color: "#8A95A3" } }, tl.status)), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] mb-1.5", style: { color: "#6B7785" } }, tl.balance != null && "Balance " + money(tl.balance), tl.limit != null && " · Limit " + money(tl.limit)), tl.flag && /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-1.5", style: { color: "#B45309" } }, "⚠ ", tl.flag), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, acct && (savedTradeline[idx] ? /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#11875E" } }, "✓ Limit saved for " + acct.name) : /* @__PURE__ */ React.createElement("button", { onClick: () => saveLimit(idx, tl, acct), className: "rounded-lg px-2.5 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: "#EEF2FF", color: "#4338CA" } }, "Save limit for " + acct.name)), tl.flag && (draftedDispute["t" + idx] ? /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#11875E" } }, "✓ Draft added") : /* @__PURE__ */ React.createElement("button", { onClick: () => draftDisputeFromTradeline(idx, tl), className: "rounded-lg px-2.5 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: "#FFFBEB", color: "#92400E" } }, "Draft dispute"))));
+  }))), result.negativeItems.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-3" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-semibold uppercase tracking-[0.12em] mb-2 px-1", style: { color: "#6B7785" } }, "Negative items"), /* @__PURE__ */ React.createElement("ul", { className: "space-y-2" }, result.negativeItems.map((n, idx) => /* @__PURE__ */ React.createElement("li", { key: idx, className: "rounded-2xl p-3.5", style: { background: "#FEF2F2", border: "1px solid #FCA5A5" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[13px] truncate" }, n.creditor), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] shrink-0", style: { color: "#B91C1C" } }, n.kind)), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] mb-1.5", style: { color: "#7F1D1D" } }, n.date && fmtLong(n.date), n.amount != null && " · " + money(n.amount)), n.suggestedDisputeReason ? (draftedDispute["n" + idx] ? /* @__PURE__ */ React.createElement("span", { className: "text-[12px] font-semibold", style: { color: "#11875E" } }, "✓ Draft added — review in Disputes tab") : /* @__PURE__ */ React.createElement("button", { onClick: () => draftDisputeFromNegative(idx, n), className: "rounded-lg px-2.5 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: "#fff", color: "#B91C1C", border: "1px solid #FCA5A5" } }, "Draft dispute: " + n.suggestedDisputeReason)) : /* @__PURE__ */ React.createElement("span", { className: "text-[12px]", style: { color: "#991B1B" } }, "Looks accurate — not flagged for dispute."))))), result.inquiries.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] font-semibold uppercase tracking-[0.12em] mb-2 px-1", style: { color: "#6B7785" } }, "Recent inquiries (", result.inquiries.length, ")"), result.inquiries.length > 2 && /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-2 px-1", style: { color: "#D97706" } }, "Several inquiries close together can ding your score short-term."), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, result.inquiries.map((q, idx) => /* @__PURE__ */ React.createElement("li", { key: idx, className: "text-[12px] px-1", style: { color: "#6B7785" } }, q.creditor, q.date && " · " + fmtLong(q.date)))))));
+}
 function CreditSheet({ credit, accounts, onChange, onOpenAccounts, onClose }) {
   const [tab, setTab] = useState("score");
+  const [advisorOpen, setAdvisorOpen] = useState(false);
   const c = Object.assign({}, CREDIT_EMPTY, credit);
   const TABS = [
     { id: "score", label: "Score" },
     { id: "utilization", label: "Utilization" },
     { id: "disputes", label: "Disputes" },
-    { id: "improve", label: "Improve" }
+    { id: "improve", label: "Improve" },
+    { id: "scan", label: "Scan report" }
   ];
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "🛡️"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, "Credit health")), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Track your score, watch utilization, and manage disputes — all stored privately on this device."), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 mb-4 overflow-x-auto" }, TABS.map((t) => /* @__PURE__ */ React.createElement("button", { key: t.id, onClick: () => setTab(t.id), className: "shrink-0 rounded-xl px-3 py-2 text-[12.5px] font-semibold active:scale-[.99]", style: { background: tab === t.id ? "#13202E" : "#F2F4F7", color: tab === t.id ? "#fff" : "#6B7785" } }, t.label))), tab === "score" && /* @__PURE__ */ React.createElement(CreditScoreTab, { credit: c, onChange }), tab === "utilization" && /* @__PURE__ */ React.createElement(CreditUtilizationTab, { credit: c, accounts, onChange, onOpenAccounts }), tab === "disputes" && /* @__PURE__ */ React.createElement(CreditDisputesTab, { credit: c, onChange }), tab === "improve" && /* @__PURE__ */ React.createElement(CreditImproveTab, { credit: c, onChange }), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-3 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close")));
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)" }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "🛡️"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, "Credit health")), /* @__PURE__ */ React.createElement("button", { onClick: () => setAdvisorOpen(true), className: "flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold active:scale-95", style: { background: "#EEF2FF", color: "#4338CA" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13 } }, "🤝"), " Counselor")), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Track your score, watch utilization, and manage disputes — all stored privately on this device."), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1.5 mb-4 overflow-x-auto" }, TABS.map((t) => /* @__PURE__ */ React.createElement("button", { key: t.id, onClick: () => setTab(t.id), className: "shrink-0 rounded-xl px-3 py-2 text-[13px] font-semibold active:scale-[.99]", style: { background: tab === t.id ? "#13202E" : "#F2F4F7", color: tab === t.id ? "#fff" : "#6B7785" } }, t.label))), tab === "score" && /* @__PURE__ */ React.createElement(CreditScoreTab, { credit: c, onChange }), tab === "utilization" && /* @__PURE__ */ React.createElement(CreditUtilizationTab, { credit: c, accounts, onChange, onOpenAccounts }), tab === "disputes" && /* @__PURE__ */ React.createElement(CreditDisputesTab, { credit: c, onChange }), tab === "improve" && /* @__PURE__ */ React.createElement(CreditImproveTab, { credit: c, onChange }), tab === "scan" && /* @__PURE__ */ React.createElement(CreditScanTab, { credit: c, accounts, onChange }), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-full py-3 mt-3 text-[14px] font-medium", style: { color: "#8A95A3" } }, "Close"))), advisorOpen && /* @__PURE__ */ React.createElement(CreditAdvisor, { credit: c, accounts, onChange, onClose: () => setAdvisorOpen(false) }));
 }
 
 function ScanResultsSheet({ results, added, items, accounts, onSaveItem, onUndoItem, onUpdateAccount, onClose }) {
@@ -2869,13 +3081,13 @@ function ScanResultsSheet({ results, added, items, accounts, onSaveItem, onUndoI
                     r.summary && React.createElement("p", { className: "text-[13px] leading-relaxed mb-2", style: { color: "#3C4654" } }, r.summary),
                     r.deadline && React.createElement("p", { className: "text-[12px] font-semibold mb-2", style: { color: urgencyColor } }, "\uD83D\uDCC5 Deadline: ", r.deadline),
                     r.action && React.createElement("div", { className: "rounded-xl px-3 py-2 mb-3", style: { background: "rgba(0,0,0,.04)" } },
-                      React.createElement("p", { className: "text-[11px] font-semibold mb-0.5 uppercase tracking-[0.1em]", style: { color: "#8A95A3" } }, "Action needed"),
+                      React.createElement("p", { className: "text-[11px] font-semibold mb-0.5 uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Action needed"),
                       React.createElement("p", { className: "text-[13px]", style: { color: "#16202B" } }, r.action)
                     ),
                     !docDone && React.createElement("div", { className: "space-y-2" },
                       r.pin && React.createElement("button", { onClick: function() { if (onSaveItem) onSaveItem({ kind: "pin", content: r.pin }, i); setAcctHandled(function(p) { return Object.assign({}, p, { ["pin" + i]: true }); }); }, className: "w-full rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.99]", style: { background: "#FFFBEB", color: "#78350F", border: "1px solid #FCD34D" } }, acctHandled["pin" + i] ? "\u2713 Pinned to Insights" : "\uD83D\uDCCC Pin this situation to Insights"),
                       r.items && r.items.length > 0 && React.createElement("div", { className: "space-y-1.5" },
-                        React.createElement("p", { className: "text-[11px] font-semibold uppercase tracking-[0.1em]", style: { color: "#8A95A3" } }, "Budget items from this document"),
+                        React.createElement("p", { className: "text-[11px] font-semibold uppercase tracking-[0.12em]", style: { color: "#8A95A3" } }, "Budget items from this document"),
                         r.items.map(function(item, ii) {
                           var itemDone = !!acctHandled["item" + i + "_" + ii];
                           var amt = typeof item.amount === "number" ? item.amount : parseFloat(item.amount) || 0;
