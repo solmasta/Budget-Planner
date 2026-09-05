@@ -6,6 +6,7 @@ A single-page, installable budget planner: track accounts, recurring bills and i
 
 - Accounts, recurring bills/income (weekly/biweekly/monthly/quarterly/yearly), and projected running balance
 - Snapshots, cleared/skipped transaction tracking, and manual overrides
+- Credit health tracker: log your credit score over time, monitor credit card utilization, track disputes and generate FCRA dispute letters, and work through a credit-improvement checklist
 - AI insights, an AI "advisor" chat, and photo-based receipt/bill scanning (via Claude)
 - Optional backup/restore to Google Drive
 - Installable PWA with offline support via a service worker
@@ -61,4 +62,6 @@ Backup/restore uses Google Identity Services with the narrow `drive.file` scope 
 
 ## Data & privacy
 
-All budget data (accounts, bills, snapshots, notes) is stored only in the browser's `IndexedDB` on the device you're using — this gets a much larger storage quota than `localStorage` on most browsers, so the app is less likely to run into "storage full" errors. (Existing installs are migrated automatically from `localStorage` the first time they load an updated version.) A few small flags (last backup timestamp, Google Drive connection state) still live in `localStorage`. Nothing is sent anywhere except: (a) the optional Google Drive backup file, and (b) the minimal context sent to your AI proxy Worker when you use an AI feature.
+The credit tracker is entirely manual — there's no connection to Experian, Equifax, TransUnion, or any credit bureau. You log your own score checks and disputes, and the app generates a dispute letter template for you to send yourself; it doesn't file anything on your behalf.
+
+All budget data (accounts, bills, snapshots, notes, credit tracker entries) is stored only in the browser's `IndexedDB` on the device you're using — this gets a much larger storage quota than `localStorage` on most browsers, so the app is less likely to run into "storage full" errors. (Existing installs are migrated automatically from `localStorage` the first time they load an updated version.) A few small flags (last backup timestamp, Google Drive connection state) still live in `localStorage`. Nothing is sent anywhere except: (a) the optional Google Drive backup file, and (b) the minimal context sent to your AI proxy Worker when you use an AI feature.
