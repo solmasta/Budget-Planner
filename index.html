@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "47";
+  window.__APP_VERSION = "48";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -437,7 +437,20 @@ const DRIVE_FILENAME = "budget-planner-backup.json";
 const DRIVE_FOLDER_NAME = "Budget Planner Backups";
 const DRIVE_STALE_MS = 3 * 24 * 60 * 60 * 1e3;
 const CREDIT_KEY = "budget-credit-v1";
-const CREDIT_EMPTY = { scores: [], disputes: [], limits: {}, checklist: {}, notes: [] };
+const CREDIT_EMPTY = { scores: [], disputes: [], limits: {}, checklist: {}, notes: [], profile: {} };
+const BUREAU_CONTACTS = {
+  Experian: { address: "Experian\nP.O. Box 4500\nAllen, TX 75013", portal: "https://www.experian.com/disputes/main.html", phone: "1-888-397-3742" },
+  Equifax: { address: "Equifax Information Services LLC\nP.O. Box 740256\nAtlanta, GA 30374", portal: "https://www.equifax.com/personal/credit-report-services/credit-dispute/", phone: "1-866-349-5191" },
+  TransUnion: { address: "TransUnion LLC Consumer Dispute Center\nP.O. Box 2000\nChester, PA 19016", portal: "https://www.transunion.com/credit-disputes/dispute-your-credit", phone: "1-800-916-8800" }
+};
+const CREDIT_AGING_FACTS = [
+  "Late payments, collections, and charge-offs generally fall off ~7 years from the original delinquency date.",
+  "Chapter 7 bankruptcy can stay up to 10 years from the filing date.",
+  "Chapter 13 bankruptcy generally falls off ~7 years from the filing date.",
+  "Hard inquiries drop off after 2 years, but usually only affect your score for about the first 12 months.",
+  "Paid, on-time accounts can stay on your report for up to 10 years and generally help your history length.",
+  "Something still showing well past these windows is a strong candidate for an \"Account too old (obsolete)\" dispute."
+];
 const CREDIT_BUREAUS = ["Experian", "Equifax", "TransUnion", "VantageScore", "Other"];
 function creditBand(score) {
   const n = Number(score);
@@ -479,17 +492,19 @@ const CREDIT_IMPROVE_ITEMS = [
   { id: "goodwill", text: "For an isolated late payment on an otherwise good account, try a polite goodwill letter asking for removal." },
   { id: "mix", text: "A healthy mix of credit types (cards, loans) can help a little, but don't take on new debt just for this." }
 ];
-function buildDisputeLetter(d) {
+function buildDisputeLetter(d, profile) {
+  const p = profile || {};
+  const bc = BUREAU_CONTACTS[d.bureau];
   const today = new Date().toLocaleDateString();
   const lines = [
-    "[Your Name]",
-    "[Your Street Address]",
-    "[City, State ZIP]",
+    p.name || "[Your Name]",
+    p.address || "[Your Street Address]",
+    p.cityStateZip || "[City, State ZIP]",
     "",
     today,
     "",
     (d.bureau || "[Credit Bureau]") + " Consumer Disputes",
-    "[Bureau dispute mailing address — see the bureau's website]",
+    bc ? bc.address : "[Bureau dispute mailing address — see the bureau's website]",
     "",
     "RE: Request to investigate inaccurate information on my credit report",
     "",
@@ -508,9 +523,9 @@ function buildDisputeLetter(d) {
     "I have enclosed copies of any supporting documents (if applicable). Please contact me at the address above with any questions.",
     "",
     "Sincerely,",
-    "[Your Name]",
-    "[Your Social Security Number — last 4 digits: XXXX]",
-    "[Your Date of Birth]"
+    p.name || "[Your Name]",
+    "Social Security Number — last 4 digits: " + (p.ssn4 || "XXXX"),
+    "Date of birth: " + (p.dob ? new Date(p.dob + "T00:00:00").toLocaleDateString() : "[Your Date of Birth]")
   );
   return lines.join("\n");
 }
@@ -2734,13 +2749,23 @@ function DisputeForm({ onAdd }) {
   }
   return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(Field, { label: "Creditor / furnisher" }, /* @__PURE__ */ React.createElement("input", { value: creditor, onChange: (e) => setCreditor(e.target.value), placeholder: "e.g. Capital One", onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none", style: inputStyle })), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Bureau" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("select", { value: bureau, onChange: (e) => setBureau(e.target.value), className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none appearance-none", style: inputStyle }, CREDIT_BUREAUS.slice(0, 3).map((b) => /* @__PURE__ */ React.createElement("option", { key: b, value: b }, b))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "⌄"))), /* @__PURE__ */ React.createElement(Field, { label: "Date filed" }, /* @__PURE__ */ React.createElement("input", { type: "date", value: dateFiled, onChange: (e) => setDateFiled(e.target.value), onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3 py-2.5 text-[14px] outline-none", style: inputStyle }))), /* @__PURE__ */ React.createElement(Field, { label: "Account or item" }, /* @__PURE__ */ React.createElement("input", { value: item, onChange: (e) => setItem(e.target.value), placeholder: "e.g. Account ending 1234", onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none", style: inputStyle })), /* @__PURE__ */ React.createElement(Field, { label: "Reason" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("select", { value: reason, onChange: (e) => setReason(e.target.value), className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none appearance-none", style: inputStyle }, DISPUTE_REASONS.map((r) => /* @__PURE__ */ React.createElement("option", { key: r, value: r }, r))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "⌄"))), /* @__PURE__ */ React.createElement(Field, { label: "Notes (optional)" }, /* @__PURE__ */ React.createElement("textarea", { value: notes, onChange: (e) => setNotes(e.target.value), placeholder: "Anything specific to include in a dispute letter…", onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none resize-none", style: Object.assign({}, inputStyle, { minHeight: 64 }) })), /* @__PURE__ */ React.createElement("button", { onClick: submit, disabled: !valid, className: "w-full rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.99]", style: { background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" } }, "Add dispute"));
 }
-function DisputeItem({ d, onUpdate, onRemove }) {
+function printLetter(letter, title) {
+  const w = window.open("", "_blank", "width=680,height=860");
+  if (!w) return;
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  w.document.write("<!doctype html><html><head><title>" + esc(title || "Dispute letter") + "</title><style>body{font-family:Georgia,'Times New Roman',serif;white-space:pre-wrap;padding:0.75in;line-height:1.6;font-size:13px;color:#111;max-width:7.5in;margin:0 auto}</style></head><body>" + esc(letter) + "</body></html>");
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); }, 350);
+}
+function DisputeItem({ d, profile, onUpdate, onRemove }) {
   const [showLetter, setShowLetter] = useState(false);
   const [copied, setCopied] = useState(false);
   const st = disputeStatus(d.status);
+  const bc = BUREAU_CONTACTS[d.bureau];
   const days = Math.floor((Date.now() - parseISO(d.dateFiled).getTime()) / 864e5);
   const overdue = days > 30 && (d.status === "sent" || d.status === "investigating");
-  const letter = buildDisputeLetter(d);
+  const letter = buildDisputeLetter(d, profile);
   function copyLetter() {
     try {
       navigator.clipboard.writeText(letter).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
@@ -2754,7 +2779,37 @@ function DisputeItem({ d, onUpdate, onRemove }) {
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
-  return /* @__PURE__ */ React.createElement("li", { className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[13px] truncate" }, d.creditor, d.item && " · " + d.item), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, d.bureau, " · ", d.reason)), /* @__PURE__ */ React.createElement("button", { onClick: () => onRemove(d.id), className: "shrink-0 text-[16px] leading-none active:opacity-60", style: { color: "#C0C8D2" } }, "×")), d.notes && /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-2", style: { color: "#6B7785" } }, d.notes), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-semibold rounded-full px-2 py-0.5", style: { background: st.bg, color: st.color } }, st.label), /* @__PURE__ */ React.createElement("span", { className: "text-[11px]", style: { color: overdue ? "#B91C1C" : "#A0AAB6" } }, "Filed ", fmtLong(d.dateFiled), " · ", days, "d ago", overdue ? " · past 30-day window" : "")), /* @__PURE__ */ React.createElement("div", { className: "relative mb-2" }, /* @__PURE__ */ React.createElement("select", { value: d.status, onChange: (e) => onUpdate(d.id, { status: e.target.value, updatedAt: Date.now() }), className: "w-full rounded-xl px-3 py-2 text-[12px] outline-none appearance-none", style: { background: "#fff", border: "1px solid #E2E6EB" } }, DISPUTE_STATUSES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s.id, value: s.id }, s.label))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6", fontSize: 12 } }, "⌄")), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowLetter((v) => !v), className: "text-[12px] font-semibold active:opacity-60", style: { color: "#4338CA" } }, showLetter ? "Hide dispute letter" : "Generate dispute letter"), showLetter && /* @__PURE__ */ React.createElement("div", { className: "mt-2" }, /* @__PURE__ */ React.createElement("textarea", { readOnly: true, value: letter, className: "w-full rounded-xl px-3 py-2.5 text-[11px] leading-relaxed outline-none resize-none bx-num", style: { background: "#fff", border: "1px solid #E2E6EB", minHeight: 160, fontFamily: "inherit" }, onClick: (e) => e.target.select() }), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 mt-2" }, /* @__PURE__ */ React.createElement("button", { onClick: copyLetter, className: "flex-1 rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, copied ? "Copied!" : "Copy text"), /* @__PURE__ */ React.createElement("button", { onClick: downloadLetter, className: "flex-1 rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "Download .txt")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] mt-2", style: { color: "#A0AAB6" } }, "Fill in the bracketed placeholders, then mail it to the bureau (certified mail is a good idea) or paste it into their online dispute form.")));
+  function emailCopy() {
+    const subject = encodeURIComponent("Credit dispute letter — " + (d.creditor || d.bureau || ""));
+    const body = encodeURIComponent(letter);
+    window.location.href = "mailto:?subject=" + subject + "&body=" + body;
+  }
+  return /* @__PURE__ */ React.createElement("li", { className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[13px] truncate" }, d.creditor, d.item && " · " + d.item), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, d.bureau, " · ", d.reason)), /* @__PURE__ */ React.createElement("button", { onClick: () => onRemove(d.id), className: "shrink-0 text-[16px] leading-none active:opacity-60", style: { color: "#C0C8D2" } }, "×")), d.notes && /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-2", style: { color: "#6B7785" } }, d.notes), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-semibold rounded-full px-2 py-0.5", style: { background: st.bg, color: st.color } }, st.label), /* @__PURE__ */ React.createElement("span", { className: "text-[11px]", style: { color: overdue ? "#B91C1C" : "#A0AAB6" } }, "Filed ", fmtLong(d.dateFiled), " · ", days, "d ago", overdue ? " · past 30-day window" : "")), /* @__PURE__ */ React.createElement("div", { className: "relative mb-2" }, /* @__PURE__ */ React.createElement("select", { value: d.status, onChange: (e) => onUpdate(d.id, { status: e.target.value, updatedAt: Date.now() }), className: "w-full rounded-xl px-3 py-2 text-[12px] outline-none appearance-none", style: { background: "#fff", border: "1px solid #E2E6EB" } }, DISPUTE_STATUSES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s.id, value: s.id }, s.label))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6", fontSize: 12 } }, "⌄")), bc && /* @__PURE__ */ React.createElement("a", { href: bc.portal, target: "_blank", rel: "noopener noreferrer", className: "block text-[11px] font-semibold mb-2", style: { color: "#4338CA" } }, "Open ", d.bureau, "'s online dispute portal →"), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowLetter((v) => !v), className: "text-[12px] font-semibold active:opacity-60", style: { color: "#4338CA" } }, showLetter ? "Hide dispute letter" : "Generate dispute letter"), showLetter && /* @__PURE__ */ React.createElement("div", { className: "mt-2" }, /* @__PURE__ */ React.createElement("textarea", { readOnly: true, value: letter, className: "w-full rounded-xl px-3 py-2.5 text-[11px] leading-relaxed outline-none resize-none bx-num", style: { background: "#fff", border: "1px solid #E2E6EB", minHeight: 160, fontFamily: "inherit" }, onClick: (e) => e.target.select() }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 mt-2" }, /* @__PURE__ */ React.createElement("button", { onClick: copyLetter, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, copied ? "Copied!" : "Copy text"), /* @__PURE__ */ React.createElement("button", { onClick: downloadLetter, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "Download .txt"), /* @__PURE__ */ React.createElement("button", { onClick: () => printLetter(letter, "Dispute letter — " + d.creditor), className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "🖨 Print / save PDF"), /* @__PURE__ */ React.createElement("button", { onClick: emailCopy, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "✉ Email a copy")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] mt-2", style: { color: "#A0AAB6" } }, "No bureau accepts disputes by plain email, so \"Email a copy\" just opens your mail app with the letter in the body — send it to yourself for your records, or use Print / Download to mail it, or Copy it into the bureau's online portal above.", !profile || !profile.name ? " Add your info above to fill in the placeholders automatically." : "")));
+}
+function CreditProfileCard({ credit, onChange }) {
+  const p = credit.profile || {};
+  const hasInfo = !!(p.name || p.address);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(p.name || "");
+  const [address, setAddress] = useState(p.address || "");
+  const [cityStateZip, setCityStateZip] = useState(p.cityStateZip || "");
+  const [dob, setDob] = useState(p.dob || "");
+  const [ssn4, setSsn4] = useState(p.ssn4 || "");
+  const inputStyle = { background: "#fff", border: "1px solid transparent" };
+  const focus = (e) => e.target.style.border = "1px solid #13202E";
+  const blur = (e) => e.target.style.border = "1px solid transparent";
+  function save() {
+    onChange(Object.assign({}, credit, { profile: { name: name.trim(), address: address.trim(), cityStateZip: cityStateZip.trim(), dob: dob.trim(), ssn4: ssn4.replace(/[^0-9]/g, "").slice(0, 4) } }));
+    setEditing(false);
+  }
+  if (!editing) {
+    return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "text-[13px] font-semibold" }, "📋 Your info for letters"), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] truncate", style: { color: "#8A95A3" } }, hasInfo ? (p.name || "Name not set") + (p.cityStateZip ? " · " + p.cityStateZip : "") : "Not set — letters will use placeholders")), /* @__PURE__ */ React.createElement("button", { onClick: () => setEditing(true), className: "shrink-0 text-[12px] font-semibold active:opacity-60", style: { color: "#4338CA" } }, hasInfo ? "Edit" : "Add")));
+  }
+  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("p", { className: "text-[13px] font-semibold mb-1" }, "📋 Your info for letters"), /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-3", style: { color: "#8A95A3" } }, "Auto-fills your dispute letters. Stored only on this device (and in your own backups, same as the rest of your data) — never sent anywhere by this app."), /* @__PURE__ */ React.createElement(Field, { label: "Full name" }, /* @__PURE__ */ React.createElement("input", { value: name, onChange: (e) => setName(e.target.value), onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none", style: inputStyle })), /* @__PURE__ */ React.createElement(Field, { label: "Street address" }, /* @__PURE__ */ React.createElement("input", { value: address, onChange: (e) => setAddress(e.target.value), onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none", style: inputStyle })), /* @__PURE__ */ React.createElement(Field, { label: "City, state ZIP" }, /* @__PURE__ */ React.createElement("input", { value: cityStateZip, onChange: (e) => setCityStateZip(e.target.value), onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none", style: inputStyle })), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ React.createElement(Field, { label: "Date of birth" }, /* @__PURE__ */ React.createElement("input", { type: "date", value: dob, onChange: (e) => setDob(e.target.value), onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3 py-2.5 text-[14px] outline-none", style: inputStyle })), /* @__PURE__ */ React.createElement(Field, { label: "SSN last 4 (optional)" }, /* @__PURE__ */ React.createElement("input", { value: ssn4, onChange: (e) => setSsn4(e.target.value.replace(/[^0-9]/g, "").slice(0, 4)), inputMode: "numeric", placeholder: "1234", onFocus: focus, onBlur: blur, className: "bx-num w-full rounded-xl px-3 py-2.5 text-[14px] outline-none", style: inputStyle }))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 mt-1" }, /* @__PURE__ */ React.createElement("button", { onClick: save, className: "flex-1 rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, "Save"), /* @__PURE__ */ React.createElement("button", { onClick: () => setEditing(false), className: "flex-1 rounded-xl py-2.5 text-[13px] font-medium active:scale-[.99]", style: { background: "#F2F4F7", color: "#6B7785" } }, "Cancel")));
+}
+function CreditBureauReference() {
+  const [open, setOpen] = useState(false);
+  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setOpen((v) => !v), className: "w-full flex items-center justify-between p-4 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-[13px] font-semibold" }, "📚 Bureau contacts & reporting time limits"), /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" } }, "⌄")), open && /* @__PURE__ */ React.createElement("div", { className: "px-4 pb-4" }, /* @__PURE__ */ React.createElement("p", { className: "text-[11px] mb-3", style: { color: "#A0AAB6" } }, "Commonly published, but bureaus do change these — confirm on the bureau's own site before mailing anything important."), Object.keys(BUREAU_CONTACTS).map((name) => { const bc = BUREAU_CONTACTS[name]; return /* @__PURE__ */ React.createElement("div", { key: name, className: "mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "text-[13px] font-semibold mb-0.5" }, name), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] mb-1", style: { color: "#6B7785", whiteSpace: "pre-line" } }, bc.address), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] mb-1", style: { color: "#6B7785" } }, "Phone: ", bc.phone), /* @__PURE__ */ React.createElement("a", { href: bc.portal, target: "_blank", rel: "noopener noreferrer", className: "text-[12px] font-semibold", style: { color: "#4338CA" } }, "Online dispute portal →")); }), /* @__PURE__ */ React.createElement("div", { className: "mt-1 pt-3", style: { borderTop: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "text-[13px] font-semibold mb-1.5" }, "How long negative items can stay"), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, CREDIT_AGING_FACTS.map((f, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "text-[12px] flex gap-1.5", style: { color: "#6B7785" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "•"), /* @__PURE__ */ React.createElement("span", null, f))))), /* @__PURE__ */ React.createElement("a", { href: "https://www.annualcreditreport.com", target: "_blank", rel: "noopener noreferrer", className: "block mt-3 text-[12px] font-semibold", style: { color: "#4338CA" } }, "Get your free reports → annualcreditreport.com")));
 }
 function CreditDisputesTab({ credit, onChange }) {
   const disputes = credit.disputes || [];
@@ -2768,7 +2823,7 @@ function CreditDisputesTab({ credit, onChange }) {
   function remove(id) {
     onChange(Object.assign({}, credit, { disputes: disputes.filter((d) => d.id !== id) }));
   }
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-3", style: { color: "#8A95A3" } }, "Track anything you're disputing on your credit report and generate a ready-to-send letter. This app can't file disputes for you — send the letter to the bureau by mail or their online portal."), /* @__PURE__ */ React.createElement(DisputeForm, { onAdd: add }), sorted.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-[13px] py-4 text-center", style: { color: "#8A95A3" } }, "No disputes logged yet.") : /* @__PURE__ */ React.createElement("ul", { className: "space-y-2.5" }, sorted.map((d) => /* @__PURE__ */ React.createElement(DisputeItem, { key: d.id, d, onUpdate: update, onRemove: remove }))));
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-3", style: { color: "#8A95A3" } }, "Track anything you're disputing on your credit report and generate a ready-to-send letter. This app can't file disputes for you — send the letter to the bureau by mail or their online portal."), /* @__PURE__ */ React.createElement(CreditProfileCard, { credit, onChange }), /* @__PURE__ */ React.createElement(CreditBureauReference, null), /* @__PURE__ */ React.createElement(DisputeForm, { onAdd: add }), sorted.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-[13px] py-4 text-center", style: { color: "#8A95A3" } }, "No disputes logged yet.") : /* @__PURE__ */ React.createElement("ul", { className: "space-y-2.5" }, sorted.map((d) => /* @__PURE__ */ React.createElement(DisputeItem, { key: d.id, d, profile: credit.profile, onUpdate: update, onRemove: remove }))));
 }
 function CreditImproveTab({ credit, onChange }) {
   const checklist = credit.checklist || {};

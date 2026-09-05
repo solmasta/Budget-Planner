@@ -9,6 +9,7 @@ A single-page, installable budget planner: track accounts, recurring bills and i
 - Credit health tracker: log your credit score over time, monitor credit card utilization, track disputes and generate FCRA dispute letters, and work through a credit-improvement checklist
   - Scan a credit report screenshot or PDF (Credit Karma, myFICO, a bureau site, annualcreditreport.com) to auto-extract score, accounts, inquiries, and flagged items — you approve what gets saved
   - A dedicated "Credit counselor" AI chat scoped to your credit data, which can log scores, draft disputes, set card limits, and check off improvement steps for you (again, only with your approval on each action)
+  - Dispute letters auto-fill with your name/address/DOB/SSN-last-4 once you save them once, include each bureau's real mailing address and dispute portal link, and can be copied, downloaded, printed (browser print-to-PDF), or opened in your email app as a draft — no bureau accepts disputes by plain email, so that last option is for your own records or a portal/mail submission, not an automatic filing
 - AI insights, an AI "advisor" chat, and photo-based receipt/bill scanning (via Claude)
 - Optional backup/restore to Google Drive
 - Installable PWA with offline support via a service worker
