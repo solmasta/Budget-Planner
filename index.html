@@ -32,7 +32,7 @@
   @media (prefers-reduced-motion:reduce){.bx-sheet,.bx-fade{animation:none}}
 </style>
 <script>
-  window.__APP_VERSION = "48";
+  window.__APP_VERSION = "49";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -437,7 +437,11 @@ const DRIVE_FILENAME = "budget-planner-backup.json";
 const DRIVE_FOLDER_NAME = "Budget Planner Backups";
 const DRIVE_STALE_MS = 3 * 24 * 60 * 60 * 1e3;
 const CREDIT_KEY = "budget-credit-v1";
-const CREDIT_EMPTY = { scores: [], disputes: [], limits: {}, checklist: {}, notes: [], profile: {} };
+const CREDIT_EMPTY = { scores: [], disputes: [], limits: {}, checklist: {}, notes: [], profile: {}, letters: [] };
+const LETTER_KINDS = [
+  { id: "goodwill", label: "Goodwill letter (isolated late payment)" },
+  { id: "validation", label: "Debt validation letter (collections, FDCPA)" }
+];
 const BUREAU_CONTACTS = {
   Experian: { address: "Experian\nP.O. Box 4500\nAllen, TX 75013", portal: "https://www.experian.com/disputes/main.html", phone: "1-888-397-3742" },
   Equifax: { address: "Equifax Information Services LLC\nP.O. Box 740256\nAtlanta, GA 30374", portal: "https://www.equifax.com/personal/credit-report-services/credit-dispute/", phone: "1-866-349-5191" },
@@ -490,7 +494,10 @@ const CREDIT_IMPROVE_ITEMS = [
   { id: "disputeerrors", text: "Dispute anything inaccurate — errors are common, and bureaus must investigate within 30 days by law." },
   { id: "authuser", text: "Becoming an authorized user on a trusted person's old, well-managed card can boost your history." },
   { id: "goodwill", text: "For an isolated late payment on an otherwise good account, try a polite goodwill letter asking for removal." },
-  { id: "mix", text: "A healthy mix of credit types (cards, loans) can help a little, but don't take on new debt just for this." }
+  { id: "mix", text: "A healthy mix of credit types (cards, loans) can help a little, but don't take on new debt just for this." },
+  { id: "cli", text: "If a card's utilization is high, ask the issuer for a credit-limit increase (often a soft-pull online request) — it can drop utilization instantly without paying down debt." },
+  { id: "altdata", text: "Thin file or short history? Experian Boost or a rent/utility-reporting service can add real payment history to your report in days." },
+  { id: "garden", text: "Planning a mortgage or big auto loan in the next year? Stop opening new credit 6-12 months out and let your file 'garden' undisturbed." }
 ];
 function buildDisputeLetter(d, profile) {
   const p = profile || {};
@@ -529,8 +536,78 @@ function buildDisputeLetter(d, profile) {
   );
   return lines.join("\n");
 }
+function buildGoodwillLetter(l, profile) {
+  const p = profile || {};
+  const today = new Date().toLocaleDateString();
+  const lines = [
+    p.name || "[Your Name]",
+    p.address || "[Your Street Address]",
+    p.cityStateZip || "[City, State ZIP]",
+    "",
+    today,
+    "",
+    (l.creditor || "[Creditor Name]") + " — Customer Service / Goodwill Adjustment Requests",
+    "[Creditor's account services address — check your statement or their website]",
+    "",
+    "RE: Goodwill adjustment request — account " + (l.item || "[account number or last 4 digits]"),
+    "",
+    "Dear Sir or Madam:",
+    "",
+    "I have held this account for some time and, aside from the issue below, have managed it responsibly.",
+    "",
+    "I am respectfully requesting a goodwill adjustment to remove a negative mark reported to the credit bureaus" + (l.notes ? " regarding: " + l.notes : " on this account") + ". This was an isolated incident and does not reflect how I have otherwise handled this account."
+  ];
+  lines.push(
+    "",
+    "I understand you are under no obligation to make this change, but a corrected report would mean a great deal to me and would better reflect my actual payment history on this account. I would sincerely appreciate your consideration.",
+    "",
+    "Thank you for your time.",
+    "",
+    "Sincerely,",
+    p.name || "[Your Name]",
+    "Account: " + (l.item || "[account number or last 4 digits]")
+  );
+  return lines.join("\n");
+}
+function buildValidationLetter(l, profile) {
+  const p = profile || {};
+  const today = new Date().toLocaleDateString();
+  const lines = [
+    p.name || "[Your Name]",
+    p.address || "[Your Street Address]",
+    p.cityStateZip || "[City, State ZIP]",
+    "",
+    today,
+    "",
+    l.creditor || "[Collection Agency Name]",
+    "[Collector's mailing address — from their collection letter]",
+    "",
+    "RE: Request for debt validation — " + (l.item || "[account or reference number]"),
+    "",
+    "To Whom It May Concern:",
+    "",
+    "This letter is sent in response to a notice I received from your company. Be advised this is not a refusal to pay, but a request for validation made pursuant to the Fair Debt Collection Practices Act, 15 U.S.C. § 1692g.",
+    "",
+    "Please provide:",
+    "- The amount of the debt and an itemized accounting of how it was calculated",
+    "- The name and address of the original creditor",
+    "- Proof that you are licensed or authorized to collect this debt in my state",
+    "- A copy of any judgment, if one is being claimed"
+  ];
+  if (l.notes) lines.push("- " + l.notes);
+  lines.push(
+    "",
+    "Until you provide this validation, please cease all collection activity and do not report this account to any credit reporting agency. If it has already been reported, reporting an unvalidated debt after this request may violate the FCRA and FDCPA.",
+    "",
+    "Please respond in writing to the address above.",
+    "",
+    "Sincerely,",
+    p.name || "[Your Name]"
+  );
+  return lines.join("\n");
+}
 const CREDIT_SCAN_SYS = "You extract structured data from photos or PDFs of credit reports or credit-monitoring screenshots (annualcreditreport.com, myFICO, Experian/Equifax/TransUnion sites and apps, Credit Karma, a bank's \"free FICO score\" screen, etc).\n\nRespond ONLY with a JSON object, no markdown:\n{\"reportDate\":\"YYYY-MM-DD or empty if not shown\",\"bureau\":\"Experian, Equifax, TransUnion, VantageScore, or empty if unclear\",\"score\":number or null,\"tradelines\":[{\"creditor\":\"name as shown\",\"last4\":\"last 4 digits or empty\",\"balance\":number or null,\"limit\":number or null (credit limit, or original loan amount for installment loans),\"status\":\"open, closed, collection, or charge-off\",\"flag\":\"a short specific reason this line is worth the person double-checking, or empty string if it looks fine\"}],\"inquiries\":[{\"creditor\":\"name\",\"date\":\"YYYY-MM-DD or empty\"}],\"negativeItems\":[{\"creditor\":\"name\",\"kind\":\"late payment, collection, charge-off, bankruptcy, repossession, or other\",\"date\":\"YYYY-MM-DD or empty\",\"amount\":number or null,\"suggestedDisputeReason\":\"the closest match from: Not mine / identity theft, Paid in full / zero balance, Duplicate account, Incorrect late payment, Incorrect balance or limit, Account too old (obsolete), Incorrect account status, Other inaccuracy — or empty string if this looks accurate and shouldn't be disputed\"}]}\n\nOnly report what is actually visible in the image(s)/document — never invent a number, date, or account. Use null/empty for anything not shown. Be conservative about suggestedDisputeReason: only suggest a dispute when something is genuinely questionable (very old items past or near the ~7-year reporting window, a balance that looks stale next to a 'paid' status, duplicate-looking tradelines, obvious inconsistencies) — routine accurate accounts and on-time payments should have an empty flag/suggestedDisputeReason.";
-const CREDIT_ADVISOR_SYS = "You are an expert, ethical credit counselor and credit-repair strategist. You know the real mechanics: how FICO and VantageScore weight payment history (~35%), utilization (~30%), length of history (~15%), new credit (~10%), and credit mix (~10%); how the FCRA dispute process actually works (bureaus generally must investigate within 30 days per Section 611, and forward the dispute to the furnisher); when a goodwill letter (for an isolated late payment on an otherwise clean account) is a better tool than a formal dispute; when debt validation under the FDCPA applies to a third-party collector; how utilization reported to the bureaus is normally driven by the STATEMENT closing balance, not the due date, so paying down before the statement cuts what gets reported; how authorized-user status and secured cards/credit-builder loans actually move a score and over what timeframe; what 'pay for delete' is and how realistic it is; how the ~7-year credit-report reporting clock (7.5 for some Chapter 13 cases) differs from a state's statute of limitations on debt collection lawsuits; and how a lender's 'rapid rescore' process works when someone needs a quick bump before a mortgage closing.\n\nYou have this person's real credit tracker below — their logged score history, per-card utilization (with real limits when set), open disputes and status, and improvement-checklist progress. Reason from those actual numbers, not generic advice. Be direct and specific.\n\nBe honest about limits: you cannot legally get accurate negative information removed just by disputing it repeatedly — that is illegal 'credit repair' fraud (15 U.S.C. § 1679 territory) if done knowingly. Disputes are for information that is actually inaccurate, unverifiable, or outdated. Never suggest anything illegal or predatory: no synthetic identity / CPN schemes, no disputing accurate debt just to stall collections, no 'rent an authorized user slot' brokering, no advising someone to lie to a bureau or furnisher.\n\nWhen you want to take a concrete action in their tracker, respond ONLY with valid JSON, no markdown, no text outside the JSON:\n{\"message\":\"plain-English explanation of the recommendation\",\"actions\":[{\"type\":\"add_score\",\"score\":712,\"bureau\":\"Experian\",\"date\":\"YYYY-MM-DD\",\"label\":\"Short button label\"},{\"type\":\"add_dispute\",\"creditor\":\"\",\"bureau\":\"Experian, Equifax, or TransUnion\",\"item\":\"\",\"reason\":\"one of: Not mine / identity theft, Paid in full / zero balance, Duplicate account, Incorrect late payment, Incorrect balance or limit, Account too old (obsolete), Incorrect account status, Other inaccuracy\",\"notes\":\"\",\"label\":\"Short button label\"},{\"type\":\"set_limit\",\"accountName\":\"must match part of one of the account names given below\",\"limit\":5000,\"label\":\"Short button label\"},{\"type\":\"toggle_checklist\",\"id\":\"one of the checklist ids given below, exactly\",\"label\":\"Short button label\"},{\"type\":\"note\",\"content\":\"one concise line worth remembering long-term\",\"label\":\"Short button label\"}]}\n\nFor a normal conversational reply with no tracker edit, respond with plain text only — no JSON. The user confirms every action with a button before anything is saved — never claim you've already done it.";
+const CREDIT_ADVISOR_SYS = "You are the sharpest credit strategist available — the combined expertise of a CROA-compliant credit counselor, a mortgage loan officer who lives on rapid-rescore deadlines, and a consumer-rights-savvy advocate who knows the FCRA and FDCPA cold. You are decisive, specific, and never generic. You know the mechanics professionals use, not just consumer-website basics:\n\n- Score mechanics: FICO weights payment history ~35%, utilization ~30%, length of history ~15%, new credit ~10%, credit mix ~10%. VantageScore weighs similarly but reacts faster to recent behavior and handles thin files differently. Different lenders pull different models — mortgage lenders typically pull a tri-merge FICO 2/4/5, auto lenders often use a FICO Auto Score, card issuers often show FICO 8 or a VantageScore — so the same person can legitimately see scores 40+ points apart depending on where they check.\n- Utilization is reported from the STATEMENT closing balance, not the due date — paying down before the statement date cuts the reported number even if the balance would be paid off by the due date anyway. Per-card utilization matters independently of the aggregate: one maxed card can hurt even when overall utilization looks fine.\n- Fast levers that don't require paying down debt: a credit-limit-increase request (often a soft pull, done online) instantly lowers utilization on that card; asking an issuer to move a statement or due date can smooth what gets reported; a 0% APR balance transfer can cut interest and rebalance utilization across cards.\n- Alternative-data boosts: Experian Boost adds on-time utility/phone/streaming payments directly to an Experian file, often worth a quick bump for thin files; rent-reporting services (a well-known example is RentTrack/Rental Kharma/LevelCredit/Piñata-style tools) can add rent history to one or more bureaus — genuinely useful for a thin file or someone with few active tradelines.\n- Building from a thin or damaged file: secured credit cards, credit-builder loans (through a credit union or a service like Self), and becoming an authorized user on someone else's OLD, LOW-UTILIZATION, ON-TIME-PAID card (their history often backdates onto your file) are the standard, legitimate on-ramps — timing and card choice both matter, and a card with high utilization or late payments will hurt as an authorized user too.\n- Dispute mechanics: FCRA Section 611 gives the bureau about 30 days (45 if the consumer submits more information mid-investigation) to investigate and respond, and the bureau must forward it to the furnisher, who has to actually investigate rather than rubber-stamp it. If a dispute comes back 'verified' with no real explanation, or the window lapses with no response, that's escalation territory: a CFPB complaint (consumerfinance.gov/complaint) often gets a real response fast; for a furnisher that keeps failing to investigate, a state attorney general complaint or an FCRA attorney consult (many take cases on contingency because the FCRA awards fees) is worth raising.\n- Beyond formal bureau disputes: a GOODWILL letter (best for an isolated late payment on an account otherwise in good standing) asks a creditor to voluntarily remove an accurate mark — it's a favor, not a legal right, so tone and a genuine track record matter. DEBT VALIDATION under the FDCPA (15 U.S.C. § 1692g) is a distinct, often stronger first move on a COLLECTION account: within 30 days of first contact from a collector, the consumer can demand proof the debt is theirs and accurately calculated, and the collector must pause collection activity until they provide it.\n- 'Pay for delete' (asking a collector to remove the tradeline in exchange for payment) is never guaranteed and collectors aren't bound by a verbal promise — get any such agreement in writing BEFORE paying, never after.\n- Reporting clock vs. legal clock — never conflate these: negative items generally age off a credit report ~7 years from the original delinquency date (Chapter 7 bankruptcy up to 10 years, Chapter 13 generally ~7, hard inquiries 2 years with score impact fading after about 12 months) under FCRA §605. A state's statute of limitations on suing over unpaid debt is a completely separate legal question that varies by state and debt type — never give a definitive answer on whether a debt is 'too old to collect'; tell the person to verify their specific state's rule (or consult a consumer attorney) before assuming that.\n- Rapid rescore is a paid, lender-initiated process during mortgage underwriting (not something a consumer requests directly) that can post a verified update — like a big paydown — to the file in days instead of a normal statement cycle. Worth naming when someone has a closing deadline and one fixable, verifiable item.\n- Identity theft and fraud protection: a security freeze (free, at all three bureaus, by law) blocks new-account fraud with zero score impact and can be lifted temporarily for a real application — this should usually be recommended alongside, not instead of, a formal dispute whenever fraud/identity theft is the actual reason. A fraud alert is a lighter-touch alternative. identitytheft.gov (FTC) is the right first stop for a genuine identity-theft case, generating an official report that strengthens any dispute.\n- New-credit strategy: 'gardening' (no new credit applications) for 6-12 months before a major loan application avoids inquiry and new-account drag exactly when it matters most. Conversely, rate-shopping for a single mortgage or auto loan within a short window (roughly 14-45 days depending on the scoring model) is usually bucketed as one inquiry — shop confidently within that window rather than spreading applications out.\n\nYou have this person's real credit tracker below — score history, per-card utilization with real limits when set, open bureau disputes and their status, any goodwill/validation letters already drafted, improvement-checklist progress, and a list of automated signals already computed from their real numbers (stale scores, high per-card utilization, disputes past the 30-day window, etc). Reason from that real data, not from a generic checklist. When there are signals, lead with the single highest-leverage move for THIS person right now — don't bury it.\n\nBe honest about limits and never cross them: you cannot get ACCURATE negative information removed just by disputing it repeatedly — doing that knowingly is illegal credit-repair fraud (15 U.S.C. § 1679 territory, and most states have their own Credit Services Organization Act on top of that). Disputes are for information that is inaccurate, unverifiable, or obsolete. Never suggest anything illegal, predatory, or deceptive: no synthetic-identity or CPN schemes, no disputing accurate debt just to stall a legitimate collector, no brokering paid 'authorized user slot' arrangements, no advising anyone to lie to a bureau, furnisher, or collector, and never promise a specific score outcome or timeline — describe what typically happens and roughly how fast, never guarantee it.\n\nFormat every reply for someone skimming on a phone: lead with the single most important move as one bold line (wrap it in **double asterisks**), then a short list of next-best moves as '- ' bullets. No long paragraphs, no restating the question, no filler.\n\nWhen you want to take a concrete action in their tracker, respond ONLY with valid JSON, no markdown, no text outside the JSON:\n{\"message\":\"the reply, formatted per the style above, with actual \\n line breaks between the bold lead line and the bullets\",\"actions\":[{\"type\":\"add_score\",\"score\":712,\"bureau\":\"Experian\",\"date\":\"YYYY-MM-DD\",\"label\":\"Short button label\"},{\"type\":\"add_dispute\",\"creditor\":\"\",\"bureau\":\"Experian, Equifax, or TransUnion\",\"item\":\"\",\"reason\":\"one of: Not mine / identity theft, Paid in full / zero balance, Duplicate account, Incorrect late payment, Incorrect balance or limit, Account too old (obsolete), Incorrect account status, Other inaccuracy\",\"notes\":\"\",\"label\":\"Short button label\"},{\"type\":\"set_limit\",\"accountName\":\"must match part of one of the account names given below\",\"limit\":5000,\"label\":\"Short button label\"},{\"type\":\"toggle_checklist\",\"id\":\"one of the checklist ids given below, exactly\",\"label\":\"Short button label\"},{\"type\":\"draft_goodwill_letter\",\"creditor\":\"\",\"item\":\"account number or last 4, if known\",\"notes\":\"what happened, to personalize the letter\",\"label\":\"Short button label\"},{\"type\":\"draft_validation_letter\",\"creditor\":\"the collection agency name\",\"item\":\"account or reference number, if known\",\"notes\":\"\",\"label\":\"Short button label\"},{\"type\":\"note\",\"content\":\"one concise line worth remembering long-term\",\"label\":\"Short button label\"}]}\n\nFor a normal conversational reply with no tracker edit, respond with plain text only — no JSON — but still use the bold-lead-then-bullets format. The user confirms every action with a button before anything is saved — never claim you've already done it.";
 function buildCreditContext(credit, accounts) {
   const c = Object.assign({}, CREDIT_EMPTY, credit);
   const scores = (c.scores || []).slice().sort((a, b) => b.date.localeCompare(a.date));
@@ -543,13 +620,37 @@ function buildCreditContext(credit, accounts) {
     return a.name + ": balance $" + debt + (limit > 0 ? ", limit $" + limit + ", utilization " + Math.round(debt / limit * 100) + "%" : ", limit not set");
   });
   const disputeLines = (c.disputes || []).map((d) => "[" + d.id.slice(-6) + "] " + d.creditor + (d.item ? " (" + d.item + ")" : "") + " — " + d.bureau + " — reason: " + d.reason + " — status: " + disputeStatus(d.status).label + " — filed " + d.dateFiled);
+  const letterLines = (c.letters || []).map((l) => "[" + l.id.slice(-6) + "] " + (LETTER_KINDS.find((k) => k.id === l.kind) || LETTER_KINDS[0]).label + " — " + l.creditor + (l.item ? " (" + l.item + ")" : ""));
   const checklistLines = CREDIT_IMPROVE_ITEMS.map((it) => it.id + ": " + (c.checklist && c.checklist[it.id] ? "done" : "not done") + " — " + it.text);
+  const daysSince = (iso) => Math.floor((Date.now() - parseISO(iso).getTime()) / 864e5);
+  const signals = [];
+  if (scores.length === 0) signals.push("No score has ever been logged — recommend checking a free score source (bank/card issuer app, Credit Karma, etc.) and logging it.");
+  else {
+    const d = daysSince(scores[0].date);
+    if (d > 45) signals.push("Last logged score was " + d + " days ago (" + scores[0].date + ") — recommend a fresh check.");
+  }
+  creditAccounts.forEach((a) => {
+    const debt = Math.abs(Number(a.balance) || 0);
+    const limit = Number(limits[a.id]) || 0;
+    if (limit > 0) {
+      const pct = Math.round(debt / limit * 100);
+      if (pct > 30) signals.push(a.name + " is at " + pct + "% utilization — a strong candidate for a payment before the statement closes, or a credit-limit-increase request.");
+    }
+  });
+  (c.disputes || []).forEach((d) => {
+    if (d.status === "sent" || d.status === "investigating") {
+      const days = daysSince(d.dateFiled);
+      if (days > 30) signals.push("Dispute with " + d.creditor + " (" + d.bureau + ") has been open " + days + " days, past the 30-day FCRA window — recommend following up or filing a CFPB complaint.");
+    }
+  });
   return {
     scoreBlock: scoreLines.length ? "Score history (newest first):\n" + scoreLines.join("\n") + "\n\n" : "No scores logged yet.\n\n",
     utilBlock: utilLines.length ? "Credit card utilization:\n" + utilLines.join("\n") + "\n\n" : "No credit card accounts tracked yet.\n\n",
     disputeBlock: disputeLines.length ? "Disputes on file:\n" + disputeLines.join("\n") + "\n\n" : "No disputes logged yet.\n\n",
+    letterBlock: letterLines.length ? "Goodwill/validation letters already drafted:\n" + letterLines.join("\n") + "\n\n" : "",
     checklistBlock: "Improvement checklist (id: status — text):\n" + checklistLines.join("\n") + "\n\n",
-    notesBlock: c.notes && c.notes.length ? "Pinned notes from previous sessions:\n" + c.notes.map((n) => "- " + n).join("\n") + "\n\n" : ""
+    notesBlock: c.notes && c.notes.length ? "Pinned notes from previous sessions:\n" + c.notes.map((n) => "- " + n).join("\n") + "\n\n" : "",
+    signalsBlock: signals.length ? "Automated signals worth addressing — lead with the most impactful one:\n" + signals.map((s) => "- " + s).join("\n") + "\n\n" : ""
   };
 }
 function driveTokenClient(callback) {
@@ -2271,13 +2372,27 @@ const fmtLong = (iso) => {
   const d = parseISO(iso);
   return `${DOW[d.getDay()]}, ${MO_SHORT[d.getMonth()]} ${d.getDate()}`;
 };
+function renderInline(text, keyPrefix) {
+  const parts = text.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s)]+)/g).filter((p) => p !== "");
+  return parts.map((part, i) => {
+    if (/^\*\*[^*]+\*\*$/.test(part)) return /* @__PURE__ */ React.createElement("strong", { key: keyPrefix + i, className: "font-semibold" }, part.slice(2, -2));
+    if (/^https?:\/\//.test(part)) return /* @__PURE__ */ React.createElement("a", { key: keyPrefix + i, href: part, target: "_blank", rel: "noopener noreferrer", className: "font-semibold underline", style: { color: "#4338CA" } }, part);
+    return part;
+  });
+}
 function RichText({ text }) {
   return /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, text.split(/\n+/).map((line, i) => {
     const t = line.trim();
     if (!t) return null;
+    if (/^#{1,3}\s/.test(t))
+      return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[11px] font-bold uppercase tracking-[0.12em]", style: { color: "#6B7785" } }, renderInline(t.replace(/^#{1,3}\s/, ""), i + "h"));
     if (/^[-•]\s/.test(t))
-      return /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[14px] leading-relaxed" }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, t.replace(/^[-•]\s/, "")));
-    return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[14px] leading-relaxed" }, t);
+      return /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[14px] leading-relaxed" }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, renderInline(t.replace(/^[-•]\s/, ""), i + "b")));
+    if (/^\d+\.\s/.test(t)) {
+      const m = t.match(/^(\d+)\.\s(.*)$/);
+      return /* @__PURE__ */ React.createElement("div", { key: i, className: "flex gap-2 text-[14px] leading-relaxed" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold shrink-0", style: { color: "#A0AAB6" } }, m[1] + "."), /* @__PURE__ */ React.createElement("span", null, renderInline(m[2], i + "n")));
+    }
+    return /* @__PURE__ */ React.createElement("p", { key: i, className: "text-[14px] leading-relaxed" }, renderInline(t, i + "p"));
   }));
 }
 function Advisor({ advisor, items, startBalance, cleared, skipped, overrides, advisorNotes, kbEntries, accounts, onApplyAction, onClose }) {
@@ -2784,7 +2899,7 @@ function DisputeItem({ d, profile, onUpdate, onRemove }) {
     const body = encodeURIComponent(letter);
     window.location.href = "mailto:?subject=" + subject + "&body=" + body;
   }
-  return /* @__PURE__ */ React.createElement("li", { className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[13px] truncate" }, d.creditor, d.item && " · " + d.item), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, d.bureau, " · ", d.reason)), /* @__PURE__ */ React.createElement("button", { onClick: () => onRemove(d.id), className: "shrink-0 text-[16px] leading-none active:opacity-60", style: { color: "#C0C8D2" } }, "×")), d.notes && /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-2", style: { color: "#6B7785" } }, d.notes), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-semibold rounded-full px-2 py-0.5", style: { background: st.bg, color: st.color } }, st.label), /* @__PURE__ */ React.createElement("span", { className: "text-[11px]", style: { color: overdue ? "#B91C1C" : "#A0AAB6" } }, "Filed ", fmtLong(d.dateFiled), " · ", days, "d ago", overdue ? " · past 30-day window" : "")), /* @__PURE__ */ React.createElement("div", { className: "relative mb-2" }, /* @__PURE__ */ React.createElement("select", { value: d.status, onChange: (e) => onUpdate(d.id, { status: e.target.value, updatedAt: Date.now() }), className: "w-full rounded-xl px-3 py-2 text-[12px] outline-none appearance-none", style: { background: "#fff", border: "1px solid #E2E6EB" } }, DISPUTE_STATUSES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s.id, value: s.id }, s.label))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6", fontSize: 12 } }, "⌄")), bc && /* @__PURE__ */ React.createElement("a", { href: bc.portal, target: "_blank", rel: "noopener noreferrer", className: "block text-[11px] font-semibold mb-2", style: { color: "#4338CA" } }, "Open ", d.bureau, "'s online dispute portal →"), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowLetter((v) => !v), className: "text-[12px] font-semibold active:opacity-60", style: { color: "#4338CA" } }, showLetter ? "Hide dispute letter" : "Generate dispute letter"), showLetter && /* @__PURE__ */ React.createElement("div", { className: "mt-2" }, /* @__PURE__ */ React.createElement("textarea", { readOnly: true, value: letter, className: "w-full rounded-xl px-3 py-2.5 text-[11px] leading-relaxed outline-none resize-none bx-num", style: { background: "#fff", border: "1px solid #E2E6EB", minHeight: 160, fontFamily: "inherit" }, onClick: (e) => e.target.select() }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 mt-2" }, /* @__PURE__ */ React.createElement("button", { onClick: copyLetter, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, copied ? "Copied!" : "Copy text"), /* @__PURE__ */ React.createElement("button", { onClick: downloadLetter, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "Download .txt"), /* @__PURE__ */ React.createElement("button", { onClick: () => printLetter(letter, "Dispute letter — " + d.creditor), className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "🖨 Print / save PDF"), /* @__PURE__ */ React.createElement("button", { onClick: emailCopy, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "✉ Email a copy")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] mt-2", style: { color: "#A0AAB6" } }, "No bureau accepts disputes by plain email, so \"Email a copy\" just opens your mail app with the letter in the body — send it to yourself for your records, or use Print / Download to mail it, or Copy it into the bureau's online portal above.", !profile || !profile.name ? " Add your info above to fill in the placeholders automatically." : "")));
+  return /* @__PURE__ */ React.createElement("li", { className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[13px] truncate" }, d.creditor, d.item && " · " + d.item), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, d.bureau, " · ", d.reason)), /* @__PURE__ */ React.createElement("button", { onClick: () => onRemove(d.id), className: "shrink-0 text-[16px] leading-none active:opacity-60", style: { color: "#C0C8D2" } }, "×")), d.notes && /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-2", style: { color: "#6B7785" } }, d.notes), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-semibold rounded-full px-2 py-0.5", style: { background: st.bg, color: st.color } }, st.label), /* @__PURE__ */ React.createElement("span", { className: "text-[11px]", style: { color: overdue ? "#B91C1C" : "#A0AAB6" } }, "Filed ", fmtLong(d.dateFiled), " · ", days, "d ago", overdue ? " · past 30-day window" : "")), /* @__PURE__ */ React.createElement("div", { className: "relative mb-2" }, /* @__PURE__ */ React.createElement("select", { value: d.status, onChange: (e) => onUpdate(d.id, { status: e.target.value, updatedAt: Date.now() }), className: "w-full rounded-xl px-3 py-2 text-[12px] outline-none appearance-none", style: { background: "#fff", border: "1px solid #E2E6EB" } }, DISPUTE_STATUSES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s.id, value: s.id }, s.label))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6", fontSize: 12 } }, "⌄")), bc && /* @__PURE__ */ React.createElement("a", { href: bc.portal, target: "_blank", rel: "noopener noreferrer", className: "block text-[11px] font-semibold mb-2", style: { color: "#4338CA" } }, "Open ", d.bureau, "'s online dispute portal →"), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowLetter((v) => !v), className: "text-[12px] font-semibold active:opacity-60", style: { color: "#4338CA" } }, showLetter ? "Hide dispute letter" : "Generate dispute letter"), showLetter && /* @__PURE__ */ React.createElement("div", { className: "mt-2" }, /* @__PURE__ */ React.createElement("textarea", { readOnly: true, value: letter, className: "w-full rounded-xl px-3 py-2.5 text-[11px] leading-relaxed outline-none resize-none bx-num", style: { background: "#fff", border: "1px solid #E2E6EB", minHeight: 160, fontFamily: "inherit" }, onClick: (e) => e.target.select() }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: copyLetter, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, copied ? "Copied!" : "Copy text"), /* @__PURE__ */ React.createElement("button", { onClick: downloadLetter, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "Download .txt"), /* @__PURE__ */ React.createElement("button", { onClick: () => printLetter(letter, "Dispute letter — " + d.creditor), className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "🖨 Print / save PDF"), /* @__PURE__ */ React.createElement("button", { onClick: emailCopy, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "✉ Email a copy")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] mt-2", style: { color: "#A0AAB6" } }, "No bureau accepts disputes by plain email, so \"Email a copy\" just opens your mail app with the letter in the body — send it to yourself for your records, or use Print / Download to mail it, or Copy it into the bureau's online portal above.", !profile || !profile.name ? " Add your info above to fill in the placeholders automatically." : "")));
 }
 function CreditProfileCard({ credit, onChange }) {
   const p = credit.profile || {};
@@ -2811,6 +2926,60 @@ function CreditBureauReference() {
   const [open, setOpen] = useState(false);
   return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setOpen((v) => !v), className: "w-full flex items-center justify-between p-4 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-[13px] font-semibold" }, "📚 Bureau contacts & reporting time limits"), /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" } }, "⌄")), open && /* @__PURE__ */ React.createElement("div", { className: "px-4 pb-4" }, /* @__PURE__ */ React.createElement("p", { className: "text-[11px] mb-3", style: { color: "#A0AAB6" } }, "Commonly published, but bureaus do change these — confirm on the bureau's own site before mailing anything important."), Object.keys(BUREAU_CONTACTS).map((name) => { const bc = BUREAU_CONTACTS[name]; return /* @__PURE__ */ React.createElement("div", { key: name, className: "mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "text-[13px] font-semibold mb-0.5" }, name), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] mb-1", style: { color: "#6B7785", whiteSpace: "pre-line" } }, bc.address), /* @__PURE__ */ React.createElement("div", { className: "text-[12px] mb-1", style: { color: "#6B7785" } }, "Phone: ", bc.phone), /* @__PURE__ */ React.createElement("a", { href: bc.portal, target: "_blank", rel: "noopener noreferrer", className: "text-[12px] font-semibold", style: { color: "#4338CA" } }, "Online dispute portal →")); }), /* @__PURE__ */ React.createElement("div", { className: "mt-1 pt-3", style: { borderTop: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "text-[13px] font-semibold mb-1.5" }, "How long negative items can stay"), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1" }, CREDIT_AGING_FACTS.map((f, i) => /* @__PURE__ */ React.createElement("li", { key: i, className: "text-[12px] flex gap-1.5", style: { color: "#6B7785" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6" } }, "•"), /* @__PURE__ */ React.createElement("span", null, f))))), /* @__PURE__ */ React.createElement("a", { href: "https://www.annualcreditreport.com", target: "_blank", rel: "noopener noreferrer", className: "block mt-3 text-[12px] font-semibold", style: { color: "#4338CA" } }, "Get your free reports → annualcreditreport.com")));
 }
+function buildOtherLetter(l, profile) {
+  return l.kind === "goodwill" ? buildGoodwillLetter(l, profile) : buildValidationLetter(l, profile);
+}
+function OtherLetterForm({ onAdd }) {
+  const [kind, setKind] = useState("goodwill");
+  const [creditor, setCreditor] = useState("");
+  const [item, setItem] = useState("");
+  const [notes, setNotes] = useState("");
+  const valid = creditor.trim().length > 0;
+  const inputStyle = { background: "#fff", border: "1px solid transparent" };
+  const focus = (e) => e.target.style.border = "1px solid #13202E";
+  const blur = (e) => e.target.style.border = "1px solid transparent";
+  function submit() {
+    if (!valid) return;
+    onAdd({ id: uid(), kind, creditor: creditor.trim(), item: item.trim(), notes: notes.trim(), createdAt: Date.now() });
+    setCreditor(""); setItem(""); setNotes("");
+  }
+  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl p-4 mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement(Field, { label: "Letter type" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement("select", { value: kind, onChange: (e) => setKind(e.target.value), className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none appearance-none", style: inputStyle }, LETTER_KINDS.map((k) => /* @__PURE__ */ React.createElement("option", { key: k.id, value: k.id }, k.label))), /* @__PURE__ */ React.createElement("span", { className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none", style: { color: "#A0AAB6" } }, "⌄"))), /* @__PURE__ */ React.createElement(Field, { label: kind === "goodwill" ? "Creditor" : "Collection agency" }, /* @__PURE__ */ React.createElement("input", { value: creditor, onChange: (e) => setCreditor(e.target.value), placeholder: kind === "goodwill" ? "e.g. Capital One" : "e.g. Midland Credit Management", onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none", style: inputStyle })), /* @__PURE__ */ React.createElement(Field, { label: "Account / reference number" }, /* @__PURE__ */ React.createElement("input", { value: item, onChange: (e) => setItem(e.target.value), onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none", style: inputStyle })), /* @__PURE__ */ React.createElement(Field, { label: "Notes (optional)" }, /* @__PURE__ */ React.createElement("textarea", { value: notes, onChange: (e) => setNotes(e.target.value), placeholder: kind === "goodwill" ? "What happened, how long you've been a customer, etc." : "Anything specific to include...", onFocus: focus, onBlur: blur, className: "w-full rounded-xl px-3.5 py-2.5 text-[14px] outline-none resize-none", style: Object.assign({}, inputStyle, { minHeight: 64 }) })), /* @__PURE__ */ React.createElement("button", { onClick: submit, disabled: !valid, className: "w-full rounded-xl py-2.5 text-[13px] font-semibold active:scale-[.99]", style: { background: valid ? "#13202E" : "#E2E6EB", color: valid ? "#fff" : "#A0AAB6" } }, "Add letter"));
+}
+function OtherLetterItem({ l, profile, onRemove }) {
+  const [showLetter, setShowLetter] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const letter = buildOtherLetter(l, profile);
+  const kindLabel = (LETTER_KINDS.find((k) => k.id === l.kind) || LETTER_KINDS[0]).label;
+  function copyLetter() {
+    try {
+      navigator.clipboard.writeText(letter).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+    } catch (e) {}
+  }
+  function downloadLetter() {
+    const blob = new Blob([letter], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = l.kind + "-letter-" + (l.creditor || "letter").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".txt";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function emailCopy() {
+    const subject = encodeURIComponent((l.kind === "goodwill" ? "Goodwill letter" : "Debt validation letter") + " — " + (l.creditor || ""));
+    window.location.href = "mailto:?subject=" + subject + "&body=" + encodeURIComponent(letter);
+  }
+  return /* @__PURE__ */ React.createElement("li", { className: "rounded-2xl p-3.5", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "block font-semibold text-[13px] truncate" }, l.creditor, l.item && " · " + l.item), /* @__PURE__ */ React.createElement("span", { className: "block text-[12px]", style: { color: "#8A95A3" } }, kindLabel)), /* @__PURE__ */ React.createElement("button", { onClick: () => onRemove(l.id), className: "shrink-0 text-[16px] leading-none active:opacity-60", style: { color: "#C0C8D2" } }, "×")), l.notes && /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-2", style: { color: "#6B7785" } }, l.notes), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowLetter((v) => !v), className: "text-[12px] font-semibold active:opacity-60", style: { color: "#4338CA" } }, showLetter ? "Hide letter" : "Generate letter"), showLetter && /* @__PURE__ */ React.createElement("div", { className: "mt-2" }, /* @__PURE__ */ React.createElement("textarea", { readOnly: true, value: letter, className: "w-full rounded-xl px-3 py-2.5 text-[11px] leading-relaxed outline-none resize-none bx-num", style: { background: "#fff", border: "1px solid #E2E6EB", minHeight: 160, fontFamily: "inherit" }, onClick: (e) => e.target.select() }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: copyLetter, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#13202E", color: "#fff" } }, copied ? "Copied!" : "Copy text"), /* @__PURE__ */ React.createElement("button", { onClick: downloadLetter, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "Download .txt"), /* @__PURE__ */ React.createElement("button", { onClick: () => printLetter(letter, kindLabel + " — " + l.creditor), className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "🖨 Print / save PDF"), /* @__PURE__ */ React.createElement("button", { onClick: emailCopy, className: "rounded-lg py-2 text-[12px] font-semibold active:scale-[.99]", style: { background: "#EEF2FF", color: "#4338CA" } }, "✉ Email a copy"))));
+}
+function OtherLettersSection({ credit, onChange }) {
+  const letters = credit.letters || [];
+  const [open, setOpen] = useState(false);
+  function add(entry) {
+    onChange(Object.assign({}, credit, { letters: [entry].concat(letters) }));
+  }
+  function remove(id) {
+    onChange(Object.assign({}, credit, { letters: letters.filter((l) => l.id !== id) }));
+  }
+  return /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl mb-3", style: { background: "#F6F7FB", border: "1px solid #ECEFF4" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setOpen((v) => !v), className: "w-full flex items-center justify-between p-4 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-[13px] font-semibold" }, "🖋 Other letters (goodwill & debt validation)", letters.length > 0 ? " (" + letters.length + ")" : ""), /* @__PURE__ */ React.createElement("span", { style: { color: "#A0AAB6", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" } }, "⌄")), open && /* @__PURE__ */ React.createElement("div", { className: "px-4 pb-4" }, /* @__PURE__ */ React.createElement("p", { className: "text-[12px] mb-3", style: { color: "#8A95A3" } }, "For things a formal bureau dispute doesn't fit: asking a creditor to forgive an isolated late payment (goodwill), or making a collector prove a debt is valid before you pay it (debt validation, FDCPA)."), /* @__PURE__ */ React.createElement(OtherLetterForm, { onAdd: add }), letters.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-[13px] py-2 text-center", style: { color: "#8A95A3" } }, "None yet.") : /* @__PURE__ */ React.createElement("ul", { className: "space-y-2.5" }, letters.map((l) => /* @__PURE__ */ React.createElement(OtherLetterItem, { key: l.id, l, profile: credit.profile, onRemove: remove })))));
+}
 function CreditDisputesTab({ credit, onChange }) {
   const disputes = credit.disputes || [];
   const sorted = disputes.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
@@ -2823,7 +2992,7 @@ function CreditDisputesTab({ credit, onChange }) {
   function remove(id) {
     onChange(Object.assign({}, credit, { disputes: disputes.filter((d) => d.id !== id) }));
   }
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-3", style: { color: "#8A95A3" } }, "Track anything you're disputing on your credit report and generate a ready-to-send letter. This app can't file disputes for you — send the letter to the bureau by mail or their online portal."), /* @__PURE__ */ React.createElement(CreditProfileCard, { credit, onChange }), /* @__PURE__ */ React.createElement(CreditBureauReference, null), /* @__PURE__ */ React.createElement(DisputeForm, { onAdd: add }), sorted.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-[13px] py-4 text-center", style: { color: "#8A95A3" } }, "No disputes logged yet.") : /* @__PURE__ */ React.createElement("ul", { className: "space-y-2.5" }, sorted.map((d) => /* @__PURE__ */ React.createElement(DisputeItem, { key: d.id, d, profile: credit.profile, onUpdate: update, onRemove: remove }))));
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-3", style: { color: "#8A95A3" } }, "Track anything you're disputing on your credit report and generate a ready-to-send letter. This app can't file disputes for you — send the letter to the bureau by mail or their online portal."), /* @__PURE__ */ React.createElement(CreditProfileCard, { credit, onChange }), /* @__PURE__ */ React.createElement(CreditBureauReference, null), /* @__PURE__ */ React.createElement(DisputeForm, { onAdd: add }), sorted.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-[13px] py-4 text-center", style: { color: "#8A95A3" } }, "No disputes logged yet.") : /* @__PURE__ */ React.createElement("ul", { className: "space-y-2.5 mb-3" }, sorted.map((d) => /* @__PURE__ */ React.createElement(DisputeItem, { key: d.id, d, profile: credit.profile, onUpdate: update, onRemove: remove }))), /* @__PURE__ */ React.createElement(OtherLettersSection, { credit, onChange }));
 }
 function CreditImproveTab({ credit, onChange }) {
   const checklist = credit.checklist || {};
@@ -2862,6 +3031,12 @@ function applyCreditAction(credit, accounts, onChange, action) {
     onChange(Object.assign({}, c, { checklist: Object.assign({}, c.checklist || {}, { [action.id]: true }) }));
     return true;
   }
+  if (action.type === "draft_goodwill_letter" || action.type === "draft_validation_letter") {
+    if (!action.creditor) return false;
+    const entry = { id: uid(), kind: action.type === "draft_goodwill_letter" ? "goodwill" : "validation", creditor: String(action.creditor), item: action.item || "", notes: action.notes || "", createdAt: Date.now() };
+    onChange(Object.assign({}, c, { letters: [entry].concat(c.letters || []) }));
+    return true;
+  }
   if (action.type === "note" && action.content) {
     const notes = (c.notes || []).filter((n) => n !== action.content).concat([action.content]).slice(-8);
     onChange(Object.assign({}, c, { notes }));
@@ -2885,7 +3060,7 @@ function CreditAdvisor({ credit, accounts, onChange, onClose }) {
     setActionApplied((p) => Object.assign({}, p, { [ak]: !!ok }));
     if (!ok) setActionFailed((p) => Object.assign({}, p, { [ak]: true }));
   }
-  const chips = ["What's dragging my score down right now?", "Should I dispute anything I've logged?", "How do I get utilization under 10%?", "Is a goodwill letter worth trying here?"];
+  const chips = ["What's the single highest-leverage move for me right now?", "Is this worth a goodwill letter, a bureau dispute, or debt validation?", "How do I get utilization down before my next statement closes?", "What can I do this week before a big loan application?"];
   async function ask(textOverride) {
     const question = (textOverride != null ? textOverride : q).trim();
     if (!question || asking) return;
@@ -2896,7 +3071,7 @@ function CreditAdvisor({ credit, accounts, onChange, onClose }) {
     setError("");
     try {
       const ctx = buildCreditContext(credit, accounts);
-      const sys = CREDIT_ADVISOR_SYS + "\n\n" + ctx.scoreBlock + ctx.utilBlock + ctx.disputeBlock + ctx.checklistBlock + ctx.notesBlock + "Today is " + toISO(/* @__PURE__ */ new Date()) + ".";
+      const sys = CREDIT_ADVISOR_SYS + "\n\n" + ctx.signalsBlock + ctx.scoreBlock + ctx.utilBlock + ctx.disputeBlock + ctx.letterBlock + ctx.checklistBlock + ctx.notesBlock + "Today is " + toISO(/* @__PURE__ */ new Date()) + ".";
       const apiMessages = history.map((mm) => ({ role: mm.role, content: mm.text }));
       const reply = await claudeRequest(apiMessages, sys, MODEL);
       let replyText = reply, replyActions = [];
@@ -2917,7 +3092,7 @@ function CreditAdvisor({ credit, accounts, onChange, onClose }) {
       setAsking(false);
     }
   }
-  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)", zIndex: 60 }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "🤝"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, "Credit counselor")), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Knows your logged score, utilization, and disputes. Can log scores, draft disputes, set limits, and check off improvement steps for you — you approve every action."), messages.length === 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, "Try asking"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2 mb-3" }, chips.map((cq, i) => /* @__PURE__ */ React.createElement("button", { key: i, onClick: () => ask(cq), disabled: asking, className: "rounded-full px-3 py-2 text-[13px] font-medium text-left active:scale-95", style: { background: "#EEF2FF", color: "#4338CA" } }, cq)))), messages.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-3 space-y-3" }, messages.map(function(mm, i) {
+  return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 flex items-end justify-center bx-fade", style: { background: "rgba(19,32,46,.45)", zIndex: 60 }, onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bx-sheet w-full bg-white rounded-t-3xl p-5", style: { maxWidth: 480, maxHeight: "92vh", overflowY: "auto" }, onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto mb-4 h-1.5 w-10 rounded-full", style: { background: "#E2E6EB" } }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[18px]" }, "🤝"), /* @__PURE__ */ React.createElement("h3", { className: "text-[19px] font-bold" }, "Credit counselor")), /* @__PURE__ */ React.createElement("p", { className: "text-[13px] mb-4", style: { color: "#8A95A3" } }, "Sees your real numbers and flags what's actually worth acting on. Can log scores, draft bureau disputes, goodwill letters, and debt-validation letters, set card limits, and check off improvement steps for you — you approve every action."), messages.length === 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("label", { className: "block text-[12px] font-semibold mb-1.5", style: { color: "#6B7785" } }, "Try asking"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-2 mb-3" }, chips.map((cq, i) => /* @__PURE__ */ React.createElement("button", { key: i, onClick: () => ask(cq), disabled: asking, className: "rounded-full px-3 py-2 text-[13px] font-medium text-left active:scale-95", style: { background: "#EEF2FF", color: "#4338CA" } }, cq)))), messages.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "mb-3 space-y-3" }, messages.map(function(mm, i) {
     const isUser = mm.role === "user";
     const msgActions = !isUser && Array.isArray(mm.actions) ? mm.actions : [];
     return /* @__PURE__ */ React.createElement(React.Fragment, { key: i },
@@ -2929,7 +3104,7 @@ function CreditAdvisor({ credit, accounts, onChange, onClose }) {
         const isDone = !!actionApplied[ak];
         const isFailed = !!actionFailed[ak];
         return /* @__PURE__ */ React.createElement("div", { key: j, className: "rounded-xl p-3 flex items-center justify-between gap-3", style: { background: isDone ? "#F6FBF9" : action.type === "note" ? "#FFFBEB" : "#F0F4FF", border: "1px solid " + (isDone ? "#BBF7D0" : action.type === "note" ? "#FCD34D" : "#C7D2FE") } },
-          /* @__PURE__ */ React.createElement("span", { className: "text-[13px] font-medium flex-1", style: { color: "#16202B" } }, action.type === "note" ? "📌 " : "", action.label, isFailed && /* @__PURE__ */ React.createElement("span", { className: "block text-[11px] font-normal", style: { color: "#C2410C" } }, "Couldn't apply that — check the details and try from the tab directly.")),
+          /* @__PURE__ */ React.createElement("span", { className: "text-[13px] font-medium flex-1", style: { color: "#16202B" } }, action.type === "note" ? "📌 " : action.type === "draft_goodwill_letter" || action.type === "draft_validation_letter" ? "🖋 " : "", action.label, isFailed && /* @__PURE__ */ React.createElement("span", { className: "block text-[11px] font-normal", style: { color: "#C2410C" } }, "Couldn't apply that — check the details and try from the tab directly.")),
           isDone
             ? /* @__PURE__ */ React.createElement("span", { className: "shrink-0 text-[12px] font-semibold", style: { color: "#11875E" } }, "✓ Applied")
             : /* @__PURE__ */ React.createElement("button", { onClick: () => runAction(ak, action), className: "shrink-0 rounded-lg px-3 py-1.5 text-[12px] font-semibold active:scale-95", style: { background: action.type === "note" ? "#D97706" : "#4338CA", color: "#fff" } }, isFailed ? "Retry" : "Apply")
