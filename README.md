@@ -11,6 +11,7 @@ A single-page, installable budget planner: track accounts, recurring bills and i
   - A dedicated "Credit counselor" AI chat with deep, professional-grade knowledge (statement-date utilization timing, credit-limit-increase requests, Experian Boost/rent reporting, goodwill vs. dispute vs. debt-validation strategy, FCRA/FDCPA escalation paths, rapid rescore, and more). It reads your real tracked data, computes signals (stale scores, high per-card utilization, disputes past the 30-day window) and leads with the highest-leverage move — and can log scores, draft bureau disputes, goodwill letters, and debt-validation letters, set card limits, and check off improvement steps for you, all pending your approval on each action
   - Dispute letters auto-fill with your name/address/DOB/SSN-last-4 once you save them once, include each bureau's real mailing address and dispute portal link, and can be copied, downloaded, printed (browser print-to-PDF), or opened in your email app as a draft — no bureau accepts disputes by plain email, so that last option is for your own records or a portal/mail submission, not an automatic filing
 - AI insights, an AI "advisor" chat, and photo-based receipt/bill scanning (via Claude)
+  - Both the budget advisor and credit counselor chats accept screenshots and files (images or PDFs) attached mid-conversation — the AI reads them directly, no separate scan step needed
 - Optional backup/restore to Google Drive
 - Installable PWA with offline support via a service worker
 
