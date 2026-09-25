@@ -1,0 +1,40 @@
+{
+  "name": "budget-planner-desktop",
+  "version": "1.0.0",
+  "description": "Budget Planner packaged as a desktop app",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.budgetplanner.desktop",
+    "productName": "Budget Planner",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js"
+    ],
+    "extraResources": [
+      { "from": "../index.html", "to": "app/index.html" },
+      { "from": "../sw.js", "to": "app/sw.js" }
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.finance"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Finance"
+    }
+  }
+}

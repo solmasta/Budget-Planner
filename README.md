@@ -13,12 +13,12 @@ A single-page, installable budget planner: track accounts, recurring bills and i
 - AI insights, an AI "advisor" chat, and photo-based receipt/bill scanning (via Claude)
   - Both the budget advisor and credit counselor chats accept screenshots and files (images or PDFs) attached mid-conversation — the AI reads them directly, no separate scan step needed
 - Optional backup/restore to Google Drive
-- Installable PWA with offline support via a service worker
+- Installable PWA with offline support via a service worker, or as a native-feeling desktop app (see [`desktop/`](desktop/README.md))
 
 ## Tech stack
 
 - Plain HTML + a single bundled React (production build) — everything lives in `index.html`
-- No bundler, no `npm install`, no build step
+- No bundler, no `npm install`, no build step for the web app itself (the optional desktop wrapper in `desktop/` does use `npm install`, for Electron)
 - `sw.js` — service worker for offline caching and install-to-home-screen support
 
 ## Running locally
@@ -33,6 +33,10 @@ npx serve .
 ```
 
 Then open `http://localhost:8080`. Your data is saved to the browser's `IndexedDB`, so it's local to that browser/device unless you use the Google Drive backup feature.
+
+## Desktop app
+
+`desktop/` wraps the exact same `index.html` in an Electron window — a proper dock/taskbar app instead of a browser tab, with no code duplicated between the two. See [`desktop/README.md`](desktop/README.md) for how to run it in dev mode or build a `.dmg`/`.exe`/`.AppImage` installer.
 
 ## Deployment (GitHub Pages)
 

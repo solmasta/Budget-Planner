@@ -1,4 +1,9 @@
-const ALLOWED_ORIGIN = "https://solmasta.github.io";
+// The web app's deployed origin, plus the fixed local origin the desktop (Electron) build
+// serves itself on — see desktop/main.js. Anything else is rejected below.
+const ALLOWED_ORIGINS = new Set([
+  "https://solmasta.github.io",
+  "http://localhost:51248",
+]);
 // The models and cost ceiling actually used by index.html — anything outside this is rejected
 // so a request that reaches this Worker (with or without a browser) can't run up unbounded
 // Anthropic spend on the owner's key.
@@ -35,8 +40,13 @@ async function readBodyCapped(request, maxBytes) {
 
 export default {
   async fetch(request, env) {
+    // Echo back the request's Origin only if it's one we allow, so the preflight response
+    // (and every response after it) carries an Access-Control-Allow-Origin the browser will
+    // actually accept for that request. A disallowed origin still gets a response (so error
+    // bodies are readable during debugging) but with no matching ACAO, so the browser blocks it.
+    const origin = request.headers.get("Origin");
     const headers = {
-      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+      "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://solmasta.github.io",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     };
@@ -55,8 +65,7 @@ export default {
     // so this is the actual server-side gate. It can't stop a non-browser client that forges an
     // Origin header, but it does block the far more common case of this URL being hit from
     // another website or script running in a browser.
-    const origin = request.headers.get("Origin");
-    if (origin && origin !== ALLOWED_ORIGIN) {
+    if (origin && !ALLOWED_ORIGINS.has(origin)) {
       return new Response(JSON.stringify({ error: "Forbidden origin" }), {
         status: 403,
         headers: { ...headers, "Content-Type": "application/json" },
