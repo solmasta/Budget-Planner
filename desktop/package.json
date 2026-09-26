@@ -9,6 +9,9 @@
     "start": "electron .",
     "dist": "electron-builder"
   },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
   "devDependencies": {
     "electron": "^32.0.0",
     "electron-builder": "^25.0.0"
@@ -16,19 +19,20 @@
   "build": {
     "appId": "com.budgetplanner.desktop",
     "productName": "Budget Planner",
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "solmasta",
+      "repo": "Budget-Planner"
+    },
     "directories": {
       "output": "dist"
     },
-    "files": [
-      "main.js"
-    ],
     "extraResources": [
       { "from": "../index.html", "to": "app/index.html" },
       { "from": "../sw.js", "to": "app/sw.js" }
     ],
     "mac": {
-      "target": "dmg",
+      "target": ["dmg", "zip"],
       "category": "public.app-category.finance"
     },
     "win": {

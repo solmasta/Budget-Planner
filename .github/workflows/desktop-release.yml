@@ -1,0 +1,42 @@
+name: Build & release desktop app
+
+# Triggered by pushing a tag like desktop-v1.0.1. electron-builder ignores the tag name itself —
+# it names the GitHub Release "v<version>" from desktop/package.json's "version" field, so bump
+# that field first and make the tag match, e.g.:
+#   1. edit desktop/package.json -> "version": "1.0.1"
+#   2. git commit -am "Bump desktop app to 1.0.1" && git push
+#   3. git tag desktop-v1.0.1 && git push origin desktop-v1.0.1
+# workflow_dispatch is there too so a build can be kicked off manually (e.g. to retry a failed run)
+# without needing a new tag.
+on:
+  push:
+    tags:
+      - "desktop-v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build and publish
+        working-directory: desktop
+        run: npm run dist -- --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

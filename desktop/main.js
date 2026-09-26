@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Menu, shell, dialog } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -128,6 +129,41 @@ async function createWindow() {
   return win;
 }
 
+// Checks GitHub Releases (see .github/workflows/desktop-release.yml and the "publish" config
+// in package.json) for a newer version, downloads it in the background, and offers to restart
+// once it's ready. A no-op in dev (`npm start`) since there's no packaged installer to update.
+function setupAutoUpdates(win) {
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("error", (err) => {
+    console.error("Auto-update check failed:", err);
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    dialog
+      .showMessageBox(win, {
+        type: "info",
+        buttons: ["Restart now", "Later"],
+        defaultId: 0,
+        cancelId: 1,
+        title: "Update ready",
+        message: `Budget Planner ${info.version} has been downloaded.`,
+        detail: "Restart now to finish installing it, or it'll install next time you quit.",
+      })
+      .then(({ response }) => {
+        if (response === 0) autoUpdater.quitAndInstall();
+      });
+  });
+
+  const check = () => autoUpdater.checkForUpdates().catch((err) => console.error(err));
+  check();
+  // Also re-check periodically in case the app is left open for a long time.
+  setInterval(check, 4 * 60 * 60 * 1000);
+}
+
 // Two instances can't both bind PORT, so hand focus to the existing window instead of
 // letting the second launch fail with a confusing "port in use" dialog.
 const gotLock = app.requestSingleInstanceLock();
@@ -156,7 +192,8 @@ if (!gotLock) {
     }
 
     Menu.setApplicationMenu(buildMenu());
-    await createWindow();
+    const win = await createWindow();
+    setupAutoUpdates(win);
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

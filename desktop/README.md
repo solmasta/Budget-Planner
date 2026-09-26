@@ -26,6 +26,34 @@ Output lands in `desktop/dist/`: a `.dmg` on macOS, an NSIS `.exe` installer on 
 `.AppImage` on Linux (electron-builder only cross-builds some of these — building the macOS
 target requires running on macOS, etc.).
 
+## Releasing an update (auto-updates)
+
+Once installed, the app checks for a newer version on launch (and every few hours while left
+open) and installs it in the background via [`electron-updater`](https://www.electron.build/auto-update) —
+no manual reinstall needed. Updates are published as GitHub Releases by
+`.github/workflows/desktop-release.yml`, which builds installers for all three platforms and
+uploads them automatically. To ship an update:
+
+1. Bump `"version"` in `desktop/package.json` (e.g. `1.0.0` → `1.0.1`).
+2. Commit and push that change.
+3. Tag and push: `git tag desktop-v1.0.1 && git push origin desktop-v1.0.1` (the tag just
+   triggers the workflow — electron-builder names the actual GitHub Release `v1.0.1` from the
+   `package.json` version, not from the tag text, so the two must match).
+4. Wait for the [Actions run](../../actions) to finish (builds on Windows/macOS/Linux runners in
+   parallel, a few minutes) — it publishes a release automatically since `permissions.contents`
+   is `write` and `GH_TOKEN` is the default `GITHUB_TOKEN`; no extra secrets to set up.
+5. Every installed copy of the app picks up the new version next time it's opened (or within its
+   next 4-hour check if left running).
+
+**macOS caveat:** Squirrel.Mac (the auto-update mechanism `electron-updater` uses on macOS)
+requires the app to be code-signed and notarized to actually apply an update; that's not set up
+here (needs a paid Apple Developer account). Unsigned Mac builds can still be downloaded and
+installed manually from the GitHub Release, they just won't self-update. Windows and Linux
+auto-updates work fine unsigned.
+
+You can also trigger `.github/workflows/desktop-release.yml` manually from the Actions tab
+(`workflow_dispatch`) if a run needs to be retried without pushing a new tag.
+
 ## Why port 51248 is fixed
 
 The Worker that proxies AI requests (`worker/index.js`) only accepts requests from an allowlisted
