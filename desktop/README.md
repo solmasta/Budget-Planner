@@ -40,10 +40,16 @@ uploads them automatically. To ship an update:
    triggers the workflow — electron-builder names the actual GitHub Release `v1.0.1` from the
    `package.json` version, not from the tag text, so the two must match).
 4. Wait for the [Actions run](../../actions) to finish (builds on Windows/macOS/Linux runners in
-   parallel, a few minutes) — it publishes a release automatically since `permissions.contents`
+   parallel, a few minutes) — `"releaseType": "release"` in `package.json`'s publish config makes
+   it go live immediately (no draft, no manual "Publish release" click) since `permissions.contents`
    is `write` and `GH_TOKEN` is the default `GITHUB_TOKEN`; no extra secrets to set up.
 5. Every installed copy of the app picks up the new version next time it's opened (or within its
    next 4-hour check if left running).
+
+There's no review step between step 3 and the release going live to every installed copy — that's
+a deliberate tradeoff for a low-stakes personal app. If that ever stops being comfortable, drop
+`"releaseType": "release"` from `package.json` (electron-builder's default is `"draft"`), which
+adds back a manual "Publish release" click on GitHub before `electron-updater` will see it.
 
 **macOS caveat:** Squirrel.Mac (the auto-update mechanism `electron-updater` uses on macOS)
 requires the app to be code-signed and notarized to actually apply an update; that's not set up

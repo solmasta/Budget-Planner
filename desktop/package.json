@@ -22,7 +22,8 @@
     "publish": {
       "provider": "github",
       "owner": "solmasta",
-      "repo": "Budget-Planner"
+      "repo": "Budget-Planner",
+      "releaseType": "release"
     },
     "directories": {
       "output": "dist"
