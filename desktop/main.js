@@ -15,6 +15,10 @@ const HOST = "127.0.0.1";
 // copies index.html/sw.js into resources/app via the "extraResources" config in package.json.
 const APP_ROOT = app.isPackaged ? path.join(process.resourcesPath, "app") : path.join(__dirname, "..");
 
+// Without this, Windows attributes notifications (bill reminders, update-ready) to a generic
+// "Electron" identity instead of "Budget Planner", with the wrong icon.
+if (process.platform === "win32") app.setAppUserModelId("com.budgetplanner.desktop");
+
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
