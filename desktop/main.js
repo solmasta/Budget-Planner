@@ -125,7 +125,8 @@ async function createWindow() {
     return { action: "deny" };
   });
 
-  await win.loadURL(`http://${HOST}:${PORT}/index.html`);
+  // index.html reads ?desktop= to show the installed desktop version next to the web version.
+  await win.loadURL(`http://${HOST}:${PORT}/index.html?desktop=${encodeURIComponent(app.getVersion())}`);
   return win;
 }
 
