@@ -1,7 +1,10 @@
 // The web app's deployed origin, plus the fixed local origin the desktop (Electron) build
-// serves itself on — see desktop/main.js. Anything else is rejected below.
+// serves itself on — see desktop/main.js, which binds to the 127.0.0.1 literal (not
+// "localhost"; browsers treat them as distinct origins, so both are listed here to be safe).
+// Anything else is rejected below.
 const ALLOWED_ORIGINS = new Set([
   "https://solmasta.github.io",
+  "http://127.0.0.1:51248",
   "http://localhost:51248",
 ]);
 // The models and cost ceiling actually used by index.html — anything outside this is rejected

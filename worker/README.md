@@ -19,7 +19,7 @@ You can also skip the Git integration and paste `worker/index.js`'s contents dir
 
 ## CORS
 
-The Worker only allows requests from origins listed in `ALLOWED_ORIGINS` at the top of `worker/index.js`: the deployed web app (`https://solmasta.github.io`) and the fixed local origin the desktop (Electron) build serves itself on (`http://localhost:51248`, see `desktop/main.js`). Update that set if the app is ever deployed under a different origin, or if the desktop build's port changes.
+The Worker only allows requests from origins listed in `ALLOWED_ORIGINS` at the top of `worker/index.js`: the deployed web app (`https://solmasta.github.io`) and the fixed local origin the desktop (Electron) build serves itself on — `http://127.0.0.1:51248` (what `desktop/main.js` actually binds to) plus `http://localhost:51248` for convenience when testing that URL directly in a browser; the two are different origins even though they're the same machine. Update that set if the app is ever deployed under a different origin, or if the desktop build's port changes.
 
 ## Abuse protection
 

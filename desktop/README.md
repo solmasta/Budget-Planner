@@ -64,16 +64,19 @@ You can also trigger `.github/workflows/desktop-release.yml` manually from the A
 
 The Worker that proxies AI requests (`worker/index.js`) only accepts requests from an allowlisted
 `Origin` header — that's what stops the publicly-visible Worker URL from being abused by other
-sites. The desktop app's local server always binds to `http://localhost:51248` so that origin can
-be allowlisted once, in `ALLOWED_ORIGINS` in `worker/index.js`, rather than needing to change
-every time you rebuild. If you change `PORT` in `main.js`, update and redeploy the Worker to match
-(and update `worker/README.md`'s CORS note), or AI features will fail with "Forbidden origin".
+sites. The desktop app's local server always binds to `http://127.0.0.1:51248` (`HOST`/`PORT` in
+`main.js`) so that origin can be allowlisted once, in `ALLOWED_ORIGINS` in `worker/index.js`,
+rather than needing to change every time you rebuild. Note it's `127.0.0.1`, not `localhost` —
+browsers (and Google's OAuth origin check) treat those as different origins even though they're
+the same machine, and mixing them up here is exactly what broke AI features silently for a while.
+If you change `HOST`/`PORT` in `main.js`, update and redeploy the Worker to match (and update
+`worker/README.md`'s CORS note), or AI features will fail with "Forbidden origin".
 
 ## Google Drive backup in the desktop app
 
 Google's OAuth client only allows sign-in from origins you've explicitly authorized. If you use
-the optional Drive backup feature, add `http://localhost:51248` to **Authorized JavaScript
-origins** on your OAuth client in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
+the optional Drive backup feature, add `http://127.0.0.1:51248` (not `localhost` — see above) to
+**Authorized JavaScript origins** on your OAuth client in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
 the same way the deployed web origin is added per the root README. Without this, the "Connect
 Google Drive" button will fail in the desktop app even though it works fine in the browser.
 
