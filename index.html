@@ -42,7 +42,7 @@
   }
 </style>
 <script>
-  window.__APP_VERSION = "61";
+  window.__APP_VERSION = "62";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -1894,13 +1894,18 @@ function BudgetPlanner() {
     const todayISO = toISO(today);
     const led = ledger(eff, startBalance, toISO(addDays(today, 60)), cleared, skipped, overrides);
     const future = led.filter(function(e) { return e.iso >= todayISO; });
-    const nextIncomeIdx = future.findIndex(function(e) { return e.type === "income"; });
-    const window = nextIncomeIdx === -1 ? future : future.slice(0, nextIncomeIdx);
+    const nextIncome = future.find(function(e) { return e.type === "income"; });
+    const nextPaydayISO = nextIncome ? nextIncome.iso : null;
+    // Bills due on the same day as the next payday still have to be covered —
+    // don't drop them just because they sort after that day's income event.
+    const window = nextPaydayISO == null ? future : future.filter(function(e) {
+      return e.iso < nextPaydayISO || (e.iso === nextPaydayISO && e.type !== "income");
+    });
     let min = startBalance;
     for (const e of window) { if (e.balance < min) min = e.balance; }
     return {
       amount: Math.round(min),
-      nextPaydayISO: nextIncomeIdx === -1 ? null : future[nextIncomeIdx].iso
+      nextPaydayISO
     };
   }, [eff, startBalance, cleared, skipped, overrides]);
   const notifiedRef = useRef(notified);
