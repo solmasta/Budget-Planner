@@ -42,7 +42,7 @@
   }
 </style>
 <script>
-  window.__APP_VERSION = "60";
+  window.__APP_VERSION = "61";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -1126,6 +1126,25 @@ function ledger(items, startBalance, toISOstr, cleared, skipped, overrides) {
     return { id: e.item.id, iso: e.iso, name: e.item.name, type: e.item.type, amount: e.item.amount, payee: e.item.payee || "", balance: bal, cleared: !!c[ck(e.item.id, e.iso)] };
   });
 }
+function clearedAdjustment(items, cleared, overrides) {
+  const ov = overrides || {};
+  const todayISO = toISO(/* @__PURE__ */ new Date());
+  const byId = {};
+  for (const it of items) byId[it.id] = it;
+  let total = 0;
+  for (const k in cleared || {}) {
+    if (!cleared[k]) continue;
+    const m = k.match(/^(.+):(\d{4}-\d{2}-\d{2})$/);
+    if (!m) continue;
+    const iso = m[2];
+    if (iso > todayISO) continue;
+    const item = byId[m[1]];
+    if (!item) continue;
+    const amt = ov[k] != null ? ov[k] : item.amount;
+    total += item.type === "income" ? amt : -amt;
+  }
+  return total;
+}
 function useTheme() {
   useEffect(() => {
     const link = document.createElement("link");
@@ -1401,7 +1420,10 @@ function BudgetPlanner() {
   useEffect(() => {
     latestRef.current = { items, accounts };
   }, [items, accounts]);
-  const startBalance = useMemo(() => accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0), [accounts]);
+  const startBalance = useMemo(() => {
+    const raw = accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+    return raw + clearedAdjustment(items, cleared, overrides);
+  }, [accounts, items, cleared, overrides]);
   useEffect(() => {
     (async () => {
       if (typeof indexedDB === "undefined") {
@@ -1556,25 +1578,13 @@ function BudgetPlanner() {
     recordNetWorthPoint(startBalance);
   }, [startBalance, loading]);
   function toggleCleared(id, iso) {
-    const k = ck(id, iso);
-    const nowCleared = !cleared[k];
     setCleared((prev) => {
       const next = { ...prev };
+      const k = ck(id, iso);
       if (next[k]) delete next[k];
       else next[k] = true;
       return next;
     });
-    const item = items.find(function(x) { return x.id === id; });
-    if (item && accounts.length > 0) {
-      const amt = overrides[k] != null ? overrides[k] : item.amount;
-      const signedAmt = item.type === "income" ? amt : -amt;
-      const delta = nowCleared ? signedAmt : -signedAmt;
-      const nextAccounts = accounts.map(function(a, i) {
-        return i === 0 ? Object.assign({}, a, { balance: Math.round((((Number(a.balance) || 0) + delta) + Number.EPSILON) * 100) / 100 }) : a;
-      });
-      setAccounts(nextAccounts);
-      persist(items, nextAccounts);
-    }
   }
   const [saveError, setSaveError] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
