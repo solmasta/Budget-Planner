@@ -42,7 +42,7 @@
   }
 </style>
 <script>
-  window.__APP_VERSION = "59";
+  window.__APP_VERSION = "60";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -1556,13 +1556,25 @@ function BudgetPlanner() {
     recordNetWorthPoint(startBalance);
   }, [startBalance, loading]);
   function toggleCleared(id, iso) {
+    const k = ck(id, iso);
+    const nowCleared = !cleared[k];
     setCleared((prev) => {
       const next = { ...prev };
-      const k = ck(id, iso);
       if (next[k]) delete next[k];
       else next[k] = true;
       return next;
     });
+    const item = items.find(function(x) { return x.id === id; });
+    if (item && accounts.length > 0) {
+      const amt = overrides[k] != null ? overrides[k] : item.amount;
+      const signedAmt = item.type === "income" ? amt : -amt;
+      const delta = nowCleared ? signedAmt : -signedAmt;
+      const nextAccounts = accounts.map(function(a, i) {
+        return i === 0 ? Object.assign({}, a, { balance: Math.round((((Number(a.balance) || 0) + delta) + Number.EPSILON) * 100) / 100 }) : a;
+      });
+      setAccounts(nextAccounts);
+      persist(items, nextAccounts);
+    }
   }
   const [saveError, setSaveError] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
