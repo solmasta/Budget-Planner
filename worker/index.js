@@ -14,6 +14,10 @@ const ALLOWED_MODELS = new Set(["claude-sonnet-4-6", "claude-haiku-4-5"]);
 const MAX_TOKENS_CEILING = 1500;
 const MAX_BODY_BYTES = 8 * 1024 * 1024; // generous headroom for base64 receipt photos
 
+// SimpleFIN caps a single accounts request to 90 days of transaction history.
+const SIMPLEFIN_LOOKBACK_DAYS = 60;
+const SIMPLEFIN_KV_KEY = "simplefin";
+
 // Content-Length is client-supplied and can be omitted or lied about (chunked transfer, a
 // non-browser caller with no header at all), so it can't be trusted as the size cap on its own.
 // Read the stream ourselves and bail out as soon as it exceeds the limit, before ever handing
@@ -41,6 +45,106 @@ async function readBodyCapped(request, maxBytes) {
   return new TextDecoder().decode(buf);
 }
 
+// Splits an "https://user:pass@host/path" Access URL into a bare fetchable URL plus a
+// Basic Auth header. Not relying on fetch() to honor userinfo embedded in a URL, since
+// that's inconsistent across runtimes (browsers reject it outright) — this is explicit
+// and portable.
+function splitAccessUrl(accessUrl) {
+  const u = new URL(accessUrl);
+  const auth = "Basic " + btoa(decodeURIComponent(u.username) + ":" + decodeURIComponent(u.password));
+  u.username = "";
+  u.password = "";
+  return { url: u.toString(), auth };
+}
+
+async function handleSimplefinConnect(request, env, headers) {
+  let body;
+  try {
+    body = JSON.parse(await readBodyCapped(request, 16 * 1024) || "");
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  const setupToken = body && typeof body.setupToken === "string" ? body.setupToken.trim() : "";
+  if (!setupToken) {
+    return new Response(JSON.stringify({ error: "Missing setup token" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  let claimUrl;
+  try {
+    claimUrl = atob(setupToken);
+    if (!/^https:\/\//.test(claimUrl)) throw new Error("bad token");
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "That doesn't look like a valid setup token" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  let claimRes;
+  try {
+    claimRes = await fetch(claimUrl, { method: "POST" });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "Couldn't reach SimpleFIN to claim that token" }), { status: 502, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  if (!claimRes.ok) {
+    return new Response(JSON.stringify({ error: "SimpleFIN rejected that setup token (it may already be used, or expired)" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  const accessUrl = (await claimRes.text()).trim();
+  if (!/^https:\/\/.+:.+@.+/.test(accessUrl)) {
+    return new Response(JSON.stringify({ error: "Unexpected response from SimpleFIN" }), { status: 502, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  const secret = crypto.randomUUID();
+  await env.SIMPLEFIN_KV.put(SIMPLEFIN_KV_KEY, JSON.stringify({ accessUrl, secret, connectedAt: new Date().toISOString() }));
+  return new Response(JSON.stringify({ ok: true, secret }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+}
+
+async function handleSimplefinDisconnect(request, env, headers) {
+  const secret = request.headers.get("X-SimpleFIN-Secret") || "";
+  const stored = await env.SIMPLEFIN_KV.get(SIMPLEFIN_KV_KEY, "json");
+  if (stored && secret && stored.secret === secret) {
+    await env.SIMPLEFIN_KV.delete(SIMPLEFIN_KV_KEY);
+  }
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+}
+
+async function handleSimplefinSync(request, env, headers) {
+  const secret = request.headers.get("X-SimpleFIN-Secret") || "";
+  const stored = await env.SIMPLEFIN_KV.get(SIMPLEFIN_KV_KEY, "json");
+  if (!stored) {
+    return new Response(JSON.stringify({ error: "Not connected" }), { status: 404, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  if (!secret || secret !== stored.secret) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  const { url, auth } = splitAccessUrl(stored.accessUrl);
+  const startDate = Math.floor(Date.now() / 1000) - SIMPLEFIN_LOOKBACK_DAYS * 24 * 60 * 60;
+  let sfinRes;
+  try {
+    sfinRes = await fetch(`${url}/accounts?pending=1&start-date=${startDate}`, { headers: { Authorization: auth } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "Couldn't reach SimpleFIN" }), { status: 502, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  if (!sfinRes.ok) {
+    return new Response(JSON.stringify({ error: "SimpleFIN returned an error (" + sfinRes.status + ") — the connection may need to be redone" }), { status: 502, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  let data;
+  try {
+    data = await sfinRes.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "Unexpected response from SimpleFIN" }), { status: 502, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  const accounts = (data.accounts || []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    balance: parseFloat(a.balance) || 0,
+    balanceDate: a["balance-date"] || null,
+    org: a.org && a.org.name ? a.org.name : "",
+    transactions: (a.transactions || []).map((t) => ({
+      id: t.id,
+      date: t.posted || t.transacted_at || null,
+      amount: parseFloat(t.amount) || 0,
+      description: t.description || "",
+      pending: !!t.pending,
+    })),
+  }));
+  return new Response(JSON.stringify({ ok: true, accounts, syncedAt: new Date().toISOString() }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+}
+
 export default {
   async fetch(request, env) {
     // Echo back the request's Origin only if it's one we allow, so the preflight response
@@ -51,7 +155,7 @@ export default {
     const headers = {
       "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://solmasta.github.io",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, X-SimpleFIN-Secret",
     };
 
     if (request.method === "OPTIONS") {
@@ -74,6 +178,11 @@ export default {
         headers: { ...headers, "Content-Type": "application/json" },
       });
     }
+
+    const pathname = new URL(request.url).pathname;
+    if (pathname === "/simplefin/connect") return handleSimplefinConnect(request, env, headers);
+    if (pathname === "/simplefin/sync") return handleSimplefinSync(request, env, headers);
+    if (pathname === "/simplefin/disconnect") return handleSimplefinDisconnect(request, env, headers);
 
     const raw = await readBodyCapped(request, MAX_BODY_BYTES);
     if (raw === null) {

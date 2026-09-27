@@ -24,3 +24,17 @@ The Worker only allows requests from origins listed in `ALLOWED_ORIGINS` at the 
 ## Abuse protection
 
 Since `WORKER_URL` is public (it's right there in `index.html`'s source), anything reachable through it is reachable by anyone who reads the page source, not just this app. The Worker rejects requests whose `Origin` header isn't in `ALLOWED_ORIGINS` (this stops browser-based abuse from other sites, since browsers don't let JS forge that header — though it can't stop a non-browser client that sets its own headers), and it hard-caps the blast radius of any request that does get through: only the two models `index.html` actually uses are allowed, `max_tokens` is clamped to what the app ever sends, and oversized payloads are rejected before they reach Anthropic. None of this is real authentication — there's no login and no server-side secret the client can present, so a determined attacker who finds the URL can still make requests at the capped cost. If usage/cost ever becomes a problem, add a Cloudflare Rate Limiting binding (per-IP) to `wrangler.jsonc`.
+
+## Bank sync (SimpleFIN)
+
+`worker/index.js` also handles three routes for pulling real account balances and transactions from [SimpleFIN Bridge](https://www.simplefin.org) (a small paid service — $1.50/mo — the user signs up for themselves; the app never sees a bank login, only a SimpleFIN access URL):
+
+- `POST /simplefin/connect` — body `{"setupToken": "..."}`. Decodes the base64 setup token to a claim URL, POSTs to it once (SimpleFIN one-time-claims these), and stores the resulting Access URL (which embeds Basic Auth credentials) in the `SIMPLEFIN_KV` namespace under a single fixed key — this is a single-user app, so there's no per-user keying. Returns a random `secret` the client must present on every later call.
+- `POST /simplefin/sync` — header `X-SimpleFIN-Secret: <secret>`. Looks up the stored Access URL, calls SimpleFIN's own `/accounts` endpoint (last 60 days, `pending=1`), and returns a normalized `{accounts: [{id, name, balance, transactions: [...]}]}` shape to the client.
+- `POST /simplefin/disconnect` — same header; clears the KV entry.
+
+**This needs a KV namespace binding** (`SIMPLEFIN_KV`) declared in `wrangler.jsonc`'s `kv_namespaces` array with a real namespace `id`. One was already created for this account; if the Worker ever needs to be recreated from scratch, create a new KV namespace (**Workers & Pages → KV** in the dashboard, or `wrangler kv namespace create SIMPLEFIN_KV`) and update the `id` in `wrangler.jsonc` to match — Cloudflare's Git integration binds it automatically on the next deploy, no dashboard step needed beyond that.
+
+The `X-SimpleFIN-Secret` header is why `Access-Control-Allow-Headers` includes it alongside `Content-Type` — without that, the browser's CORS preflight would block the sync/disconnect calls.
+
+Real bank balance and transaction data is much higher-stakes than the AI proxy's abuse surface, hence the secret gate on top of the existing origin check (see **Abuse protection** above) — but the same caveat applies: this is proportionate protection, not real authentication.

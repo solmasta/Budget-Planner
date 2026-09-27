@@ -8,5 +8,11 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SIMPLEFIN_KV",
+      "id": "057732d946c340a7a32ba8b019fd5c0c"
+    }
   ]
 }
