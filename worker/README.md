@@ -38,3 +38,16 @@ Since `WORKER_URL` is public (it's right there in `index.html`'s source), anythi
 The `X-SimpleFIN-Secret` header is why `Access-Control-Allow-Headers` includes it alongside `Content-Type` — without that, the browser's CORS preflight would block the sync/disconnect calls.
 
 Real bank balance and transaction data is much higher-stakes than the AI proxy's abuse surface, hence the secret gate on top of the existing origin check (see **Abuse protection** above) — but the same caveat applies: this is proportionate protection, not real authentication.
+
+## Cross-device sync
+
+Two more routes let a phone and a laptop share one budget, storing the full app export in the `SYNC_KV` namespace:
+
+- `POST /sync/push` — header `X-Sync-Key: <key>`, body `{"data": {...full backup object...}}`. Stores `{data, updatedAt: Date.now()}` under KV key `"sync:" + key` (the key itself doubles as the bearer credential, same reasoning as SimpleFIN's secret above — it's a client-generated `crypto.randomUUID()`, never a user-typed low-entropy code).
+- `POST /sync/pull` — same header. Returns the stored `{data, updatedAt}`, or 404 if nothing's been pushed under that key yet.
+
+Conflict handling is intentionally simple: last write wins, using the server-assigned `updatedAt`. The client only overwrites its local state on a pull when the server's `updatedAt` is newer than what it last saw — this is fine for one person alternating between two devices, but two devices editing at the same moment (both offline, say) will have the later push silently win. No merge logic beyond that.
+
+**Needs a `SYNC_KV` namespace binding**, same pattern as `SIMPLEFIN_KV` above (create it once, reference its `id` in `wrangler.jsonc`, Cloudflare's Git integration binds it on the next deploy).
+
+`X-Sync-Key` is included in `Access-Control-Allow-Headers` alongside the others for the same CORS-preflight reason.

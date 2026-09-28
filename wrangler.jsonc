@@ -13,6 +13,10 @@
     {
       "binding": "SIMPLEFIN_KV",
       "id": "057732d946c340a7a32ba8b019fd5c0c"
+    },
+    {
+      "binding": "SYNC_KV",
+      "id": "611e51489c424218aa7b77e15e37739b"
     }
   ]
 }

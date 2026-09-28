@@ -18,6 +18,11 @@ const MAX_BODY_BYTES = 8 * 1024 * 1024; // generous headroom for base64 receipt 
 const SIMPLEFIN_LOOKBACK_DAYS = 60;
 const SIMPLEFIN_KV_KEY = "simplefin";
 
+// Cross-device sync: the sync key itself is the KV lookup key, so it doubles as the bearer
+// credential — anyone who has it can read/write this budget's data. It's a client-generated
+// crypto.randomUUID(), never a user-chosen low-entropy code, so treating it this way is safe.
+const SYNC_KEY_MAX_LEN = 128;
+
 // Content-Length is client-supplied and can be omitted or lied about (chunked transfer, a
 // non-browser caller with no header at all), so it can't be trusted as the size cap on its own.
 // Read the stream ourselves and bail out as soon as it exceeds the limit, before ever handing
@@ -145,6 +150,46 @@ async function handleSimplefinSync(request, env, headers) {
   return new Response(JSON.stringify({ ok: true, accounts, syncedAt: new Date().toISOString() }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
 }
 
+function syncKeyFrom(request) {
+  const key = request.headers.get("X-Sync-Key") || "";
+  return key && key.length <= SYNC_KEY_MAX_LEN ? key : "";
+}
+
+async function handleSyncPush(request, env, headers) {
+  const key = syncKeyFrom(request);
+  if (!key) {
+    return new Response(JSON.stringify({ error: "Missing or invalid sync key" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  const raw = await readBodyCapped(request, MAX_BODY_BYTES);
+  if (raw === null) {
+    return new Response(JSON.stringify({ error: "Payload too large" }), { status: 413, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  let body;
+  try {
+    body = JSON.parse(raw);
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  if (!body || typeof body !== "object" || !body.data) {
+    return new Response(JSON.stringify({ error: "Missing data" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  const updatedAt = Date.now();
+  await env.SYNC_KV.put("sync:" + key, JSON.stringify({ data: body.data, updatedAt }));
+  return new Response(JSON.stringify({ ok: true, updatedAt }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+}
+
+async function handleSyncPull(request, env, headers) {
+  const key = syncKeyFrom(request);
+  if (!key) {
+    return new Response(JSON.stringify({ error: "Missing or invalid sync key" }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  const stored = await env.SYNC_KV.get("sync:" + key, "json");
+  if (!stored) {
+    return new Response(JSON.stringify({ error: "Nothing synced yet under this code" }), { status: 404, headers: { ...headers, "Content-Type": "application/json" } });
+  }
+  return new Response(JSON.stringify({ ok: true, data: stored.data, updatedAt: stored.updatedAt }), { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+}
+
 export default {
   async fetch(request, env) {
     // Echo back the request's Origin only if it's one we allow, so the preflight response
@@ -155,7 +200,7 @@ export default {
     const headers = {
       "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://solmasta.github.io",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-SimpleFIN-Secret",
+      "Access-Control-Allow-Headers": "Content-Type, X-SimpleFIN-Secret, X-Sync-Key",
     };
 
     if (request.method === "OPTIONS") {
@@ -183,6 +228,8 @@ export default {
     if (pathname === "/simplefin/connect") return handleSimplefinConnect(request, env, headers);
     if (pathname === "/simplefin/sync") return handleSimplefinSync(request, env, headers);
     if (pathname === "/simplefin/disconnect") return handleSimplefinDisconnect(request, env, headers);
+    if (pathname === "/sync/push") return handleSyncPush(request, env, headers);
+    if (pathname === "/sync/pull") return handleSyncPull(request, env, headers);
 
     const raw = await readBodyCapped(request, MAX_BODY_BYTES);
     if (raw === null) {
