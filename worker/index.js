@@ -136,7 +136,10 @@ async function handleSimplefinSync(request, env, headers) {
   const accounts = (data.accounts || []).map((a) => ({
     id: a.id,
     name: a.name,
-    balance: parseFloat(a.balance) || 0,
+    // Prefer available balance (posted transactions minus pending holds/debits — what the
+    // bank's own app shows as "available to spend") over the raw ledger balance, which can
+    // run well ahead of reality when there are pending transactions not yet posted.
+    balance: parseFloat(a["available-balance"] != null ? a["available-balance"] : a.balance) || 0,
     balanceDate: a["balance-date"] || null,
     org: a.org && a.org.name ? a.org.name : "",
     transactions: (a.transactions || []).map((t) => ({
