@@ -42,7 +42,7 @@
   }
 </style>
 <script>
-  window.__APP_VERSION = "64";
+  window.__APP_VERSION = "65";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -1625,7 +1625,7 @@ function BudgetPlanner() {
       setSimplefinConnecting(false);
     }
   }
-  async function syncSimplefin() {
+  async function syncSimplefin(silent) {
     if (!simplefinSecret || simplefinSyncing) return;
     setSimplefinSyncing(true);
     setSimplefinError("");
@@ -1639,8 +1639,10 @@ function BudgetPlanner() {
       setSimplefinData(data);
       try { localStorage.setItem(SIMPLEFIN_LAST_SYNC_KEY, data.syncedAt); } catch (e) {}
       setSimplefinLastSync(data.syncedAt);
-      setSettingsOpen(false);
-      setBankSyncOpen(true);
+      if (!silent) {
+        setSettingsOpen(false);
+        setBankSyncOpen(true);
+      }
     } catch (e) {
       setSimplefinError(e && e.message ? e.message : "Couldn't sync");
     } finally {
@@ -1765,6 +1767,22 @@ function BudgetPlanner() {
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [syncKey, loading]);
+  useEffect(function() {
+    if (!simplefinSecret || loading) return;
+    syncSimplefin(true);
+    // SimpleFIN itself only refreshes from the bank about once a day, so this just keeps
+    // the number fresh across a long-lived open tab/desktop session — not a tighter poll.
+    const interval = setInterval(function() { syncSimplefin(true); }, 4 * 60 * 60 * 1000);
+    function onFocus() { syncSimplefin(true); }
+    function onVisibility() { if (document.visibilityState === "visible") syncSimplefin(true); }
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return function() {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [simplefinSecret, loading]);
   function recordNetWorthPoint(total) {
     const iso = toISO(/* @__PURE__ */ new Date());
     setNetWorthHistory(function(prev) {
@@ -2358,7 +2376,7 @@ function BudgetPlanner() {
       simplefinError,
       simplefinLastSync,
       onSimplefinConnect: connectSimplefin,
-      onSimplefinSync: syncSimplefin,
+      onSimplefinSync: () => syncSimplefin(false),
       onSimplefinDisconnect: disconnectSimplefin,
       onSimplefinReview: () => { if (simplefinData) { setSettingsOpen(false); setBankSyncOpen(true); } },
       syncKey,
