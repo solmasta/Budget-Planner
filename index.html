@@ -42,7 +42,7 @@
   }
 </style>
 <script>
-  window.__APP_VERSION = "67";
+  window.__APP_VERSION = "68";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -2828,7 +2828,7 @@ function buildSimplefinContext(simplefinData) {
   }
   return "REAL BANK TRANSACTIONS (raw feed from the connected bank account(s), most recent first — this is what's actually being spent, separate from the planned/scheduled bills below; interpret the raw merchant text yourself, e.g. recognize recurring subscriptions, cash-advance apps, overdraft fees):\n" + lines + "\n";
 }
-function Insights({ items, eff, startBalance, cleared, skipped, overrides, advisorNotes, kbEntries, accounts, simplefinData }) {
+function Insights({ items, eff, startBalance, cleared, skipped, overrides, advisorNotes, kbEntries, onRemoveNote, accounts, simplefinData }) {
   const sig = useMemo(
     () => JSON.stringify(items.map((i) => [i.type, i.name, i.amount, i.date, i.freq, i.category, i.auto, i.linkedIncomeId])) + "|" + startBalance + "|" + JSON.stringify(cleared) + "|" + JSON.stringify(skipped) + "|" + JSON.stringify(overrides),
     [items, startBalance, cleared, skipped, overrides]
