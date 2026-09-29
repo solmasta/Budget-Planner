@@ -42,7 +42,7 @@
   }
 </style>
 <script>
-  window.__APP_VERSION = "71";
+  window.__APP_VERSION = "72";
   window.__bootErr = "";
   function __note(msg){ if(!window.__bootErr) window.__bootErr = String(msg || "unknown"); }
   window.addEventListener("error", function (e) { __note(e.message || (e.error && e.error.message) || "script error"); });
@@ -1758,6 +1758,11 @@ function BudgetPlanner() {
     setSyncStatus("syncing");
     try {
       const data = await buildBackupData();
+      // Deliberately kept out of buildBackupData() itself -- backup files and Google Drive
+      // backups should not carry a live bank-linking secret that could outlive a token
+      // rotation. Only the device-to-device sync channel (already a trusted shared secret)
+      // carries it.
+      data.simplefinSecret = simplefinSecret || null;
       const res = await fetch(WORKER_URL + "/sync/push", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Sync-Key": key },
@@ -1892,6 +1897,15 @@ function BudgetPlanner() {
     const t = setTimeout(function() { syncPush(); }, 4000);
     return function() { clearTimeout(t); };
   }, [lastSaved, syncKey]);
+  // Carries the bank connection itself across devices, same as everything else that syncs --
+  // connecting or disconnecting SimpleFIN on one device applies on the others too, rather than
+  // requiring a separate SimpleFIN setup token per device.
+  const simplefinSecretMounted = useRef(false);
+  useEffect(function() {
+    if (!syncKey) return;
+    if (!simplefinSecretMounted.current) { simplefinSecretMounted.current = true; return; }
+    syncPush();
+  }, [simplefinSecret, syncKey]);
   useEffect(function() {
     if (!driveConnected || !lastSaved || !driveTokenRef.current) return;
     const t = setTimeout(function() { driveBackupNow(); }, 4000);
@@ -2058,6 +2072,24 @@ function BudgetPlanner() {
     if (extra && Array.isArray(extra.netWorthHistory)) {
       setNetWorthHistory(extra.netWorthHistory);
       idbSafeSet(HISTORY_KEY, extra.netWorthHistory);
+    }
+    // Only present when this came from the device-sync channel (never from a backup file or
+    // Drive restore, which don't carry it) -- applies the bank connection from the other
+    // device, or clears it here too if the other device disconnected.
+    if (extra && "simplefinSecret" in extra && extra.simplefinSecret !== simplefinSecret) {
+      if (extra.simplefinSecret) {
+        try { localStorage.setItem(SIMPLEFIN_SECRET_KEY, extra.simplefinSecret); } catch (e) {}
+        setSimplefinSecret(extra.simplefinSecret);
+      } else {
+        try {
+          localStorage.removeItem(SIMPLEFIN_SECRET_KEY);
+          localStorage.removeItem(SIMPLEFIN_LAST_SYNC_KEY);
+        } catch (e) {}
+        setSimplefinSecret("");
+        setSimplefinData(null);
+        setSimplefinLastSync(null);
+        idbSafeSet(SIMPLEFIN_DATA_KEY, null);
+      }
     }
     persist(nextItems, accts);
   }
